@@ -1,0 +1,175 @@
+type: spec.insomnia.rest/5.0
+name: Toggle Master
+meta:
+  id: wrk_d84e8b18661549f9b2459460254807ba
+  created: 1757378122095
+  modified: 1757378122095
+  description: ""
+collection:
+  - url: "{{ _.endpoint }}/health"
+    name: Health
+    meta:
+      id: req_6ad67206f7924d42849fb8976b51be2e
+      created: 1757377490916
+      modified: 1757377868091
+      isPrivate: false
+      description: ""
+      sortKey: -1757377513595
+    method: GET
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+  - url: "{{ _.endpoint }}/flags"
+    name: Flags
+    meta:
+      id: req_7cf27b5e031e42e18338920e95de1a1e
+      created: 1757377513395
+      modified: 1757800741796
+      isPrivate: false
+      description: ""
+      sortKey: -1757377513545
+    method: POST
+    body:
+      mimeType: application/json
+      text: |-
+        {
+        	"name": "{% faker 'randomLoremWord' %}",
+        	"is_enabled": false
+        }
+    headers:
+      - name: Content-Type
+        value: application/json
+    scripts:
+      afterResponse: |-
+        const responseBody = JSON.parse(insomnia.response.body);
+        const message = responseBody.message;
+        const flag = message.match(/'([^']+)'/);
+        console.log("MESSAGE: " + flag[1]);
+        insomnia.environment.set("var_flag", flag[1]);
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+  - url: "{{ _.endpoint }}/flags"
+    name: All Flags
+    meta:
+      id: req_53a6d29b1ae747508135c4edcc962dad
+      created: 1757377603045
+      modified: 1757799544903
+      isPrivate: false
+      description: ""
+      sortKey: -1757377513495
+    method: GET
+    scripts:
+      preRequest: insomnia.environment.get("var_flag");
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+  - url: "{{ _.endpoint }}/flags/:flag"
+    name: Flags by Name
+    meta:
+      id: req_2a61fd43c71e4d0d92dbf8602a723cf9
+      created: 1757377654632
+      modified: 1757800779689
+      isPrivate: false
+      description: ""
+      sortKey: -1757377490830.5
+    method: GET
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+    pathParameters:
+      - name: flag
+        value: "{{ _.var_flag }}"
+  - url: "{{ _.endpoint }}/flags/:flag"
+    name: Update Flag
+    meta:
+      id: req_c42f97e751ff458981169bd9b1c850b1
+      created: 1757377696609
+      modified: 1757800855164
+      isPrivate: false
+      description: ""
+      sortKey: -1757377490730.5
+    method: PUT
+    body:
+      mimeType: application/json
+      text: |-
+        {
+        	"is_enabled": true
+        }
+    headers:
+      - name: Content-Type
+        value: application/json
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+    pathParameters:
+      - name: flag
+        value: "{{ _.var_flag }}"
+cookieJar:
+  name: Default Jar
+  meta:
+    id: jar_41c34878e08b701d89f45449eefb2d8630afc683
+    created: 1757378122119
+    modified: 1757801264029
+environments:
+  name: Base Environment
+  meta:
+    id: env_41c34878e08b701d89f45449eefb2d8630afc683
+    created: 1757378122117
+    modified: 1757801264038
+    isPrivate: false
+  data:
+    var_flag: ""
+  subEnvironments:
+    - name: local
+      meta:
+        id: env_624306fe135048fe9ebc49c7fa43c5cc
+        created: 1757795961384
+        modified: 1757801264037
+        isPrivate: false
+        sortKey: 1757795961384
+      data:
+        endpoint: http://localhost:5000
+        var_flag: decretum
+      color: "#3afd61"
+    - name: aws
+      meta:
+        id: env_ba0c6249ca21492791f37455c3d85532
+        created: 1757796013183
+        modified: 1757801306270
+        isPrivate: false
+        sortKey: 1757795961434
+      data:
+        endpoint: http://localhost:5000
+        var_flag: ""
+      color: "#0033ff"
+spec:
+  meta:
+    id: spc_3c1bcb2cced543e791c8536942d6ef2c
+    created: 1757378122114
+    modified: 1757792625805
