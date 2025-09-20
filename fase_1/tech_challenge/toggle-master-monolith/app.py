@@ -1,25 +1,91 @@
 import os
-import click
+from functools import lru_cache
+
 from flask import Flask, request, jsonify
 import psycopg2
 from psycopg2.extras import RealDictCursor
+import boto3
+from botocore.exceptions import ClientError
+import json
 
 app = Flask(__name__)
 _db_inicializado = False
 
-DB_HOST = os.getenv("DB_HOST")
-DB_NAME = os.getenv("DB_NAME")
-DB_USER = os.getenv("DB_USER")
-DB_PASSWORD = os.getenv("DB_PASSWORD")
+USE_LOCALSTACK = os.getenv("LOCALSTACK", "false").lower() == "true"
+AWS_REGION = os.getenv("AWS_REGION")
+boto3_args = {"region_name": AWS_REGION}
+
+if USE_LOCALSTACK:
+    boto3_args["endpoint_url"] = os.getenv("AWS_ENDPOINT_URL", "http://localhost:4566")
+    boto3_args["aws_access_key_id"] = "test"
+    boto3_args["aws_secret_access_key"] = "test"
+    print("⚡ Conectado ao Localstack...")
+else:
+    print(f"⚡ Conectado à AWS na região {AWS_REGION}...")
+
+@lru_cache(maxsize=1)
+def _get_parameters():
+    """
+    Busca os parâmetros do SSM Parameter Store, incluindo o nome do Secret do Secrets Manager.
+    """
+    print("🔍 Buscando parâmetros no SSM...")
+    client = boto3.client("ssm", **boto3_args)
+    try:
+        params = {
+            "host": client.get_parameter(Name="/togglemaster/DB_HOST")["Parameter"]["Value"],
+            "dbname": client.get_parameter(Name="/togglemaster/DB_NAME")["Parameter"]["Value"],
+            "port": client.get_parameter(Name="/togglemaster/DB_PORT")["Parameter"]["Value"],
+            "secret_name": client.get_parameter(Name="/togglemaster/SECRET_NAME")["Parameter"]["Value"],
+        }
+        print(f"✅ Parâmetros obtidos do SSM")
+        return params
+    except ClientError as e:
+        print(f"❌ Falha ao buscar parâmetros no SSM")
+        raise e
+
+
+@lru_cache(maxsize=1)
+def _get_secret_dict():
+    """
+    Busca o Secret no Secrets Manager, usando o nome obtido do Parameter Store.
+    """
+    params = _get_parameters()
+    secret_name = params["secret_name"]
+    print(f"🔑 Buscando secret no Secrets Manager...")
+
+    session = boto3.session.Session()
+    client = session.client(
+        service_name='secretsmanager',
+        region_name=AWS_REGION
+    )
+    try:
+        secret = json.loads(client.get_secret_value(SecretId=secret_name)['SecretString'])
+        print(f"✅ Secret obtido com sucesso")
+        return secret
+    except ClientError as e:
+        print(f"❌ Falha ao buscar secret: {e}")
+        raise e
+
 
 def get_db_connection():
-    conn = psycopg2.connect(
-        host=DB_HOST,
-        database=DB_NAME,
-        user=DB_USER,
-        password=DB_PASSWORD
-    )
-    return conn
+    print("🔗 Tentando conectar ao banco de dados...")
+    creds = _get_secret_dict()
+    params = _get_parameters()
+
+    try:
+        conn = psycopg2.connect(
+            user=creds.get("username"),
+            password=creds.get("password"),
+            host=params["host"],
+            dbname=params["dbname"],
+            port=params["port"]
+        )
+        print("✅ Conexão com o banco estabelecida com sucesso!")
+        return conn
+    except psycopg2.OperationalError as e:
+        print(f"❌ Erro de conexão ao banco de dados: {e}")
+        raise e
+
 
 def init_db():
     print("Tentando inicializar a tabela 'flags'...")

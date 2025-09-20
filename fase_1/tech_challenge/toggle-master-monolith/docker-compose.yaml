@@ -1,23 +1,28 @@
+version: "3.9"
+
 services:
   app:
     build: .
     ports:
       - "5000:5000"
-    volumes:
-      - .:/app
     environment:
-      - DB_HOST=db
+      - AWS_REGION=us-east-1
+      - AWS_ENDPOINT_URL=http://localstack:4566
+      - DB_USER=togglemaster
       - DB_NAME=togglemaster
-      - DB_USER=user
-      - DB_PASSWORD=password
-      - DB_PORT=5432
+      - LOCALSTACK=true
     depends_on:
       db:
         condition: service_healthy
+      localstack:
+        condition: service_healthy
+    networks:
+      - toggle-net
+
   db:
     image: postgres:13
     environment:
-      - POSTGRES_USER=user
+      - POSTGRES_USER=togglemaster
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=togglemaster
     volumes:
@@ -27,6 +32,37 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - toggle-net
+
+  localstack:
+    container_name: localstack-main
+    image: localstack/localstack:latest
+    ports:
+      - "4566:4566"
+      - "4510-4559:4510-4559"
+    environment:
+      - SERVICES=ssm,secretsmanager
+      - DEBUG=0
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_DEFAULT_REGION=us-east-1
+      - DISABLE_CORS_HEADERS=1
+    volumes:
+      - ./localstack-data:/var/lib/localstack/data
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./init-aws.sh:/etc/localstack/init/ready.d/init-aws.sh
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localstack:4566/_localstack/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - toggle-net
 
 volumes:
   postgres_data:
+
+networks:
+  toggle-net:
+    driver: bridge
