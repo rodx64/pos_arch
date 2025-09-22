@@ -29,7 +29,7 @@ collection:
     meta:
       id: req_7cf27b5e031e42e18338920e95de1a1e
       created: 1757377513395
-      modified: 1757800741796
+      modified: 1758387947458
       isPrivate: false
       description: ""
       sortKey: -1757377513545
@@ -105,7 +105,7 @@ collection:
     meta:
       id: req_c42f97e751ff458981169bd9b1c850b1
       created: 1757377696609
-      modified: 1757800855164
+      modified: 1758336800221
       isPrivate: false
       description: ""
       sortKey: -1757377490730.5
@@ -135,13 +135,13 @@ cookieJar:
   meta:
     id: jar_41c34878e08b701d89f45449eefb2d8630afc683
     created: 1757378122119
-    modified: 1757801264029
+    modified: 1758406148480
 environments:
   name: Base Environment
   meta:
     id: env_41c34878e08b701d89f45449eefb2d8630afc683
     created: 1757378122117
-    modified: 1757801264038
+    modified: 1758406148483
     isPrivate: false
   data:
     var_flag: ""
@@ -150,23 +150,23 @@ environments:
       meta:
         id: env_624306fe135048fe9ebc49c7fa43c5cc
         created: 1757795961384
-        modified: 1757801264037
+        modified: 1758396389385
         isPrivate: false
         sortKey: 1757795961384
       data:
         endpoint: http://localhost:5000
-        var_flag: decretum
+        var_flag: subito
       color: "#3afd61"
     - name: aws
       meta:
         id: env_ba0c6249ca21492791f37455c3d85532
         created: 1757796013183
-        modified: 1757801306270
+        modified: 1758406148482
         isPrivate: false
         sortKey: 1757795961434
       data:
-        endpoint: http://localhost:5000
-        var_flag: ""
+        endpoint: http://44.204.99.107:5000
+        var_flag: tres
       color: "#0033ff"
 spec:
   meta:
