@@ -12,7 +12,7 @@ deles a aplicação já atende e quais precisariam de ajustes para um
 ambiente de produção mais robusto.
 
 ## 2. Arquitetura Cloud:
-- [x] Desenhe um diagrama de [arquitetura](./arquitetura.md) simples para hospedar a
+- [x] Desenhe um diagrama de [arquitetura](0_ARQUITETURA.md) simples para hospedar a
 aplicação na AWS. O diagrama deve incluir:
 - [x] Uma VPC com sub-redes públicas e privadas.
 - [x] Uma instância EC2 na sub-rede pública para rodar a aplicação.
