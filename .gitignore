@@ -2,17 +2,14 @@
 
 !.gitignore
 
-# Fase 1
-!/fase_1/
-!/fase_2/
-!/fase_3/
-!/fase_4/
+# Fases
+!/fase_*/
 
 # Tech Challenge
-!/fase_1/tech_challenge
-!/fase_1/tech_challenge/toggle-master-monolith/
-!/fase_1/tech_challenge/toggle-master-monolith/**
+!/fase_*/tech_challenge
+!/fase_*/tech_challenge/toggle-master-*/
+!/fase_*/tech_challenge/toggle-master-*/**
 
 # Doc
-!/fase_1/tech_challenge/doc/
-!/fase_1/tech_challenge/doc/**
+!/fase_*/tech_challenge/doc/
+!/fase_*/tech_challenge/doc/**
