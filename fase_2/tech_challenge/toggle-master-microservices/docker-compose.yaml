@@ -49,6 +49,7 @@ services:
       - "5433:5432"
     volumes:
       - postgres_auth_data:/var/lib/postgresql/data/
+      - ./auth-service/db/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U toggleuser -d togglemasterauth"]
       interval: 10s
