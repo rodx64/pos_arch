@@ -30,11 +30,44 @@ services:
     ports:
       - "8001:8001"
     environment:
+      - PORT=8001
       - DATABASE_URL=postgresql://toggleuser:password@db-auth:5432/togglemasterauth
       - MASTER_KEY=01cf4be5-5270-41ff-86fe-0ce789440f04
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     depends_on:
       db-auth:
         condition: service_healthy
+    networks:
+      - toggle-net
+
+  flag-service:
+    container_name: flag-service
+    build:
+      context: ./flag-service
+      dockerfile: Dockerfile
+    ports:
+      - "8002:8002"
+    environment:
+      - PORT=8002
+      - DATABASE_URL=postgresql://toggleuser:password@db-flag:5432/togglemasterflag
+      - AUTH_SERVICE_URL=http://auth-service:8001
+    depends_on:
+      db-flag:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
     networks:
       - toggle-net
 
@@ -69,11 +102,13 @@ services:
       - "5434:5432"
     volumes:
       - postgres_flag_data:/var/lib/postgresql/data/
+      - ./flag-service/db/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U toggleuser -d togglemasterflag"]
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
     networks:
       - toggle-net
 
@@ -88,11 +123,28 @@ services:
       - "5435:5432"
     volumes:
       - postgres_target_data:/var/lib/postgresql/data/
+      - ./targeting-service/db/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U toggleuser -d togglemastertarget"]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - toggle-net
+
+  redis-evaluator:
+    image: redis:latest
+    container_name: redis-evaluator
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_evaluator_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
     networks:
       - toggle-net
 
@@ -125,6 +177,7 @@ volumes:
   postgres_auth_data:
   postgres_flag_data:
   postgres_target_data:
+  redis_evaluator_data:
 
 networks:
   toggle-net:
