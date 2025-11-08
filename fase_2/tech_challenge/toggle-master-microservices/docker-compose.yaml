@@ -22,6 +22,22 @@ services:
     networks:
       - toggle-net
 
+  auth-service:
+    container_name: auth-service
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    environment:
+      - DATABASE_URL=postgresql://toggleuser:password@db-auth:5432/togglemasterauth
+      - MASTER_KEY=01cf4be5-5270-41ff-86fe-0ce789440f04
+    depends_on:
+      db-auth:
+        condition: service_healthy
+    networks:
+      - toggle-net
+
   db-auth:
     image: postgres:13
     container_name: db-auth
@@ -29,6 +45,8 @@ services:
       - POSTGRES_USER=toggleuser
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=togglemasterauth
+    ports:
+      - "5433:5432"
     volumes:
       - postgres_auth_data:/var/lib/postgresql/data/
     healthcheck:
@@ -46,6 +64,8 @@ services:
       - POSTGRES_USER=toggleuser
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=togglemasterflag
+    ports:
+      - "5434:5432"
     volumes:
       - postgres_flag_data:/var/lib/postgresql/data/
     healthcheck:
@@ -63,6 +83,8 @@ services:
       - POSTGRES_USER=toggleuser
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=togglemastertarget
+    ports:
+      - "5435:5432"
     volumes:
       - postgres_target_data:/var/lib/postgresql/data/
     healthcheck:

@@ -13,3 +13,52 @@
 # Doc
 !/fase_*/tech_challenge/doc/
 !/fase_*/tech_challenge/doc/**
+
+# =========================
+# Arquivos de configuração / ambiente local
+# =========================
+.env
+*.env
+
+# =========================
+# Python
+# =========================
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.manifest
+*.spec
+
+# Distribuições / build
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Test / coverage
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# IDEs
+.vscode/
+.idea/
+
+# =========================
+# Go
+# =========================
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Build / dependency directories
+bin/
+vendor/
+pkg/
