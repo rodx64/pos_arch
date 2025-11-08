@@ -1,0 +1,108 @@
+services:
+  analytics-service:
+    container_name: analytics-service
+    build:
+      context: ./analytics-service
+      dockerfile: Dockerfile
+    ports:
+      - "8005:8005"
+    environment:
+      - AWS_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_DEFAULT_REGION=us-east-1
+      - AWS_ENDPOINT_URL=http://localstack:4566
+      - AWS_DYNAMODB_TABLE=analytics_events
+      - AWS_SQS_URL=http://localstack:4566/000000000000/toggle-analytics-queue
+      - PORT=8005
+      - ENVIRONMENT=local
+    depends_on:
+      localstack:
+        condition: service_healthy
+    networks:
+      - toggle-net
+
+  db-auth:
+    image: postgres:13
+    container_name: db-auth
+    environment:
+      - POSTGRES_USER=toggleuser
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=togglemasterauth
+    volumes:
+      - postgres_auth_data:/var/lib/postgresql/data/
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U toggleuser -d togglemasterauth"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - toggle-net
+
+  db-flag:
+    image: postgres:13
+    container_name: db-flag
+    environment:
+      - POSTGRES_USER=toggleuser
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=togglemasterflag
+    volumes:
+      - postgres_flag_data:/var/lib/postgresql/data/
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U toggleuser -d togglemasterflag"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - toggle-net
+
+  db-targeting:
+    image: postgres:13
+    container_name: db-targeting
+    environment:
+      - POSTGRES_USER=toggleuser
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=togglemastertarget
+    volumes:
+      - postgres_target_data:/var/lib/postgresql/data/
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U toggleuser -d togglemastertarget"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - toggle-net
+
+  localstack:
+    image: localstack/localstack:latest
+    ports:
+      - "4566:4566"
+      - "4510-4559:4510-4559"
+    environment:
+      - SERVICES=sqs,dynamodb,ssm,secretsmanager
+      - DEBUG=0
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_DEFAULT_REGION=us-east-1
+      - DISABLE_CORS_HEADERS=1
+      - DATA_DIR=/var/lib/localstack/data
+    volumes:
+      - ./localstack-data:/var/lib/localstack/data
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./init-aws.sh:/etc/localstack/init/ready.d/init-aws.sh
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:4566/_localstack/health" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - toggle-net
+
+volumes:
+  postgres_auth_data:
+  postgres_flag_data:
+  postgres_target_data:
+
+networks:
+  toggle-net:
+    driver: bridge
