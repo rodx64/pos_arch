@@ -71,6 +71,32 @@ services:
     networks:
       - toggle-net
 
+  targeting-service:
+    container_name: targeting-service
+    build:
+      context: ./targeting-service
+      dockerfile: Dockerfile
+    ports:
+      - "8003:8003"
+    environment:
+      - PORT=8003
+      - DATABASE_URL=postgresql://toggleuser:password@db-targeting:5432/togglemastertarget
+      - AUTH_SERVICE_URL=http://auth-service:8001
+    depends_on:
+      db-flag:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - toggle-net
+
   db-auth:
     image: postgres:13
     container_name: db-auth
