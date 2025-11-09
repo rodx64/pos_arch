@@ -1,0 +1,590 @@
+type: spec.insomnia.rest/5.0
+name: Toggle Master
+meta:
+  id: wrk_d84e8b18661549f9b2459460254807ba
+  created: 1757378122095
+  modified: 1757378122095
+  description: ""
+collection:
+  - name: Fase_1
+    meta:
+      id: fld_8ad644dde1ec484894e44d3285618d32
+      created: 1762630725509
+      modified: 1762630725509
+      sortKey: -1762630725509
+      description: ""
+  - name: Fase_2
+    meta:
+      id: fld_b05bf5baeb71400683edb1cd8b2c3c20
+      created: 1762630755518
+      modified: 1762630755518
+      sortKey: -1762630755518
+      description: ""
+    children:
+      - name: Auth Service
+        meta:
+          id: fld_ac9d2ffd8d1c44938e1878990ab01e84
+          created: 1762631001911
+          modified: 1762645633031
+          sortKey: -1762631024572.5
+          description: ""
+        children:
+          - url: "{{ _.endpoint }}:{{ _.auth_port }}/health"
+            name: HEALTH
+            meta:
+              id: req_337b5714b2634845a2c2aea96f95763d
+              created: 1762630784547
+              modified: 1762632292507
+              isPrivate: false
+              description: ""
+              sortKey: -1762631011671
+            method: GET
+            headers:
+              - name: User-Agent
+                value: insomnia/11.5.0
+            settings:
+              renderRequestBody: true
+              encodeUrl: true
+              followRedirects: global
+              cookies:
+                send: true
+                store: true
+              rebuildPath: true
+          - url: "{{ _.endpoint }}:{{ _.auth_port }}/validate"
+            name: VALIDATE
+            meta:
+              id: req_4b2a678de47c48a8999bedb32a23cedd
+              created: 1762631144715
+              modified: 1762632682350
+              isPrivate: false
+              description: ""
+              sortKey: -1762631011521
+            method: GET
+            headers:
+              - name: User-Agent
+                value: insomnia/11.5.0
+                id: pair_9ce2f9b5870345f199b7dd50bd2cb455
+            authentication:
+              type: bearer
+              token: "{% response 'body', 'req_ce751b3846ef406db4df1416fa63b240',
+                'b64::JC5rZXk=::46b', 'never', 60 %}"
+            settings:
+              renderRequestBody: true
+              encodeUrl: true
+              followRedirects: global
+              cookies:
+                send: true
+                store: true
+              rebuildPath: true
+          - url: "{{ _.endpoint }}:{{ _.auth_port }}/admin/keys"
+            name: CREATE KEY
+            meta:
+              id: req_ce751b3846ef406db4df1416fa63b240
+              created: 1762631259121
+              modified: 1762632644458
+              isPrivate: false
+              description: ""
+              sortKey: -1762631011571
+            method: POST
+            body:
+              mimeType: application/json
+              text: |-
+                {
+                	"name": "{% faker 'randomWord' %}"
+                }
+            headers:
+              - name: Content-Type
+                value: application/json
+                id: pair_64e1de6ddeb14a2ebc57aae4d59d4137
+              - name: User-Agent
+                value: insomnia/11.5.0
+                id: pair_9ce2f9b5870345f199b7dd50bd2cb455
+            authentication:
+              type: bearer
+              token: 01cf4be5-5270-41ff-86fe-0ce789440f04
+            settings:
+              renderRequestBody: true
+              encodeUrl: true
+              followRedirects: global
+              cookies:
+                send: true
+                store: true
+              rebuildPath: true
+      - name: Analytics Service
+        meta:
+          id: fld_04454d4d2180425dba353924d371d466
+          created: 1762631038661
+          modified: 1762631038661
+          sortKey: -1762631038661
+          description: ""
+        children:
+          - url: "{{ _.endpoint }}:{{ _.analytics_port }}/health"
+            name: HEALTH
+            meta:
+              id: req_eddcfdbff1e44e1aae6913aab0df63d1
+              created: 1762631064827
+              modified: 1762631105904
+              isPrivate: false
+              description: ""
+              sortKey: -1762631071329
+            method: GET
+            headers:
+              - name: User-Agent
+                value: insomnia/11.5.0
+            settings:
+              renderRequestBody: true
+              encodeUrl: true
+              followRedirects: global
+              cookies:
+                send: true
+                store: true
+              rebuildPath: true
+      - name: Flag Service
+        meta:
+          id: fld_e54d7063f4054453aad88466e741863c
+          created: 1762640555991
+          modified: 1762641500790
+          sortKey: -1762631010484
+          description: ""
+        children:
+          - url: "{{ _.endpoint }}:{{ _.flag_port }}/health"
+            name: HEALTH
+            meta:
+              id: req_04722507cd754b5a91847b1cebe919d7
+              created: 1762640556004
+              modified: 1762641302496
+              isPrivate: false
+              description: ""
+              sortKey: -1762641123966
+            method: GET
+            headers:
+              - name: User-Agent
+                value: insomnia/11.5.0
+            settings:
+              renderRequestBody: true
+              encodeUrl: true
+              followRedirects: global
+              cookies:
+                send: true
+                store: true
+              rebuildPath: true
+          - url: "{{ _.endpoint }}:{{ _.flag_port }}/flags"
+            name: CRIAR FLAG
+            meta:
+              id: req_633514631f224d2a8278bb14296d0e45
+              created: 1762640718002
+              modified: 1762645741719
+              isPrivate: false
+              description: ""
+              sortKey: -1762641123866
+            method: POST
+            body:
+              mimeType: application/json
+              text: |-
+                {         
+                	"name": "{% faker 'randomWord' %}",         
+                	"description": "{% faker 'randomWords' %}",         
+                	"is_enabled": true       
+                }
+            headers:
+              - name: Content-Type
+                value: application/json
+                id: pair_c864efb647b74565a81c85d5db9284b1
+            authentication:
+              type: bearer
+              token: "{% response 'body', 'req_ce751b3846ef406db4df1416fa63b240',
+                'b64::JC5rZXk=::46b', 'never', 60 %}"
+            settings:
+              renderRequestBody: true
+              encodeUrl: true
+              followRedirects: global
+              cookies:
+                send: true
+                store: true
+              rebuildPath: true
+          - url: "{{ _.endpoint }}:{{ _.flag_port }}/flags"
+            name: ENCONTRAR FLAGS
+            meta:
+              id: req_89d5abab8c4c4a879f74876ffcf0487c
+              created: 1762641123666
+              modified: 1762645758801
+              isPrivate: false
+              description: ""
+              sortKey: -1762641123666
+            method: GET
+            headers:
+              - id: pair_b5285bcec80f4e09a8fccedfdf0a3ba0
+                name: ""
+                value: ""
+                description: ""
+                disabled: false
+            authentication:
+              type: bearer
+              token: "{% response 'body', 'req_ce751b3846ef406db4df1416fa63b240',
+                'b64::JC5rZXk=::46b', 'never', 60 %}"
+            settings:
+              renderRequestBody: true
+              encodeUrl: true
+              followRedirects: global
+              cookies:
+                send: true
+                store: true
+              rebuildPath: true
+          - url: "{{ _.endpoint }}:{{ _.flag_port }}/flags/:flag"
+            name: ENCONTRAR FLAG POR NOME
+            meta:
+              id: req_da8d2f629b9c47a0a7ba58fcba629b01
+              created: 1762641292287
+              modified: 1762645753290
+              isPrivate: false
+              description: ""
+              sortKey: -1762641123766
+            method: GET
+            headers:
+              - id: pair_b5285bcec80f4e09a8fccedfdf0a3ba0
+                name: ""
+                value: ""
+                description: ""
+                disabled: false
+            authentication:
+              type: bearer
+              token: "{% response 'body', 'req_ce751b3846ef406db4df1416fa63b240',
+                'b64::JC5rZXk=::46b', 'never', 60 %}"
+            settings:
+              renderRequestBody: true
+              encodeUrl: true
+              followRedirects: global
+              cookies:
+                send: true
+                store: true
+              rebuildPath: true
+            pathParameters:
+              - name: flag
+                value: "{% prompt 'Entre com o nome da flag', 'Flag', '', '', false, true %}"
+          - url: "{{ _.endpoint }}:{{ _.flag_port }}/flags/:flag"
+            name: ATUALIZAR UMA FLAG
+            meta:
+              id: req_77cfd3312ed7412ea6f1be9c518da6e7
+              created: 1762641387616
+              modified: 1762645747662
+              isPrivate: false
+              description: ""
+              sortKey: -1762641123816
+            method: PUT
+            body:
+              mimeType: application/json
+              text: |-
+                {         
+                	"description": "Nova descrição",         
+                	"is_enabled": false       
+                }
+            headers:
+              - name: Content-Type
+                value: application/json
+                id: pair_e48a25c347824207a7de45a3aa6f0d23
+            authentication:
+              type: bearer
+              token: "{% response 'body', 'req_ce751b3846ef406db4df1416fa63b240',
+                'b64::JC5rZXk=::46b', 'never', 60 %}"
+            settings:
+              renderRequestBody: true
+              encodeUrl: true
+              followRedirects: global
+              cookies:
+                send: true
+                store: true
+              rebuildPath: true
+            pathParameters:
+              - name: flag
+                value: "{% prompt 'Entre com o nome da flag que será atualizada', 'Flag', '',
+                  '', false, true %}"
+          - url: "{{ _.endpoint }}:{{ _.flag_port }}/flags/:flag"
+            name: DELETAR FLAG
+            meta:
+              id: req_0be574ed6be548ba8fd32a579232ae09
+              created: 1762641503081
+              modified: 1762645763229
+              isPrivate: false
+              description: ""
+              sortKey: -1762641123566
+            method: DELETE
+            headers:
+              - id: pair_b2dbc50010a1477abe21adcb198563f0
+                name: ""
+                value: ""
+                description: ""
+                disabled: false
+            authentication:
+              type: bearer
+              token: "{% response 'body', 'req_ce751b3846ef406db4df1416fa63b240',
+                'b64::JC5rZXk=::46b', 'never', 60 %}"
+            settings:
+              renderRequestBody: true
+              encodeUrl: true
+              followRedirects: global
+              cookies:
+                send: true
+                store: true
+              rebuildPath: true
+            pathParameters:
+              - name: flag
+                value: "{% prompt 'Insira o nome da flag que será deletada', 'Flag', '', '',
+                  false, true %}"
+      - name: Targeting Service
+        meta:
+          id: fld_710683f18c1e4d9badeb0d1accb7f4b2
+          created: 1762645611968
+          modified: 1762645627806
+          sortKey: -1762630996395.5
+          description: ""
+        children:
+          - url: "{{ _.endpoint }}:{{ _.targeting_port }}/health"
+            name: HEALTH
+            meta:
+              id: req_d166cfb538b84a0387571bcf2ca4be8c
+              created: 1762645672688
+              modified: 1762648664617
+              isPrivate: false
+              description: ""
+              sortKey: -1762645724905
+            method: GET
+            settings:
+              renderRequestBody: true
+              encodeUrl: true
+              followRedirects: global
+              cookies:
+                send: true
+                store: true
+              rebuildPath: true
+          - url: "{{ _.endpoint }}:{{ _.targeting_port }}/rules"
+            name: CRIAR RULE
+            meta:
+              id: req_227be5e288b84982810bf3505a9a988f
+              created: 1762645724805
+              modified: 1762706125659
+              isPrivate: false
+              description: ""
+              sortKey: -1762645724805
+            method: POST
+            body:
+              mimeType: application/json
+              text: >-
+                {     
+                	"flag_name": "{% response 'body', 'req_633514631f224d2a8278bb14296d0e45', 'b64::JC5uYW1l::46b', 'never', 60 %}",     
+                	"is_enabled": true,     
+                	"rules": {       
+                		"type": "PERCENTAGE",
+                		"value": {% prompt 'Digite o percentual da rule', 'Percentual (0-100)', '', '', false, true %}
+                	}   
+                }
+            headers:
+              - name: Content-Type
+                value: application/json
+                id: pair_ad92815b590844dba4dfd8393aa8d25d
+            authentication:
+              type: bearer
+              token: "{% response 'body', 'req_ce751b3846ef406db4df1416fa63b240',
+                'b64::JC5rZXk=::46b', 'never', 60 %}"
+            settings:
+              renderRequestBody: true
+              encodeUrl: true
+              followRedirects: global
+              cookies:
+                send: true
+                store: true
+              rebuildPath: true
+          - url: "{{ _.endpoint }}:{{ _.targeting_port }}/rules/:flag"
+            name: ENCONTRAR RULE PELO NOME DA FLAG
+            meta:
+              id: req_617d27c08b244f979f9e10ec25f791a7
+              created: 1762648168153
+              modified: 1762648668568
+              isPrivate: false
+              description: ""
+              sortKey: -1762645117127
+            method: GET
+            authentication:
+              type: bearer
+              token: "{% response 'body', 'req_ce751b3846ef406db4df1416fa63b240',
+                'b64::JC5rZXk=::46b', 'never', 60 %}"
+            settings:
+              renderRequestBody: true
+              encodeUrl: true
+              followRedirects: global
+              cookies:
+                send: true
+                store: true
+              rebuildPath: true
+            pathParameters:
+              - name: flag
+                value: "{% prompt 'Insira o nome da flag', 'Flag', '', '', false, true %}"
+          - url: "{{ _.endpoint }}:{{ _.targeting_port }}/rules/:flag"
+            name: ATUALIZAR RULE PELO NOME DA FLAG
+            meta:
+              id: req_8db7670209d84bfba916b8a2fcb182bf
+              created: 1762648324207
+              modified: 1762648560696
+              isPrivate: false
+              description: ""
+              sortKey: -1762645698746.5
+            method: PUT
+            body:
+              mimeType: application/json
+              text: |-
+                {     
+                	"is_enabled": false,     
+                	"rules": {       
+                		"country": ["BR"]     
+                	}   
+                }
+            headers:
+              - name: Content-Type
+                value: application/json
+                id: pair_af07acd6992b4d239d13431b7f43f5e6
+            authentication:
+              type: bearer
+              token: "{% response 'body', 'req_ce751b3846ef406db4df1416fa63b240',
+                'b64::JC5rZXk=::46b', 'never', 60 %}"
+            settings:
+              renderRequestBody: true
+              encodeUrl: true
+              followRedirects: global
+              cookies:
+                send: true
+                store: true
+              rebuildPath: true
+            pathParameters:
+              - name: flag
+                value: "{% prompt 'Insira o nome da Flag', 'Flag', '', '', false, true %}"
+          - url: "{{ _.endpoint }}:{{ _.targeting_port }}/rules/:flag"
+            name: DELETAR UMA RULE PELO NOME DA FLAG
+            meta:
+              id: req_729c95ce2f5149d9913478f6f9d27f6e
+              created: 1762648507833
+              modified: 1762648661889
+              isPrivate: false
+              description: ""
+              sortKey: -1762644535507.5
+            method: DELETE
+            authentication:
+              type: bearer
+              token: "{% response 'body', 'req_ce751b3846ef406db4df1416fa63b240',
+                'b64::JC5rZXk=::46b', 'never', 60 %}"
+            settings:
+              renderRequestBody: true
+              encodeUrl: true
+              followRedirects: global
+              cookies:
+                send: true
+                store: true
+              rebuildPath: true
+            pathParameters:
+              - name: flag
+                value: "{% prompt 'Insira o nome da flag', 'Flag', '', '', false, true %}"
+      - name: Evaluation Service
+        meta:
+          id: fld_510a33efd9f449f0a4d54f2d703a35db
+          created: 1762649556370
+          modified: 1762649573264
+          sortKey: -1762631031616.75
+          description: ""
+        children:
+          - url: "{{ _.endpoint }}:{{ _.evaluation_port }}/health"
+            name: HEALTH
+            meta:
+              id: req_924be4ff8aef4452bb181d2d7052957e
+              created: 1762649583067
+              modified: 1762649636730
+              isPrivate: false
+              description: ""
+              sortKey: -1762649583067
+            method: GET
+            settings:
+              renderRequestBody: true
+              encodeUrl: true
+              followRedirects: global
+              cookies:
+                send: true
+                store: true
+              rebuildPath: true
+          - url: "{{ _.endpoint }}:{{ _.evaluation_port }}/evaluate"
+            name: AVALIAR FLAG
+            meta:
+              id: req_21f80f387fad4a02bb7990612962b457
+              created: 1762702441719
+              modified: 1762706089062
+              isPrivate: false
+              description: ""
+              sortKey: -1762647653986
+            method: GET
+            parameters:
+              - id: pair_3225549bcf5848e98310afe39dd51c77
+                name: user_id
+                value: "{% response 'body', 'req_ce751b3846ef406db4df1416fa63b240',
+                  'b64::JC5uYW1l::46b', 'never', 60 %}"
+                description: ""
+                disabled: false
+              - id: pair_f249cb5f2cdd410da696565fce331c6f
+                name: flag_name
+                value: "{% response 'body', 'req_633514631f224d2a8278bb14296d0e45',
+                  'b64::JC5uYW1l::46b', 'never', 60 %}"
+                description: ""
+                disabled: false
+            authentication:
+              type: none
+            settings:
+              renderRequestBody: true
+              encodeUrl: true
+              followRedirects: global
+              cookies:
+                send: true
+                store: true
+              rebuildPath: true
+cookieJar:
+  name: Default Jar
+  meta:
+    id: jar_41c34878e08b701d89f45449eefb2d8630afc683
+    created: 1757378122119
+    modified: 1758486061865
+environments:
+  name: Base Environment
+  meta:
+    id: env_41c34878e08b701d89f45449eefb2d8630afc683
+    created: 1757378122117
+    modified: 1758486061875
+    isPrivate: false
+  data:
+    var_flag: ""
+  subEnvironments:
+    - name: local
+      meta:
+        id: env_624306fe135048fe9ebc49c7fa43c5cc
+        created: 1757795961384
+        modified: 1762649618250
+        isPrivate: false
+        sortKey: 1757795961384
+      data:
+        endpoint: localhost
+        auth_port: "8001"
+        flag_port: "8002"
+        targeting_port: "8003"
+        evaluation_port: "8004"
+        analytics_port: "8005"
+        var_flag: utroque
+      color: "#3afd61"
+    - name: aws
+      meta:
+        id: env_ba0c6249ca21492791f37455c3d85532
+        created: 1757796013183
+        modified: 1758486061870
+        isPrivate: false
+        sortKey: 1757795961434
+      data:
+        endpoint: http://44.204.103.60:5000
+        var_flag: ullam
+      color: "#0033ff"
+spec:
+  meta:
+    id: spc_3c1bcb2cced543e791c8536942d6ef2c
+    created: 1757378122114
+    modified: 1757792625805

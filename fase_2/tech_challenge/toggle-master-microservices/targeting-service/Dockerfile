@@ -43,6 +43,11 @@ FROM python:3.11-slim AS runtime
 # Define diretório de trabalho
 WORKDIR /app
 
+# Instala apenas o curl (necessário para healthcheck)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
 # Copia as dependências já instaladas no builder (sem o ambiente pesado)
 COPY --from=builder /install /usr/local
 
