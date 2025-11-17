@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: targeting-deployment
+  namespace: toggle-master
+  labels:
+    app: targeting
+    tier: backend
+
+spec:
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: targeting
+      tier: backend
+
+  template:
+    metadata:
+      labels:
+        app: targeting
+        tier: backend
+
+    spec:
+      containers:
+        - name: targeting-container
+          image: kind-registry:5000/toggle-master-microservices-targeting-service
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8003
+          env:
+            - name: PORT
+              value: "8003"
+            - name: DATABASE_URL
+              value: "postgresql://toggleuser:password@172.21.0.1:5435/togglemastertarget"
+            - name: AUTH_SERVICE_URL
+              value: "http://auth-service:8001"
+          resources:
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+            requests:
+              memory: "128Mi"
+              cpu: "250m"

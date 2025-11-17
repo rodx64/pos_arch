@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: targeting-service
+  namespace: toggle-master
+spec:
+  type: LoadBalancer
+  selector:
+    app: targeting
+  loadBalancerIP: 172.21.0.103
+  ports:
+    - protocol: TCP
+      port: 8003
+      targetPort: 8003

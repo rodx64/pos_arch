@@ -17,21 +17,21 @@ docker build -t toggle-master-microservices-analytics-service ../../analytics-se
 docker build -t toggle-master-microservices-auth-service ../../auth-service/
 # docker build -t toggle-master-microservices-evaluation-service ../../evaluation-service/
 docker build -t toggle-master-microservices-flag-service ../../flag-service/
-# docker build -t toggle-master-microservices-targeting-service ../../targeting-service/
+docker build -t toggle-master-microservices-targeting-service ../../targeting-service/
 
 echo "=== Criando tag das imagens ==="
 docker tag toggle-master-microservices-analytics-service localhost:5000/toggle-master-microservices-analytics-service
 docker tag toggle-master-microservices-auth-service localhost:5000/toggle-master-microservices-auth-service
 # docker tag toggle-master-microservices-evaluation-service localhost:5000/toggle-master-microservices-evaluation-service
 docker tag toggle-master-microservices-flag-service localhost:5000/toggle-master-microservices-flag-service
-# docker tag toggle-master-microservices-targeting-service localhost:5000/toggle-master-microservices-targeting-service
+docker tag toggle-master-microservices-targeting-service localhost:5000/toggle-master-microservices-targeting-service
 
 echo "=== Enviando imagens para o registry local ==="
 docker push localhost:5000/toggle-master-microservices-analytics-service
 docker push localhost:5000/toggle-master-microservices-auth-service
 # docker push localhost:5000/toggle-master-microservices-evaluation-service
 docker push localhost:5000/toggle-master-microservices-flag-service
-# docker push localhost:5000/toggle-master-microservices-targeting-service    
+docker push localhost:5000/toggle-master-microservices-targeting-service    
 
 echo "=== Criando namespace toggle-master ==="
 kubectl apply -f ../namespace.yaml
@@ -49,11 +49,13 @@ echo "=== Aplicando Deployments  ==="
 kubectl apply -f ../deployments/analytics.yaml -n toggle-master
 kubectl apply -f ../deployments/auth.yaml -n toggle-master
 kubectl apply -f ../deployments/flag.yaml -n toggle-master
+kubectl apply -f ../deployments/targeting.yaml -n toggle-master
 
 echo "=== Criando Service LoadBalancer ==="
 kubectl apply -f ../services/analytics-service.yaml -n toggle-master
 kubectl apply -f ../services/auth-service.yaml -n toggle-master
 kubectl apply -f ../services/flag-service.yaml -n toggle-master
+kubectl apply -f ../services/targeting-service.yaml -n toggle-master
 
 echo "=== Pods e Services ==="
 kubectl get pods -n toggle-master
