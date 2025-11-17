@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: flag-service
+  namespace: toggle-master
+spec:
+  type: LoadBalancer
+  selector:
+    app: flag
+  loadBalancerIP: 172.21.0.102
+  ports:
+    - protocol: TCP
+      port: 8002
+      targetPort: 8002

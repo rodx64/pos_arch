@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: flag-deployment
+  namespace: toggle-master
+  labels:
+    app: flag
+    tier: backend
+
+spec:
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: flag
+      tier: backend
+
+  template:
+    metadata:
+      labels:
+        app: flag
+        tier: backend
+
+    spec:
+      containers:
+        - name: flag-container
+          image: kind-registry:5000/toggle-master-microservices-flag-service
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8002
+          env:
+            - name: PORT
+              value: "8002"
+            - name: DATABASE_URL
+              value: "postgresql://toggleuser:password@172.21.0.1:5434/togglemasterflag"
+            - name: AUTH_SERVICE_URL
+              value: "http://auth-service:8001"
+          resources:
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+            requests:
+              memory: "128Mi"
+              cpu: "250m"
