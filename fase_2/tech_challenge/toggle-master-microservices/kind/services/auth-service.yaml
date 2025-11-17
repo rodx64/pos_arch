@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+  namespace: toggle-master
+spec:
+  type: LoadBalancer
+  selector:
+    app: auth
+  loadBalancerIP: 172.21.0.101
+  ports:
+    - protocol: TCP
+      port: 8001         
+      targetPort: 8001
