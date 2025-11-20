@@ -4,10 +4,9 @@ metadata:
   name: flag-service
   namespace: toggle-master
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: flag
-  loadBalancerIP: 172.21.0.102
   ports:
     - protocol: TCP
       port: 8002
