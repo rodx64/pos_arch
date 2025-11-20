@@ -73,6 +73,20 @@ for i in {1..50}; do
   sleep 4
 done
 
+echo "=== Aplicando ConfigMaps ==="
+kubectl apply -f ../configmaps/analytics-config.yaml -n toggle-master
+kubectl apply -f ../configmaps/auth-config.yaml -n toggle-master
+kubectl apply -f ../configmaps/evaluation-config.yaml -n toggle-master
+kubectl apply -f ../configmaps/flag-config.yaml -n toggle-master
+kubectl apply -f ../configmaps/targeting-config.yaml -n toggle-master
+
+echo "=== Aplicando Secrets ==="
+kubectl apply -f ../secrets/analytics-secret.yaml -n toggle-master
+kubectl apply -f ../secrets/auth-secret.yaml -n toggle-master
+kubectl apply -f ../secrets/evaluation-secret.yaml -n toggle-master
+kubectl apply -f ../secrets/flag-secret.yaml -n toggle-master
+kubectl apply -f ../secrets/targeting-secret.yaml -n toggle-master
+
 echo "=== Aplicando Deployments ==="
 kubectl apply -f ../deployments/analytics.yaml -n toggle-master
 kubectl apply -f ../deployments/auth.yaml -n toggle-master

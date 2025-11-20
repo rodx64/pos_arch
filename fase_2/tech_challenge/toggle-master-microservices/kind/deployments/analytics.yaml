@@ -1,27 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
-
 metadata:
   name: analytics-deployment
   namespace: toggle-master
   labels:
     app: analytics
     tier: backend
-
 spec:
   replicas: 2
-
   selector:
     matchLabels:
       app: analytics
       tier: backend
-
   template:
     metadata:
       labels:
         app: analytics
         tier: backend
-    
     spec:
       containers:
         - name: analytics-container
@@ -29,21 +24,11 @@ spec:
           imagePullPolicy: Always
           ports:
             - containerPort: 8005
-          env:
-            - name: AWS_REGION
-              value: us-east-1
-            - name: AWS_ACCESS_KEY_ID
-              value: test
-            - name: AWS_SECRET_ACCESS_KEY
-              value: test
-            - name: AWS_ENDPOINT_URL
-              value: http://172.21.0.1:4566
-            - name: AWS_DYNAMODB_TABLE
-              value: analytics_events
-            - name: AWS_SQS_URL
-              value: http://172.21.0.1:4566/000000000000/toggle-analytics-queue
-            - name: PORT
-              value: "8005"
+          envFrom:
+            - configMapRef:
+                name: analytics-config
+            - secretRef:
+                name: analytics-secret
           resources:
             limits:
               memory: "256Mi"

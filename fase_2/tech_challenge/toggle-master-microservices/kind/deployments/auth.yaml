@@ -1,27 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
-
 metadata:
   name: auth-deployment
   namespace: toggle-master
   labels:
     app: auth
     tier: backend
-
 spec:
   replicas: 2
-
   selector:
     matchLabels:
       app: auth
       tier: backend
-
   template:
     metadata:
       labels:
         app: auth
         tier: backend
-
     spec:
       containers:
         - name: auth-container
@@ -29,13 +24,11 @@ spec:
           imagePullPolicy: Always
           ports:
             - containerPort: 8001
-          env:
-            - name: PORT
-              value: "8001"
-            - name: DATABASE_URL
-              value: "postgresql://toggleuser:password@172.21.0.1:5433/togglemasterauth"
-            - name: MASTER_KEY
-              value: "01cf4be5-5270-41ff-86fe-0ce789440f04"
+          envFrom:
+            - configMapRef:
+                name: auth-config
+            - secretRef:
+                name: auth-secret
           resources:
             limits:
               memory: "256Mi"
