@@ -16,6 +16,15 @@ kind create cluster --name "${CLUSTER_NAME}" --config ../kind-cluster.yaml || ec
 echo "=== Aguardando nodes ficarem Ready ==="
 kubectl wait --for=condition=Ready nodes --all --timeout=120s
 
+echo "=== Instalando Metrics Server ==="
+kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+
+# Remover quando migrar para cloud provider
+echo "=== Aplicando Patch para usar insecure-tls no KIND ==="
+kubectl patch deployment metrics-server -n kube-system \
+  --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value": "--kubelet-insecure-tls"}]'
+
+
 echo "=== Build das imagens ==="
 docker build -t toggle-master-microservices-analytics-service ../../analytics-service/
 docker build -t toggle-master-microservices-auth-service ../../auth-service/
@@ -93,6 +102,13 @@ kubectl apply -f ../deployments/auth.yaml -n toggle-master
 kubectl apply -f ../deployments/evaluation.yaml -n toggle-master
 kubectl apply -f ../deployments/flag.yaml -n toggle-master
 kubectl apply -f ../deployments/targeting.yaml -n toggle-master
+
+echo "=== Aplicando Deployments ==="
+kubectl apply -f ../deployments/hpa/analytics-hpa.yaml -n toggle-master
+kubectl apply -f ../deployments/hpa/auth-hpa.yaml -n toggle-master
+kubectl apply -f ../deployments/hpa/evaluation-hpa.yaml -n toggle-master
+kubectl apply -f ../deployments/hpa/flag-hpa.yaml -n toggle-master
+kubectl apply -f ../deployments/hpa/targeting-hpa.yaml -n toggle-master
 
 echo "=== Aplicando Services ClusterIP ==="
 kubectl apply -f ../services/analytics-service.yaml -n toggle-master
