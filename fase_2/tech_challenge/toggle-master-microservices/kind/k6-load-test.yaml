@@ -1,0 +1,46 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: k6-test-script
+  namespace: toggle-master
+data:
+  test.js: |
+    import http from "k6/http";
+    import { sleep } from "k6";
+
+    export let options = {
+      vus: 30,
+      duration: "30s",
+    };
+
+    export default function () {
+      http.get("http://auth-service.toggle-master.svc.cluster.local:8001/cpu");
+      http.get("http://flag-service.toggle-master.svc.cluster.local:8002/cpu");
+      http.get("http://targeting-service.toggle-master.svc.cluster.local:8003/cpu");
+      http.get("http://evaluation-service.toggle-master.svc.cluster.local:8004/cpu");
+      http.get("http://analytics-service.toggle-master.svc.cluster.local:8005/cpu");
+      sleep(0.1);
+    }
+
+---
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: k6-load-test
+  namespace: toggle-master
+spec:
+  template:
+    spec:
+      containers:
+        - name: k6
+          image: grafana/k6
+          command: ["k6", "run", "/scripts/test.js"]
+          volumeMounts:
+            - name: script-volume
+              mountPath: /scripts
+      restartPolicy: Never
+      volumes:
+        - name: script-volume
+          configMap:
+            name: k6-test-script

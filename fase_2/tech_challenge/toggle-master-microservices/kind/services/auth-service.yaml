@@ -4,10 +4,9 @@ metadata:
   name: auth-service
   namespace: toggle-master
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: auth
-  loadBalancerIP: 172.21.0.101
   ports:
     - protocol: TCP
       port: 8001         

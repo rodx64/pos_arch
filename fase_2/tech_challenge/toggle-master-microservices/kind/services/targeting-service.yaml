@@ -4,10 +4,9 @@ metadata:
   name: targeting-service
   namespace: toggle-master
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: targeting
-  loadBalancerIP: 172.21.0.103
   ports:
     - protocol: TCP
       port: 8003

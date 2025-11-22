@@ -29,12 +29,12 @@ collection:
           sortKey: -1762631024572.5
           description: ""
         children:
-          - url: "{{ _.endpoint }}:{{ _.auth_port }}/health"
+          - url: "{{ _['endpoint-auth'] }}/health"
             name: HEALTH
             meta:
               id: req_337b5714b2634845a2c2aea96f95763d
               created: 1762630784547
-              modified: 1762632292507
+              modified: 1763677817510
               isPrivate: false
               description: ""
               sortKey: -1762631011671
@@ -50,12 +50,12 @@ collection:
                 send: true
                 store: true
               rebuildPath: true
-          - url: "{{ _.endpoint }}:{{ _.auth_port }}/validate"
+          - url: "{{ _['endpoint-auth'] }}/validate"
             name: VALIDATE
             meta:
               id: req_4b2a678de47c48a8999bedb32a23cedd
               created: 1762631144715
-              modified: 1762632682350
+              modified: 1763677834760
               isPrivate: false
               description: ""
               sortKey: -1762631011521
@@ -76,12 +76,12 @@ collection:
                 send: true
                 store: true
               rebuildPath: true
-          - url: "{{ _.endpoint }}:{{ _.auth_port }}/admin/keys"
+          - url: "{{ _['endpoint-auth'] }}/admin/keys"
             name: CREATE KEY
             meta:
               id: req_ce751b3846ef406db4df1416fa63b240
               created: 1762631259121
-              modified: 1762632644458
+              modified: 1763677826456
               isPrivate: false
               description: ""
               sortKey: -1762631011571
@@ -118,12 +118,12 @@ collection:
           sortKey: -1762631038661
           description: ""
         children:
-          - url: "{{ _.endpoint }}:{{ _.analytics_port }}/health"
+          - url: "{{ _['endpoint-analytics'] }}/health"
             name: HEALTH
             meta:
               id: req_eddcfdbff1e44e1aae6913aab0df63d1
               created: 1762631064827
-              modified: 1762631105904
+              modified: 1763677792138
               isPrivate: false
               description: ""
               sortKey: -1762631071329
@@ -147,12 +147,12 @@ collection:
           sortKey: -1762631010484
           description: ""
         children:
-          - url: "{{ _.endpoint }}:{{ _.flag_port }}/health"
+          - url: "{{ _['endpoint-flag'] }}/health"
             name: HEALTH
             meta:
               id: req_04722507cd754b5a91847b1cebe919d7
               created: 1762640556004
-              modified: 1762641302496
+              modified: 1763677843480
               isPrivate: false
               description: ""
               sortKey: -1762641123966
@@ -168,12 +168,12 @@ collection:
                 send: true
                 store: true
               rebuildPath: true
-          - url: "{{ _.endpoint }}:{{ _.flag_port }}/flags"
+          - url: "{{ _['endpoint-flag'] }}/flags"
             name: CRIAR FLAG
             meta:
               id: req_633514631f224d2a8278bb14296d0e45
               created: 1762640718002
-              modified: 1762645741719
+              modified: 1763677852920
               isPrivate: false
               description: ""
               sortKey: -1762641123866
@@ -202,12 +202,12 @@ collection:
                 send: true
                 store: true
               rebuildPath: true
-          - url: "{{ _.endpoint }}:{{ _.flag_port }}/flags"
+          - url: "{{ _['endpoint-flag'] }}/flags"
             name: ENCONTRAR FLAGS
             meta:
               id: req_89d5abab8c4c4a879f74876ffcf0487c
               created: 1762641123666
-              modified: 1762645758801
+              modified: 1763677936999
               isPrivate: false
               description: ""
               sortKey: -1762641123666
@@ -230,12 +230,12 @@ collection:
                 send: true
                 store: true
               rebuildPath: true
-          - url: "{{ _.endpoint }}:{{ _.flag_port }}/flags/:flag"
+          - url: "{{ _['endpoint-flag'] }}/flags/:flag"
             name: ENCONTRAR FLAG POR NOME
             meta:
               id: req_da8d2f629b9c47a0a7ba58fcba629b01
               created: 1762641292287
-              modified: 1762645753290
+              modified: 1763677925137
               isPrivate: false
               description: ""
               sortKey: -1762641123766
@@ -261,12 +261,12 @@ collection:
             pathParameters:
               - name: flag
                 value: "{% prompt 'Entre com o nome da flag', 'Flag', '', '', false, true %}"
-          - url: "{{ _.endpoint }}:{{ _.flag_port }}/flags/:flag"
+          - url: "{{ _['endpoint-flag'] }}/flags/:flag"
             name: ATUALIZAR UMA FLAG
             meta:
               id: req_77cfd3312ed7412ea6f1be9c518da6e7
               created: 1762641387616
-              modified: 1762645747662
+              modified: 1763677865854
               isPrivate: false
               description: ""
               sortKey: -1762641123816
@@ -298,12 +298,12 @@ collection:
               - name: flag
                 value: "{% prompt 'Entre com o nome da flag que será atualizada', 'Flag', '',
                   '', false, true %}"
-          - url: "{{ _.endpoint }}:{{ _.flag_port }}/flags/:flag"
+          - url: "{{ _['endpoint-flag'] }}/flags/:flag"
             name: DELETAR FLAG
             meta:
               id: req_0be574ed6be548ba8fd32a579232ae09
               created: 1762641503081
-              modified: 1762645763229
+              modified: 1763677946004
               isPrivate: false
               description: ""
               sortKey: -1762641123566
@@ -338,12 +338,12 @@ collection:
           sortKey: -1762630996395.5
           description: ""
         children:
-          - url: "{{ _.endpoint }}:{{ _.targeting_port }}/health"
+          - url: "{{ _['endpoint-targeting'] }}/health"
             name: HEALTH
             meta:
               id: req_d166cfb538b84a0387571bcf2ca4be8c
               created: 1762645672688
-              modified: 1762648664617
+              modified: 1763677959075
               isPrivate: false
               description: ""
               sortKey: -1762645724905
@@ -356,12 +356,12 @@ collection:
                 send: true
                 store: true
               rebuildPath: true
-          - url: "{{ _.endpoint }}:{{ _.targeting_port }}/rules"
+          - url: "{{ _['endpoint-targeting'] }}/rules"
             name: CRIAR RULE
             meta:
               id: req_227be5e288b84982810bf3505a9a988f
               created: 1762645724805
-              modified: 1762706125659
+              modified: 1763677966121
               isPrivate: false
               description: ""
               sortKey: -1762645724805
@@ -393,12 +393,12 @@ collection:
                 send: true
                 store: true
               rebuildPath: true
-          - url: "{{ _.endpoint }}:{{ _.targeting_port }}/rules/:flag"
+          - url: "{{ _['endpoint-targeting'] }}/rules/:flag"
             name: ENCONTRAR RULE PELO NOME DA FLAG
             meta:
               id: req_617d27c08b244f979f9e10ec25f791a7
               created: 1762648168153
-              modified: 1762648668568
+              modified: 1763677987404
               isPrivate: false
               description: ""
               sortKey: -1762645117127
@@ -418,12 +418,12 @@ collection:
             pathParameters:
               - name: flag
                 value: "{% prompt 'Insira o nome da flag', 'Flag', '', '', false, true %}"
-          - url: "{{ _.endpoint }}:{{ _.targeting_port }}/rules/:flag"
+          - url: "{{ _['endpoint-targeting'] }}/rules/:flag"
             name: ATUALIZAR RULE PELO NOME DA FLAG
             meta:
               id: req_8db7670209d84bfba916b8a2fcb182bf
               created: 1762648324207
-              modified: 1762648560696
+              modified: 1763677976507
               isPrivate: false
               description: ""
               sortKey: -1762645698746.5
@@ -456,12 +456,12 @@ collection:
             pathParameters:
               - name: flag
                 value: "{% prompt 'Insira o nome da Flag', 'Flag', '', '', false, true %}"
-          - url: "{{ _.endpoint }}:{{ _.targeting_port }}/rules/:flag"
+          - url: "{{ _['endpoint-targeting'] }}/rules/:flag"
             name: DELETAR UMA RULE PELO NOME DA FLAG
             meta:
               id: req_729c95ce2f5149d9913478f6f9d27f6e
               created: 1762648507833
-              modified: 1762648661889
+              modified: 1763678009159
               isPrivate: false
               description: ""
               sortKey: -1762644535507.5
@@ -489,12 +489,12 @@ collection:
           sortKey: -1762631031616.75
           description: ""
         children:
-          - url: "{{ _.endpoint }}:{{ _.evaluation_port }}/health"
+          - url: "{{ _['endpoint-evaluation'] }}/health"
             name: HEALTH
             meta:
               id: req_924be4ff8aef4452bb181d2d7052957e
               created: 1762649583067
-              modified: 1762649636730
+              modified: 1763677800045
               isPrivate: false
               description: ""
               sortKey: -1762649583067
@@ -507,12 +507,12 @@ collection:
                 send: true
                 store: true
               rebuildPath: true
-          - url: "{{ _.endpoint }}:{{ _.evaluation_port }}/evaluate"
+          - url: "{{ _['endpoint-evaluation'] }}/evaluate"
             name: AVALIAR FLAG
             meta:
               id: req_21f80f387fad4a02bb7990612962b457
               created: 1762702441719
-              modified: 1762706089062
+              modified: 1763677808038
               isPrivate: false
               description: ""
               sortKey: -1762647653986
@@ -560,11 +560,15 @@ environments:
       meta:
         id: env_624306fe135048fe9ebc49c7fa43c5cc
         created: 1757795961384
-        modified: 1762649618250
+        modified: 1763344318133
         isPrivate: false
         sortKey: 1757795961384
       data:
-        endpoint: localhost
+        endpoint-analytics: localhost
+        endpoint-auth: localhost
+        endpoint-flag: localhost
+        endpoint-targeting: localhost
+        endpoint-evaluation: localhost
         auth_port: "8001"
         flag_port: "8002"
         targeting_port: "8003"
@@ -576,13 +580,31 @@ environments:
       meta:
         id: env_ba0c6249ca21492791f37455c3d85532
         created: 1757796013183
-        modified: 1758486061870
+        modified: 1763344325203
         isPrivate: false
         sortKey: 1757795961434
-      data:
-        endpoint: http://44.204.103.60:5000
-        var_flag: ullam
       color: "#0033ff"
+    - name: kind (local)
+      meta:
+        id: env_4124a93308ca482e95eabb3f974bfa66
+        created: 1763251301729
+        modified: 1763677777271
+        isPrivate: false
+        sortKey: 1757795961409
+      data:
+        host: toggle.local
+        endpoint-analytics: "{{ _.host }}/analytics"
+        endpoint-auth: "{{ _.host }}/auth"
+        endpoint-flag: "{{ _.host }}/flag"
+        endpoint-targeting: "{{ _.host }}/targeting"
+        endpoint-evaluation: "{{ _.host }}/evaluation"
+        auth_port: "8001"
+        flag_port: "8002"
+        targeting_port: "8003"
+        evaluation_port: "8004"
+        analytics_port: "8005"
+        var_flag: utroque
+      color: "#fd473a"
 spec:
   meta:
     id: spc_3c1bcb2cced543e791c8536942d6ef2c

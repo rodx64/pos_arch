@@ -4,10 +4,9 @@ metadata:
   name: analytics-service
   namespace: toggle-master
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: analytics
-  loadBalancerIP: 172.21.0.100
   ports:
     - protocol: TCP
       port: 8005         
