@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: evaluation-deployment
+  namespace: toggle-master
+  labels:
+    app: evaluation
+    tier: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: evaluation
+      tier: backend
+  template:
+    metadata:
+      labels:
+        app: evaluation
+        tier: backend
+    spec:
+      containers:
+        - name: evaluation-container
+          image: 601579748139.dkr.ecr.us-east-1.amazonaws.com/toggle-master/evaluation-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8004
+          envFrom:
+            - configMapRef:
+                name: evaluation-config
+            - secretRef:
+                name: evaluation-secret
+          resources:
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+            requests:
+              memory: "128Mi"
+              cpu: "250m"

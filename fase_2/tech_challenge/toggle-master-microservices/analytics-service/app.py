@@ -49,6 +49,19 @@ except Exception as e:
     log.critical(f"Erro ao inicializar o Boto3: {e}")
     sys.exit(1)
 
+# Variáveis de controle do worker
+sqs_ok = False
+dynamo_ok = False
+worker_started = False
+last_heartbeat = 0
+WAIT_TIME_SECONDS = 20
+HEALTH_MONITOR_INTERVAL = 10
+HEARTBEAT_INTERVAL = WAIT_TIME_SECONDS + 5
+
+# --- Heartbeat do Worker ---
+def worker_heartbeat():
+    global last_heartbeat
+    last_heartbeat = time.time()
 
 # --- SQS Worker ---
 
@@ -99,48 +112,128 @@ def sqs_worker_loop():
     log.info("Iniciando o worker SQS...")
     while True:
         try:
+            if not (sqs_ok and dynamo_ok):
+                log.debug("Dependência indisponível (SQS/Dynamo). Worker em espera.")
+                worker_heartbeat()
+                time.sleep(2)
+                continue
+
             # Long-polling: espera até 20s por mensagens
             response = sqs_client.receive_message(
                 QueueUrl=SQS_QUEUE_URL,
                 MaxNumberOfMessages=10,  # Processa em lotes de até 10
-                WaitTimeSeconds=20
+                WaitTimeSeconds=WAIT_TIME_SECONDS
             )
-            
             messages = response.get('Messages', [])
-            if not messages:
-                # Nenhuma mensagem, continua o loop
-                continue
-                
-            log.info(f"Recebidas {len(messages)} mensagens.")
-            
-            for message in messages:
-                process_message(message)
+
+            if messages:
+                log.info(f"Recebidas {len(messages)} mensagens.")
+                for message in messages:
+                    process_message(message)
+            else:
+                log.debug("Nenhuma mensagem recebida no poll.")
+
+            worker_heartbeat()
                 
         except ClientError as e:
             log.error(f"Erro do Boto3 no loop principal do SQS: {e}")
+            worker_heartbeat()
             time.sleep(10) # Pausa antes de tentar novamente
         except Exception as e:
             log.error(f"Erro inesperado no loop principal do SQS: {e}")
+            worker_heartbeat()
             time.sleep(10)
 
-# --- Servidor Flask (Apenas para Health Check) ---
+def validate_sqs():
+    global sqs_ok
+    try:
+        sqs_client.get_queue_attributes(
+            QueueUrl=SQS_QUEUE_URL,
+            AttributeNames=["ApproximateNumberOfMessages"]
+        )
+        if not sqs_ok:
+            log.info("SQS acessível")
+        sqs_ok = True
+    except Exception as e:
+        if sqs_ok:
+            log.error(f"SQS inacessível: {e}")
+        sqs_ok = False
+
+def validate_dynamo():
+    global dynamo_ok
+    try:
+        dynamodb_client.describe_table(TableName=DYNAMODB_TABLE_NAME)
+        if not dynamo_ok:
+            log.info("DynamoDB acessível")
+        dynamo_ok = True
+    except Exception as e:
+        if dynamo_ok:
+            log.error(f"Dynamo inacessível: {e}")
+        dynamo_ok = False
+
+def health_monitor():
+    global worker_started
+    while True:
+        try:
+            validate_sqs()
+            validate_dynamo()
+            new_started = sqs_ok and dynamo_ok
+            if new_started != worker_started:
+                if new_started:
+                    log.info("Worker marcado como STARTED (dependências OK).")
+                else:
+                    log.warning("Worker marcado como NOT STARTED (dependências NOK).")
+            worker_started = new_started
+        except Exception as e:
+            log.error(f"Erro no health monitor: {e}")
+        time.sleep(HEALTH_MONITOR_INTERVAL)
 
 app = Flask(__name__)
 
-@app.route('/health')
-def health():
-    # Uma verificação de saúde real poderia checar a conexão com o DynamoDB/SQS
-    return jsonify({"status": "ok"})
+# --- Probes ---
+@app.route('/health/startup')
+def health_startup():
+    if not worker_started:
+        return jsonify({"status": "not-started"}), 500
+    return jsonify({"status": "started"}), 200
+
+@app.route('/health/live')
+def health_live():
+    global last_heartbeat
+
+    if time.time() - last_heartbeat > HEARTBEAT_INTERVAL:
+        return jsonify({"status": "dead"}), 500
+
+    return jsonify({"status": "alive"}), 200
+
+
+@app.route('/health/ready')
+def health_ready():
+    global last_heartbeat
+
+    if not worker_started:
+        return jsonify({"status": "not-ready"}), 500
+
+    if time.time() - last_heartbeat > HEARTBEAT_INTERVAL:
+        return jsonify({"status": "not-ready"}), 500
+
+    return jsonify({"status": "ready"}), 200
 
 # --- Inicialização ---
-
 def start_worker():
     """ Inicia o worker SQS em uma thread separada """
-    worker_thread = threading.Thread(target=sqs_worker_loop, daemon=True)
-    worker_thread.start()
+    t = threading.Thread(target=sqs_worker_loop, daemon=True)
+    t.start()
 
-# Inicia o worker SQS em uma thread de background
-# Isso garante que ele inicie tanto com 'flask run' quanto com 'gunicorn'
+def start_health_monitor():
+    t = threading.Thread(target=health_monitor, daemon=True)
+    t.start()
+
+validate_sqs()
+validate_dynamo()
+worker_started = sqs_ok and dynamo_ok
+
+start_health_monitor()
 start_worker()
 
 if __name__ == '__main__':
