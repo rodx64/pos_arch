@@ -11,7 +11,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: a93aac5b0af544a4eb811046859c10d8-863e091d4e99603b.elb.us-east-1.amazonaws.com
+    - host: toggle.local
       http:
         paths:
           - path: /auth(/|$)(.*)
