@@ -7,4 +7,3 @@ data:
   PORT: "8005"
   LOG_LEVEL: "DEBUG"
   AWS_REGION: us-east-1
-  AWS_ENDPOINT_URL: http://172.18.0.1:4566

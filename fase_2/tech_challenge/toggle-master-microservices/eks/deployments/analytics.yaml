@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: analytics-container
-          image: kind-registry:5000/toggle-master-microservices-analytics-service
+          image: 730335657012.dkr.ecr.us-east-1.amazonaws.com/toggle-master/analytics-service:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8005

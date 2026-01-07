@@ -72,7 +72,7 @@ for i in {1..50}; do
   if kubectl get validatingwebhookconfigurations | grep -q ingress-nginx-admission; then
     echo "Webhook encontrado, testando conexão..."
     if kubectl run tmp --rm -i --restart=Never --image=busybox -- \
-         sh -c "nc -zv ingress-nginx-controller-admission.ingress-nginx.svc 443" >/dev/null 2>&1; then
+      sh -c "nc -zv ingress-nginx-controller-admission.ingress-nginx.svc 443" >/dev/null 2>&1; then
       echo "Webhook pronto!"
       break
     fi
@@ -83,39 +83,16 @@ for i in {1..50}; do
 done
 
 echo "=== Aplicando ConfigMaps ==="
-kubectl apply -f ../configmaps/analytics-config.yaml -n toggle-master
-kubectl apply -f ../configmaps/auth-config.yaml -n toggle-master
-kubectl apply -f ../configmaps/evaluation-config.yaml -n toggle-master
-kubectl apply -f ../configmaps/flag-config.yaml -n toggle-master
-kubectl apply -f ../configmaps/targeting-config.yaml -n toggle-master
+kubectl apply -f ../configmaps -n toggle-master
 
 echo "=== Aplicando Secrets ==="
-kubectl apply -f ../secrets/analytics-secret.yaml -n toggle-master
-kubectl apply -f ../secrets/auth-secret.yaml -n toggle-master
-kubectl apply -f ../secrets/evaluation-secret.yaml -n toggle-master
-kubectl apply -f ../secrets/flag-secret.yaml -n toggle-master
-kubectl apply -f ../secrets/targeting-secret.yaml -n toggle-master
+kubectl apply -f ../secrets -n toggle-master
 
 echo "=== Aplicando Deployments ==="
-kubectl apply -f ../deployments/analytics.yaml -n toggle-master
-kubectl apply -f ../deployments/auth.yaml -n toggle-master
-kubectl apply -f ../deployments/evaluation.yaml -n toggle-master
-kubectl apply -f ../deployments/flag.yaml -n toggle-master
-kubectl apply -f ../deployments/targeting.yaml -n toggle-master
-
-echo "=== Aplicando Deployments ==="
-kubectl apply -f ../deployments/hpa/analytics-hpa.yaml -n toggle-master
-kubectl apply -f ../deployments/hpa/auth-hpa.yaml -n toggle-master
-kubectl apply -f ../deployments/hpa/evaluation-hpa.yaml -n toggle-master
-kubectl apply -f ../deployments/hpa/flag-hpa.yaml -n toggle-master
-kubectl apply -f ../deployments/hpa/targeting-hpa.yaml -n toggle-master
+kubectl apply -f ../deployments -n toggle-master
 
 echo "=== Aplicando Services ClusterIP ==="
-kubectl apply -f ../services/analytics-service.yaml -n toggle-master
-kubectl apply -f ../services/auth-service.yaml -n toggle-master
-kubectl apply -f ../services/evaluation-service.yaml -n toggle-master
-kubectl apply -f ../services/flag-service.yaml -n toggle-master
-kubectl apply -f ../services/targeting-service.yaml -n toggle-master
+kubectl apply -f ../services -n toggle-master
 
 echo "=== Aplicando Ingress ==="
 kubectl apply -f ../ingress.yaml -n toggle-master

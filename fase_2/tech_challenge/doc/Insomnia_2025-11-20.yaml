@@ -34,7 +34,7 @@ collection:
             meta:
               id: req_337b5714b2634845a2c2aea96f95763d
               created: 1762630784547
-              modified: 1763677817510
+              modified: 1765154170095
               isPrivate: false
               description: ""
               sortKey: -1762631011671
@@ -118,12 +118,12 @@ collection:
           sortKey: -1762631038661
           description: ""
         children:
-          - url: "{{ _['endpoint-analytics'] }}/health"
+          - url: "{{ _['endpoint-analytics'] }}/health/ready"
             name: HEALTH
             meta:
               id: req_eddcfdbff1e44e1aae6913aab0df63d1
               created: 1762631064827
-              modified: 1763677792138
+              modified: 1765154139205
               isPrivate: false
               description: ""
               sortKey: -1762631071329
@@ -398,7 +398,7 @@ collection:
             meta:
               id: req_617d27c08b244f979f9e10ec25f791a7
               created: 1762648168153
-              modified: 1763677987404
+              modified: 1763933469869
               isPrivate: false
               description: ""
               sortKey: -1762645117127
@@ -494,7 +494,7 @@ collection:
             meta:
               id: req_924be4ff8aef4452bb181d2d7052957e
               created: 1762649583067
-              modified: 1763677800045
+              modified: 1765156332018
               isPrivate: false
               description: ""
               sortKey: -1762649583067
@@ -580,9 +580,22 @@ environments:
       meta:
         id: env_ba0c6249ca21492791f37455c3d85532
         created: 1757796013183
-        modified: 1763344325203
+        modified: 1765157094985
         isPrivate: false
         sortKey: 1757795961434
+      data:
+        host: localhost
+        auth_port: "8001"
+        flag_port: "8002"
+        targeting_port: "8003"
+        evaluation_port: "8004"
+        analytics_port: "8005"
+        endpoint-analytics: "{{ _.host }}:{{ _.analytics_port }}"
+        endpoint-auth: "{{ _.host }}:{{ _.auth_port }}"
+        endpoint-flag: "{{ _.host }}:{{ _.flag_port }}"
+        endpoint-targeting: "{{ _.host }}:{{ _.targeting_port }}"
+        endpoint-evaluation: "{{ _.host }}:{{ _.evaluation_port }}"
+        var_flag: utroque
       color: "#0033ff"
     - name: kind (local)
       meta:
