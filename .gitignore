@@ -13,6 +13,7 @@
 # Doc
 !/fase_*/tech_challenge/doc/
 !/fase_*/tech_challenge/doc/**
+!/README.md
 
 # =========================
 # Arquivos de configuração / ambiente local
