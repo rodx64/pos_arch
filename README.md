@@ -66,7 +66,7 @@ Este repositório centraliza todas as entregas práticas (Tech Challenges) desen
     - [x] Garanta segurança com Secrets, WAF e IAM.
     - [x] AWS Academy e Certificações.
 
-📁 Pasta: [fase_1](../pos-cloud-arch/fase_1/)
+📁 Pasta: `fase_1`
 
 ---
 
@@ -103,7 +103,7 @@ Este repositório centraliza todas as entregas práticas (Tech Challenges) desen
     - [x] Balanceamento de Carga com Web Servers e Containers.
     - [x] Proxy, Proxy Reverso e Alta Disponibilidade
 
-📁 Pasta: [fase_02](../pos-cloud-arch/fase_2/)
+📁 Pasta: `fase_02`
 
 ---
 
