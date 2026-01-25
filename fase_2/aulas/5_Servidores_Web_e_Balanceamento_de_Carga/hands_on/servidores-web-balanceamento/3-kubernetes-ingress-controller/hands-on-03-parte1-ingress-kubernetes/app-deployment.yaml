@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: meu-app-web-deployment
+  labels:
+    app: meu-app-web
+spec:
+  replicas: 2 # Duas réplicas do Pod para demonstração de balanceamento
+  selector:
+    matchLabels:
+      app: meu-app-web
+  template:
+    metadata:
+      labels:
+        app: meu-app-web
+    spec:
+      containers:
+      - name: meu-app-web
+        image: nginx:alpine # Usaremos uma imagem simples do Nginx
+        ports:
+        - containerPort: 80

@@ -1,0 +1,27 @@
+apiVersion: apps/v1               # Versão da API do Kubernetes para Deployment
+kind: Deployment                  # Tipo do recurso: Deployment
+metadata:
+  name: helloworld-v1             # Nome do Deployment
+  labels:
+    app: helloworld               # Label comum da aplicação
+    version: v1                   # Versão v1 (importante para o Istio identificar)
+spec:
+  replicas: 1                     # Quantidade de réplicas (pods) dessa versão
+  selector:
+    matchLabels:                  # Define quais pods fazem parte desse Deployment
+      app: helloworld
+      version: v1
+  template:                       # Template usado para criar os pods
+    metadata:
+      labels:
+        app: helloworld           # Label do app
+        version: v1               # Label da versão (usada no roteamento Istio)
+    spec:
+      containers:
+      - name: helloworld          # Nome do container
+        image: nginxdemos/hello:plain-text   # Imagem simples que retorna Hello World
+        ports:
+        - containerPort: 80       # Porta exposta pelo container
+        env:
+        - name: MESSAGE           # Variável de ambiente usada pela imagem
+          value: "Hello World from v1!"

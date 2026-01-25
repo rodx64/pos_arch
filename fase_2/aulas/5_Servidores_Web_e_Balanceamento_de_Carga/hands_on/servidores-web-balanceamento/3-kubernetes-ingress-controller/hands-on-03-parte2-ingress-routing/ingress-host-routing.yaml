@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: host-based-ingress
+spec:
+  rules:
+  - host: "frontend.local" # Exemplo de host para a aplicação frontend
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: app-frontend-service
+            port:
+              number: 80
+  - host: "api.local" # Exemplo de host para a aplicação API
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: app-api-service
+            port:
+              number: 80

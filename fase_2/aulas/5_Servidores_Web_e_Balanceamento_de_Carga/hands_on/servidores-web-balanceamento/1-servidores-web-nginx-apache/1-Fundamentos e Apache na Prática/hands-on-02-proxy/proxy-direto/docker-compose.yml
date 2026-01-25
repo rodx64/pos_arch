@@ -1,0 +1,8 @@
+services:
+  squid:
+    image: ubuntu/squid:latest
+    container_name: proxy-squid
+    ports:
+      - "3128:3128"
+    volumes:
+      - ./squid-config/squid.conf:/etc/squid/squid.conf

@@ -1,0 +1,41 @@
+services:  # Define os “serviços”, ou seja, os contêineres que o Docker vai orquestrar.
+
+  # =========================================================
+  # 🧱 SERVIÇO 1 – Apache HTTP Server
+  # =========================================================
+  apache:
+    build:  # Em vez de usar uma imagem pronta, esse serviço será construído com base em um Dockerfile local.
+      context: .  # O ponto (.) indica que o contexto de build é o diretório atual, onde está o Dockerfile.
+      dockerfile: Dockerfile.apache  # Nome do arquivo Dockerfile que será usado para montar a imagem.
+    container_name: apache-server  # Nome fixo que o contêiner vai receber, útil para identificar durante testes e logs.
+
+    ports:
+      - "8080:80"  # Faz o mapeamento de portas: acessamos via http://localhost:8080, e o tráfego é redirecionado para a porta 80 do contêiner.
+
+    volumes:
+      - ./apache/html:/usr/local/apache2/htdocs:ro  # Monta o diretório local ./apache/html dentro do contêiner, no local onde ficam as páginas do Apache.
+                                                    # O sufixo ":ro" significa "read-only" (somente leitura), evitando que o contêiner altere os arquivos locais.
+      - ./apache/logs:/usr/local/apache2/logs       # Monta a pasta local ./apache/logs para guardar os logs gerados dentro do contêiner.
+
+    restart: unless-stopped  # Faz o contêiner reiniciar automaticamente se cair, a menos que seja parado manualmente.
+
+  # =========================================================
+  # 🌐 SERVIÇO 2 – Nginx Web Server
+  # =========================================================
+  nginx-web:
+    image: nginx:1.25.3-alpine  # Usa a imagem oficial do Nginx, versão 1.25.3 baseada no Alpine (mais leve e rápida para desenvolvimento).
+    container_name: meu-nginx-hands-on  # Nome fixo para o contêiner do Nginx.
+
+    ports:
+      - "8088:80"  # Exposição padrão do Nginx (porta HTTP principal).
+      - "8081:81"  # Exemplo adicional para expor outro site ou configuração — ótimo para comparar comportamentos ou hosts virtuais.
+
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro  # Monta o arquivo principal de configuração do Nginx.
+      - ./nginx/conf.d/:/etc/nginx/conf.d/:ro        # Monta o diretório onde ficam os blocos de configuração dos sites (virtual hosts).
+      - ./html1:/usr/share/nginx/html1:ro            # Monta uma pasta local com conteúdo estático (site 1).
+      - ./html2:/usr/share/nginx/html2:ro            # Monta outra pasta local (site 2), útil para comparar comportamentos.
+                                                     # Ambas estão em modo somente leitura por segurança.
+
+    restart: unless-stopped  # Reinicia automaticamente o contêiner em caso de falha.
+

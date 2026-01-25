@@ -1,0 +1,15 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: helloworld-virtualservice
+spec:
+  hosts:
+  - "*"                           # Aplica-se a qualquer host
+  gateways:
+  - helloworld-gateway            # Associa ao Gateway que criamos
+  http:
+  - route:
+    - destination:
+        host: helloworld          # Nome do Service Kubernetes
+        subset: v1                # Subset definido no DestinationRule
+      weight: 100                 # 100% do tráfego vai para v1

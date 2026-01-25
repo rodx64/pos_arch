@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: helloworld-v2
+  labels:
+    app: helloworld
+    version: v2                   # Aqui a versão é v2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: helloworld
+      version: v2
+  template:
+    metadata:
+      labels:
+        app: helloworld
+        version: v2
+    spec:
+      containers:
+      - name: helloworld
+        image: nginxdemos/hello:plain-text
+        ports:
+        - containerPort: 80
+        env:
+        - name: MESSAGE
+          value: "Hello World from v2 - New Feature!"   # Mensagem diferente para diferenciar da v1

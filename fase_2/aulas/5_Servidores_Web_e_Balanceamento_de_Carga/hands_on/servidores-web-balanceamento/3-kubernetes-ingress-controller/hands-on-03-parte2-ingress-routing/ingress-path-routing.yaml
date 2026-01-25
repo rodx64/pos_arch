@@ -1,0 +1,29 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: path-based-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    # Reescreve removendo o prefixo (/frontend ou /api) e preservando o restante do caminho:
+    # /frontend/abc   -> /abc
+    # /api/users      -> /users
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  rules:
+  - host: "meuapp.local" # Domínio único para roteamento por path
+    http:
+      paths:
+      - path: /frontend(/|$)(.*) # Rota para o frontend, capturando o restante do path
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: app-frontend-service
+            port:
+              number: 80
+      - path: /api(/|$)(.*) # Rota para a API, capturando o restante do path
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: app-api-service
+            port:
+              number: 80

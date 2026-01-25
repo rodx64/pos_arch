@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: meu-app-web-service
+spec:
+  selector:
+    app: meu-app-web
+  ports:
+    - protocol: TCP
+      port: 80 # Porta que o Service expõe
+      targetPort: 80 # Porta que o container escuta
+  type: ClusterIP # Tipo de Service: acessível apenas dentro do cluster

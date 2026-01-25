@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nginx Node 2 - BACKUP</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #fff0e0; color: #ff8c00; text-align: center; padding-top: 50px; }
+        h1 { color: #cc6600; }
+        p { font-size: 1.2em; }
+        .node-info { margin-top: 30px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>😴 Nginx Node 2 - BACKUP (Pronto para assumir!)</h1>
+    <p>Este é o servidor Nginx de backup.</p>
+    <div class="node-info">IP Virtual: <span id="vip"></span></div>
+    <div class="node-info">Servindo em: <span id="hostname"></span></div>
+    <script>
+        document.getElementById('vip').innerText = window.location.hostname;
+        document.getElementById('hostname').innerText = window.location.origin;
+    </script>
+</body>
+</html>

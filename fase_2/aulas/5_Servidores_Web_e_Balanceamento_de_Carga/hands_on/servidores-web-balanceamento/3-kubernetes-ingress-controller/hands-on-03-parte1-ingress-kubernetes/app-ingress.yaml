@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: meu-app-ingress
+  annotations:
+    # Opcional: Reescrita de URL para / no backend, útil se o app não espera o path base
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /meu-app # Path que será roteado pelo Ingress
+        pathType: Prefix
+        backend:
+          service:
+            name: meu-app-web-service # Nome do Service para o qual o tráfego será direcionado
+            port:
+              number: 80 # Porta do Service

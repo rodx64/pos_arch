@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: helloworld                # Nome do Service (mesmo para v1 e v2)
+  labels:
+    app: helloworld
+spec:
+  selector:
+    app: helloworld               # Seleciona todos pods com label app=helloworld
+  ports:
+  - port: 80                      # Porta exposta pelo Service dentro do cluster
+    targetPort: 80                # Porta do container que o Service vai redirecionar
+  type: ClusterIP                 # Tipo padrão de Service (só acessível dentro do cluster)

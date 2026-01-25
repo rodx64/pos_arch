@@ -1,0 +1,101 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-api-deployment
+  labels:
+    app: app-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: app-api
+  template:
+    metadata:
+      labels:
+        app: app-api
+    spec:
+      containers:
+      - name: api-container
+        image: nginx:alpine  # Usaremos Nginx com conteúdo customizado para simular API
+        ports:
+        - containerPort: 80
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: APP_NAME
+          value: "API App (bonito)"
+        volumeMounts:
+        - name: api-html
+          mountPath: /configmap-html                # CM (read-only)
+        - name: nginx-conf
+          mountPath: /etc/nginx/conf.d/default.conf # conf custom com try_files
+          subPath: default.conf
+        command: ["/bin/sh","-c"]
+        args:
+          - |
+            set -e
+            apk add --no-cache gettext >/dev/null 2>&1
+            mkdir -p /usr/share/nginx/html
+            # Copia TODOS os .html do ConfigMap e aplica envsubst
+            for f in /configmap-html/*.html; do
+              fn="$(basename "$f")"
+              envsubst < "$f" > "/usr/share/nginx/html/$fn"
+            done
+            exec nginx -g 'daemon off;'
+      volumes:
+      - name: api-html
+        configMap:
+          name: api-html-config
+      - name: nginx-conf
+        configMap:
+          name: nginx-default-conf
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-default-conf
+data:
+  default.conf: |
+    server {
+      listen 80;
+      charset utf-8;
+      root /usr/share/nginx/html;
+      index index.html;
+      location / {
+        # /users -> /users.html -> /index.html
+        try_files $uri $uri.html /index.html;
+      }
+    }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api-html-config
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>API App</title>
+    </head>
+    <body>
+      <h1>Bem-vindo à API da Aplicação!</h1>
+      <p>Este é o endpoint principal da nossa API.</p>
+      <p>Servido pelo Pod: <strong>$POD_NAME</strong></p>
+      <p>Aplicação: <strong>$APP_NAME</strong></p>
+      <p>Testando rotação com Nginx Ingress Controller.</p>
+    </body>
+    </html>
+  users.html: |
+    <!DOCTYPE html>
+    <html>
+    <head><meta charset="UTF-8"><title>API - Users</title></head>
+    <body>
+      <h1>Endpoint: /api/users</h1>
+      <p>Lista de usuários fake: João, Maria, José...</p>
+      <p>Servido pelo Pod: <strong>$POD_NAME</strong></p>
+    </body>
+    </html>

@@ -1,0 +1,22 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: helloworld-virtualservice
+spec:
+  hosts:
+  - "*"
+  gateways:
+  - helloworld-gateway
+  http:
+  - match:                        # Define uma condição de roteamento
+    - headers:
+        x-test-user:              # Header HTTP específico
+          exact: beta-tester      # Se o valor for "beta-tester", roteia para v2
+    route:
+    - destination:
+        host: helloworld
+        subset: v2
+  - route:                        # Regra padrão para todo o resto do tráfego
+    - destination:
+        host: helloworld
+        subset: v1

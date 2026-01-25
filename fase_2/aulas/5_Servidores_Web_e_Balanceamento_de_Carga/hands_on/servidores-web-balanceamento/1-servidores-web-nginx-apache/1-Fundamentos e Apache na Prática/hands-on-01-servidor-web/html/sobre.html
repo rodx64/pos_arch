@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sobre - Servidor Web</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📚 Sobre este Servidor Web</h1>
+            <p class="subtitle">Detalhes Técnicos da Implementação</p>
+        </header>
+
+        <main>
+            <div class="card">
+                <h2>🐳 Tecnologias Utilizadas</h2>
+                <ul>
+                    <li><strong>Apache HTTP Server 2.4:</strong> Servidor web robusto e amplamente utilizado</li>
+                    <li><strong>Docker:</strong> Containerização para ambiente isolado e reproduzível</li>
+                    <li><strong>Docker Compose:</strong> Orquestração simples de containers</li>
+                    <li><strong>Alpine Linux:</strong> Imagem base leve e segura</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h2>⚙️ Configurações Aplicadas</h2>
+                <ul>
+                    <li><strong>Porta:</strong> 8080 (host) → 80 (container)</li>
+                    <li><strong>Volume:</strong> ./html mapeado para /usr/local/apache2/htdocs/</li>
+                    <li><strong>Restart Policy:</strong> unless-stopped</li>
+                </ul>
+            </div>
+
+            <div class="navigation">
+                <a href="index.html">← Voltar para Home</a>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
