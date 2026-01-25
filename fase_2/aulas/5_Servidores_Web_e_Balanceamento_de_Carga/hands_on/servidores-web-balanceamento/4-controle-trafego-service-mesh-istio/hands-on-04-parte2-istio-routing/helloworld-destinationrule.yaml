@@ -1,0 +1,13 @@
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: helloworld-destinationrule
+spec:
+  host: helloworld                # Nome do Service Kubernetes
+  subsets:                        # Definição dos subsets (subgrupos) que o Istio pode rotear
+  - name: v1                      # Nome do subset
+    labels:
+      version: v1                 # Vai rotear para pods com label version=v1
+  - name: v2
+    labels:
+      version: v2                 # Vai rotear para pods com label version=v2

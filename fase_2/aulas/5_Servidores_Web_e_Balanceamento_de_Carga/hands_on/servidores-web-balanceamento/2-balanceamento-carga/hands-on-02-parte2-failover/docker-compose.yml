@@ -1,0 +1,40 @@
+services:
+  nginx-balancer:
+    image: nginx:1.25.3-alpine
+    container_name: nginx-load-balancer-failover
+    ports:
+      - "8080:80"   # Nginx escutará na porta 8080 do host
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    restart: unless-stopped
+    depends_on:
+      - backend-1
+      - backend-2
+      - backend-backup # Garante que os backends subam antes do Nginx
+
+  backend-1:
+    image: httpd:2.4-alpine
+    container_name: backend-app-1
+    volumes:
+      - ./backend-server-1/html:/usr/local/apache2/htdocs/:ro
+    expose:
+      - "80" # Expõe a porta 80 internamente na rede Docker
+    restart: unless-stopped
+
+  backend-2:
+    image: httpd:2.4-alpine
+    container_name: backend-app-2
+    volumes:
+      - ./backend-server-2/html:/usr/local/apache2/htdocs/:ro
+    expose:
+      - "80"
+    restart: unless-stopped
+
+  backend-backup:
+    image: httpd:2.4-alpine
+    container_name: backend-app-backup
+    volumes:
+      - ./backend-server-backup/html:/usr/local/apache2/htdocs/:ro
+    expose:
+      - "80"
+    restart: unless-stopped

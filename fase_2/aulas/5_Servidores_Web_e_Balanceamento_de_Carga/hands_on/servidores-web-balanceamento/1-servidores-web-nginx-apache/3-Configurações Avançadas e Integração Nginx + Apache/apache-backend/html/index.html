@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bem-vindo ao Apache!</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #e6f7ff; text-align: center; padding-top: 50px; }
+        h1 { color: #0056b3; }
+        p { color: #333; }
+        a { color: #007bff; text-decoration: none; }
+        .timestamp { font-size: 0.9em; color: #666; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>🌟 Servidor Apache (Backend)!</h1>
+    <p>Esta página é servida pelo Apache, mas pode estar vindo via Nginx como Proxy Reverso!</p>
+    <p>Use o Nginx na porta 80 e acesse:</p>
+    <ul>
+        <li><a href="/user/123">Página de Usuário (via mod_rewrite)</a></li>
+        <li><a href="/big-image.jpg">Imagem Grande (para teste de cache)</a></li>
+        <li><a href="/old-page.html">Página Antiga (para teste de redirecionamento)</a></li>
+    </ul>
+    <p class="timestamp">Gerado em: <?php echo date('Y-m-d H:i:s'); ?></p>
+</body>
+</html>

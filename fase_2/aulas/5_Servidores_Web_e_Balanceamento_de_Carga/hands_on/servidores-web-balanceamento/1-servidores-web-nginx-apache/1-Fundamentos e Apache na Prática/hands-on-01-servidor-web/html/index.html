@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meu Primeiro Servidor Web</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 Servidor Web Funcionando!</h1>
+            <p class="subtitle">Conceitos de Servidor Web na Prática</p>
+        </header>
+
+        <main>
+            <div class="card">
+                <h2>✅ O que acabamos de fazer?</h2>
+                <ul>
+                    <li><strong>Subimos um servidor web</strong> usando Apache HTTP Server</li>
+                    <li><strong>Mapeamos a porta 8080</strong> do host para a porta 80 do container</li>
+                    <li><strong>Servimos arquivos estáticos</strong> (HTML, CSS) via HTTP</li>
+                    <li><strong>Demonstramos o ciclo</strong>: Requisição → Processamento → Resposta</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h2>🌐 Testando o Servidor</h2>
+                <p><strong>URL Principal:</strong> <a href="http://localhost:8080" >http://localhost:8080</a></p>
+                <p><strong>Página Sobre:</strong> <a href="http://localhost:8080/sobre.html" >http://localhost:8080/sobre.html</a></p>
+            </div>
+
+            <div class="card">
+                <h2>🔍 Conceitos Aplicados</h2>
+                <div class="conceito">
+                    <h3>Cliente-Servidor</h3>
+                    <p>Seu navegador (cliente) faz requisições HTTP para o servidor Apache</p>
+                </div>
+                <div class="conceito">
+                    <h3>Protocolo HTTP</h3>
+                    <p>Comunicação via protocolo HTTP na porta 80 (mapeada para 8080)</p>
+                </div>
+                <div class="conceito">
+                    <h3>Arquivos Estáticos</h3>
+                    <p>Servidor entrega arquivos HTML, CSS sem processamento dinâmico</p>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>🎯 <strong>Próximo passo:</strong> Vamos aprender sobre Proxys e depois configurações avançadas do Apache!</p>
+        </footer>
+    </div>
+</body>
+</html>

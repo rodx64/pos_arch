@@ -16,6 +16,19 @@
 !/README.md
 
 # =========================
+# Aulas (abre, mas não versiona todos arquivos)
+# =========================
+!/fase_*/aulas/
+!/fase_*/aulas/**/
+
+# =========================
+# Libera SOMENTE hands_on
+# =========================
+!/fase_*/aulas/**/hands_on/
+!/fase_*/aulas/**/hands_on/**
+!/fase_*/aulas/**/hands_on/**/**
+
+# =========================
 # Arquivos de configuração / ambiente local
 # =========================
 .env
@@ -63,3 +76,10 @@ htmlcov/
 bin/
 vendor/
 pkg/
+
+# =========================
+# Chaves e credenciais
+# =========================
+*.pem
+*.ppk
+*.key

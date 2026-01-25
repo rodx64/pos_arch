@@ -1,0 +1,14 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: helloworld-gateway
+spec:
+  selector:
+    istio: ingressgateway         # Usa o IngressGateway padrão do Istio
+  servers:
+  - port:
+      number: 80                  # Porta 80 (HTTP)
+      name: http
+      protocol: HTTP
+    hosts:
+    - "*"                         # Aceita tráfego de qualquer host (curinga)

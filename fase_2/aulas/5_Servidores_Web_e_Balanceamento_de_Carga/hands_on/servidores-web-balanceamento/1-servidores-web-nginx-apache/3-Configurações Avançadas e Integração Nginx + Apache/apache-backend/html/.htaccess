@@ -1,0 +1,26 @@
+# Certifique-se que o AllowOverride All esteja configurado no VirtualHost ou apache2.conf!
+# Para php:8.2-apache, AllowOverride All geralmente já está em /var/www/html
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # /user/123 -> /user.php?id=123
+    RewriteRule ^user/([0-9]+)/?$ user.php?id=$1 [L,NC,QSA]
+
+    # Redirecionamento 301
+    RewriteRule ^old-page.html$ /index.html [R=301,L]
+</IfModule>
+
+
+
+# Diretivas para Cache no Apache (se mod_cache estiver ativado)
+# <IfModule mod_expires.c>
+#     ExpiresActive On
+#     ExpiresByType image/jpg "access plus 1 week"
+#     ExpiresByType text/html "access plus 1 minute"
+# </IfModule>
+
+# <IfModule mod_headers.c>
+#     Header set Cache-Control "public, max-age=60" # Cache público por 60 segundos
+# </IfModule>

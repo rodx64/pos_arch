@@ -1,0 +1,11 @@
+version: "3.8"
+services:
+  apache:
+    build: .
+    container_name: apache-server
+    ports:
+      - "8080:80"
+    volumes:
+      - ./sites:/usr/local/apache2/htdocs
+      - ./logs:/usr/local/apache2/logs
+    restart: unless-stopped

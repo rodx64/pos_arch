@@ -1,0 +1,46 @@
+services:
+  # Início da definição dos serviços (containers) que serão criados.
+  # Cada serviço é um container separado, mas todos podem se comunicar entre si.
+
+  servidor-web:
+    # Nome do serviço. Você pode escolher qualquer nome.
+    # Esse nome também será usado como o "hostname" dentro da rede Docker.
+
+    image: httpd:2.4-alpine
+    # Define a imagem base usada para criar o container.
+    # "httpd" é a imagem oficial do Apache HTTP Server.
+    # A tag "2.4-alpine" indica a versão 2.4, baseada no sistema Alpine Linux.
+    # O Alpine é muito leve e rápido, ideal para aprendizado e ambientes simples.
+
+    container_name: meu-primeiro-servidor-web
+    # Dá um nome fixo para o container, facilitando o uso de comandos como:
+    #   docker logs meu-primeiro-servidor-web
+    #   docker stop meu-primeiro-servidor-web
+
+    ports:
+      - "8080:80"
+      # Faz o mapeamento de portas entre o host (sua máquina) e o container.
+      # A sintaxe é "porta_host:porta_container".
+      # Aqui, o Apache dentro do container escuta na porta 80,
+      # mas será acessível pelo navegador na porta 8080 do seu computador.
+      # Exemplo: http://localhost:8080
+
+    volumes:
+      - ./html:/usr/local/apache2/htdocs/
+      # Cria um volume (mapeamento de diretório) entre o host e o container.
+      # O lado esquerdo (./html) é uma pasta local no seu computador.
+      # O lado direito (/usr/local/apache2/htdocs/) é a pasta dentro do container
+      # onde o Apache busca os arquivos HTML.
+      # Isso permite que, ao editar os arquivos locais, o site atualize automaticamente.
+
+    restart: unless-stopped
+    # Define a política de reinício do container.
+    # "unless-stopped" significa:
+    #   - Se o container parar por erro, ele será reiniciado automaticamente.
+    #   - Mas se você parar manualmente (docker stop), ele não reinicia sozinho.
+
+    environment:
+      - HTTPD_PREFIX=/usr/local/apache2
+      # Define variáveis de ambiente dentro do container.
+      # Essa variável informa ao Apache o caminho base de instalação.
+      # Em geral, não é necessário alterar, mas serve como exemplo prático.

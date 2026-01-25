@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-frontend-deployment
+  labels:
+    app: app-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: app-frontend
+  template:
+    metadata:
+      labels:
+        app: app-frontend
+    spec:
+      containers:
+      - name: frontend-container
+        image: nginx:alpine # Usaremos Nginx com conteúdo customizado
+        ports:
+        - containerPort: 80
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: APP_NAME
+          value: "Frontend App (bonito)"
+        volumeMounts:
+        - name: frontend-html
+          mountPath: /configmap-html
+        command: ["/bin/sh","-c"]
+        args:
+          - |
+            apk add --no-cache gettext >/dev/null 2>&1
+            cp /configmap-html/index.html /usr/share/nginx/html/index.html
+            envsubst < /usr/share/nginx/html/index.html > /usr/share/nginx/html/index.html.tmp
+            mv /usr/share/nginx/html/index.html.tmp /usr/share/nginx/html/index.html
+            exec nginx -g 'daemon off;'
+      volumes:
+      - name: frontend-html
+        configMap:
+          name: frontend-html-config
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-html-config
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Frontend App</title>
+    </head>
+    <body>
+      <h1>Bem-vindo ao Frontend da Aplicação!</h1>
+      <p>Servido pelo Pod: <span style="color: blue;">$POD_NAME</span></p>
+      <p>Aplicação: <strong>$APP_NAME</strong></p>
+      <p>Testando rotação com Nginx Ingress Controller.</p>
+    </body>
+    </html>

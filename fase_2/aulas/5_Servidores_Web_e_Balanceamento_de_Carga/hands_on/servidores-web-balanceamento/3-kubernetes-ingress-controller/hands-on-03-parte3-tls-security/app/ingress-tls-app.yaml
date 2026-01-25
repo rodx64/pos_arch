@@ -1,0 +1,28 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: host-based-ingress
+  annotations:
+    # Diz ao cert-manager qual ClusterIssuer usar
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    acme.cert-manager.io/http01-edit-in-place: "true" 
+    # Enquanto emite, NÃO force redirect para não atrapalhar o HTTP-01
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
+spec:
+  ingressClassName: nginx        # ESSENCIAL: casar com seu ingress-nginx
+  tls:
+    - hosts:
+        - app.mkchatfuse.com.br  # seu domínio
+      secretName: meu-app-tls-secret  # cert-manager vai criar/preencher este Secret
+  rules:
+    - host: app.mkchatfuse.com.br
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: app-frontend-service
+                port:
+                  number: 80

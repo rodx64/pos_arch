@@ -1,0 +1,15 @@
+FROM php:8.2-apache
+
+# Copia config customizada
+COPY apache-backend/apache-config/httpd-vhosts.conf /etc/apache2/sites-available/000-default.conf
+
+# Ativa mod_rewrite e headers
+RUN a2enmod rewrite headers
+
+
+
+
+# (Opcional, normalmente já vem habilitado)
+# Habilitar módulos úteis (se necessário)
+# RUN sed -i 's/#LoadModule rewrite_module/LoadModule rewrite_module/' /usr/local/apache2/conf/httpd.conf
+# RUN sed -i 's/#LoadModule headers_module/LoadModule headers_module/' /usr/local/apache2/conf/httpd.conf

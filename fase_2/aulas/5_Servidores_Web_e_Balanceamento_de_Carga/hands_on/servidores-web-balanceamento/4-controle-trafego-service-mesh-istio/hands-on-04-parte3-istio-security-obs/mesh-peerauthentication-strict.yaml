@@ -1,0 +1,12 @@
+# Configuração de mTLS no Istio em modo STRICT
+# Neste modo, o Istio exige que todo tráfego dentro do mesh seja criptografado com mTLS.
+# Qualquer comunicação sem sidecar ou sem criptografia será bloqueada.
+
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default              # Nome da configuração (padrão, aplicada em todo o mesh)
+  namespace: istio-system    # Namespace do Istio (aplica globalmente no mesh)
+spec:
+  mtls:
+    mode: STRICT              # Modo estrito: apenas mTLS é aceito

@@ -1,0 +1,17 @@
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    # URL do servidor ACME (produção Let's Encrypt)
+    server: https://acme-v02.api.letsencrypt.org/directory
+    # Email para registro e notificações de renovação
+    email: devpoc00001@gmail.com # SUBSTITUA PELO SEU EMAIL
+    privateKeySecretRef:
+      # Secret onde a chave privada do ACME será armazenada
+      name: letsencrypt-prod-private-key
+    solvers:
+    - http01: # Usaremos o desafio HTTP-01
+        ingress:
+          class: nginx # A classe do Ingress Controller que irá resolver o desafio
