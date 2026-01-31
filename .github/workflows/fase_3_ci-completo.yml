@@ -1,0 +1,104 @@
+name: 🚀 CI Completo
+
+on:
+  push:
+    branches: [ 'pos/*']
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  # Job 1: Lint e Análise de Código
+  lint:
+    name: 🔍 Lint e Análise
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+      
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: fase_3/aulas/1_ci_cd/hands_on/1_aula/1_hands_on/app/package-lock.json
+      
+      - name: 📦 Instalar dependências
+        working-directory: fase_3/aulas/1_ci_cd/hands_on/1_aula/1_hands_on/app
+        run: npm ci
+      
+      - name: 🔍 Executar ESLint
+        working-directory: fase_3/aulas/1_ci_cd/hands_on/1_aula/1_hands_on/app
+        run: npm run lint --if-present
+        continue-on-error: true
+  
+  # Job 2: Testes Unitários
+  test:
+    name: 🧪 Testes Unitários
+    runs-on: ubuntu-latest
+    needs: lint  # Faz a execução ser dependende do job (Lint)
+    
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+      
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+      
+      - name: 📦 Instalar dependências
+        working-directory: fase_3/aulas/1_ci_cd/hands_on/1_aula/1_hands_on/app
+        run: npm ci
+      
+      - name: 🧪 Executar testes
+        working-directory: fase_3/aulas/1_ci_cd/hands_on/1_aula/1_hands_on/app
+        run: npm test -- --coverage
+      
+      - name: 📊 Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: fase_3/aulas/1_ci_cd/hands_on/1_aula/1_hands_on/app/coverage/
+          retention-days: 7
+  
+  # Job 3: Build
+  build:
+    name: 🏗️ Build
+    runs-on: ubuntu-latest
+    needs: test  # Executa após testes
+    
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+      
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: fase_3/aulas/1_ci_cd/hands_on/1_aula/1_hands_on/app/package-lock.json
+      
+      - name: 📦 Instalar dependências
+        working-directory: fase_3/aulas/1_ci_cd/hands_on/1_aula/1_hands_on/app
+        run: npm ci
+      
+      - name: 🏗️ Build aplicação
+        working-directory: fase_3/aulas/1_ci_cd/hands_on/1_aula/1_hands_on/app
+        run: |
+          echo "Building application..."
+          # Aqui seria npm run build para apps React, etc
+          echo "✅ Build completed!"
+      
+      - name: 📊 Build Summary
+        run: |
+          echo "## 🏗️ Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Node Version**: ${{ env.NODE_VERSION }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Status**: ✅ Success" >> $GITHUB_STEP_SUMMARY
