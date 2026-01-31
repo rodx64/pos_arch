@@ -27,19 +27,19 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
-          cache-dependency-path: fase_3/aulas/1_ci_cd/hands_on/1_aula/1_hands_on/app/package-lock.json
+          cache-dependency-path: fase_3/aulas/1_ci_cd/hands_on/1_aula/app/package-lock.json
       
       # Passo 3: Instalar dependências
       - name: 📦 Instalar dependências
-        working-directory: fase_3/aulas/1_ci_cd/hands_on/1_aula/1_hands_on/app
+        working-directory: fase_3/aulas/1_ci_cd/hands_on/1_aula/app
         run: npm ci
       
       # Passo 4: Executar testes
       - name: 🧪 Executar testes
-        working-directory: fase_3/aulas/1_ci_cd/hands_on/1_aula/1_hands_on/app
+        working-directory: fase_3/aulas/1_ci_cd/hands_on/1_aula/app
         run: npm test
       
       # Passo 5: Executar lint (análise de código)
       - name: 🔍 Lint
-        working-directory: fase_3/aulas/1_ci_cd/hands_on/1_aula/1_hands_on/app
+        working-directory: fase_3/aulas/1_ci_cd/hands_on/1_aula/app
         run: npm run lint --if-present
