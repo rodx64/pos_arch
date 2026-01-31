@@ -2,6 +2,10 @@
 
 !.gitignore
 
+# Arquivos de apoio
+!/files/
+!/files/**
+
 # Fases
 !/fase_*/
 
@@ -27,6 +31,12 @@
 !/fase_*/aulas/**/hands_on/
 !/fase_*/aulas/**/hands_on/**
 !/fase_*/aulas/**/hands_on/**/**
+
+# =========================
+# Libera Github Actions
+# =========================
+!.github/
+!.github/**
 
 # =========================
 # Arquivos de configuração / ambiente local
