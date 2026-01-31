@@ -4,8 +4,8 @@
 name: 🔄 CI Multistage Pipeline
 
 on:
-  push:
-    branches: [ 'pos/*' ]
+  # push:
+  #   branches: [ 'pos/*' ]
   workflow_dispatch:
 
 env:

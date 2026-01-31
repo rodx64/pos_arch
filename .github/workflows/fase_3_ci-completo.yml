@@ -1,10 +1,10 @@
 name: 🚀 CI Completo
 
 on:
-  push:
-    branches: [ 'pos/*']
-  pull_request:
-    branches: [ main, develop ]
+  # push:
+  #   branches: [ 'pos/*']
+  # pull_request:
+  #   branches: [ main, develop ]
   workflow_dispatch:
 
 env:
