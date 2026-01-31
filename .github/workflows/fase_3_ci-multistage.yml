@@ -1,0 +1,128 @@
+# ============================================
+# WORKFLOW: CI Pipeline Multistage
+# ============================================
+name: 🔄 CI Multistage Pipeline
+
+on:
+  push:
+    branches: [ 'pos/*' ]
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  # ============================================
+  # STAGE 1: VALIDAÇÃO (Paralelo)
+  # ============================================
+  test:
+    name: 🧪 Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+      
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: fase_3/aulas/1_ci_cd/hands_on/2_aula/app/package-lock.json
+      
+      - name: 📦 Install dependencies
+        working-directory: fase_3/aulas/1_ci_cd/hands_on/2_aula/app
+        run: npm ci
+      
+      - name: 🧪 Run tests
+        working-directory: fase_3/aulas/1_ci_cd/hands_on/2_aula/app
+        run: npm test
+  
+  lint:
+    name: 🔍 Lint Code
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+      
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: fase_3/aulas/1_ci_cd/hands_on/2_aula/app/package-lock.json
+      
+      - name: 📦 Install dependencies
+        working-directory: fase_3/aulas/1_ci_cd/hands_on/2_aula/app
+        run: npm ci
+      
+      - name: 🔍 Run lint
+        working-directory: fase_3/aulas/1_ci_cd/hands_on/2_aula/app
+        run: npm run lint
+  
+  security:
+    name: 🔒 Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+      
+      - name: 🔒 Run security audit
+        working-directory: fase_3/aulas/1_ci_cd/hands_on/2_aula/app
+        run: npm audit --audit-level=moderate || true
+  
+  # ================================================================
+  # STAGE 2: BUILD 
+  # (Depende do Stage 1) - "needs" define dependências entre jobs
+  # ================================================================
+  build:
+    name: 🏗️ Build
+    runs-on: ubuntu-latest
+    needs: [test, lint, security]
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+      
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: fase_3/aulas/1_ci_cd/hands_on/2_aula/app/package-lock.json
+      
+      - name: 📦 Install dependencies
+        working-directory: fase_3/aulas/1_ci_cd/hands_on/2_aula/app
+        run: npm ci
+      
+      - name: 🏗️ Build application
+        working-directory: fase_3/aulas/1_ci_cd/hands_on/2_aula/app
+        run: npm run build
+      
+      # Upload dos arquivos buildados para próximo stage
+      - name: 📤 Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: fase_3/aulas/1_ci_cd/hands_on/2_aula/app/dist/
+          retention-days: 7
+  
+  # ============================================
+  # STAGE 3: DEPLOY (Depende do Stage 2)
+  # ============================================
+  deploy:
+    name: 🚀 Deploy
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    steps:
+      # Download do artifact do job anterior
+      - name: 📥 Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: ./dist
+      
+      - name: 🚀 Deploy
+        run: |
+          echo "📦 Arquivos para deploy:"
+          ls -la ./dist
+          echo "🚀 Deploying..."
