@@ -6,7 +6,7 @@ name: 🔄 CI with Matrix
 
 on:
   push:
-    branches: [ main ]
+    branches: [ 'pos/*' ]
   workflow_dispatch:
 
 jobs:
