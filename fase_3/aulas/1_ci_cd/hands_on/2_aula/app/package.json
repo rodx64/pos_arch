@@ -1,0 +1,47 @@
+{
+  "name": "fiap-todo-api",
+  "version": "1.0.0",
+  "description": "Todo List API for demonstrating multistage CI/CD pipelines",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "build": "node build.js",
+    "test": "jest",
+    "test:integration": "echo 'Integration tests would run here - testing database connections, external APIs'",
+    "test:e2e": "echo 'E2E tests would run here - testing complete user workflows'",
+    "test:performance": "echo 'Performance tests would run here - load testing with artillery'",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint src/ tests/",
+    "lint:fix": "eslint src/ tests/ --fix"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "collectCoverageFrom": [
+      "src/**/*.js"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 80,
+        "functions": 80,
+        "lines": 80,
+        "statements": 80
+      }
+    }
+  },
+  "keywords": ["fiap", "cicd", "multistage", "todo", "api", "express"],
+  "author": "FIAP Student",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0",
+    "express-rate-limit": "^7.1.5"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^6.3.3",
+    "nodemon": "^3.0.1",
+    "eslint": "^8.55.0"
+  }
+}
