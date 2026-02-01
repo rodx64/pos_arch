@@ -5,8 +5,8 @@
 name: 🔄 CI with Matrix
 
 on:
-  push:
-    branches: [ 'pos/*' ]
+  # push:
+  #   branches: [ 'pos/*' ]
   workflow_dispatch:
 
 jobs:
