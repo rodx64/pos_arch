@@ -16,13 +16,13 @@ jobs:
   
   test-node-18:
     name: 🧪 Test Node 18
-    uses: ./.github/workflows/reusable-test.yml
+    uses: rodx64/workflows-library/.github/workflows/reusable-test.yml@main
     with:
       node-version: '18'
   
   test-node-20:
     name: 🧪 Test Node 20
-    uses: ./.github/workflows/reusable-test.yml
+    uses: rodx64/workflows-library/.github/workflows/reusable-test.yml@main
     with:
       node-version: '20'
   
