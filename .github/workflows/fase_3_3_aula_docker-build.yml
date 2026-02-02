@@ -47,6 +47,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
+          file: fase_3/aulas/1_ci_cd/hands_on/3_aula/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           platforms: linux/amd64
