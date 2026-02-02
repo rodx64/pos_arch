@@ -5,13 +5,12 @@
 FROM node:20-alpine AS builder
 
 # Define diretório de trabalho
-WORKDIR /app
-
+WORKDIR /fase_3/aulas/1_ci_cd/hands_on/3_aula/app
 # ============================================
 # DEPENDÊNCIAS
 # ============================================
 # Copiar apenas package files (cache layer)
-COPY app/package*.json ./
+COPY fase_3/aulas/1_ci_cd/hands_on/3_aula/app/package*.json ./
 
 # Instalar dependências de produção
 # npm install: instala deps e gera lock file se não existir
@@ -22,7 +21,7 @@ RUN npm install --omit=dev && npm cache clean --force
 # CÓDIGO FONTE
 # ============================================
 # Copiar código da aplicação
-COPY app/src/ ./src/
+COPY fase_3/aulas/1_ci_cd/hands_on/3_aula/app/src/ ./src/
 
 # ============================================
 # SEGURANÇA: USUÁRIO NÃO-ROOT
@@ -38,16 +37,15 @@ RUN addgroup -g 1001 -S nodejs && \
 FROM node:20-alpine AS runtime
 
 # Define diretório de trabalho
-WORKDIR /app
-
+WORKDIR /fase_3/aulas/1_ci_cd/hands_on/3_aula/app/
 # ============================================
 # COPIAR ARTEFATOS DO BUILDER
 # ============================================
 # Copiar apenas o necessário do stage anterior
 # Reduz tamanho da imagem final
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/src ./src
+COPY --from=builder /fase_3/aulas/1_ci_cd/hands_on/3_aula/app/node_modules ./node_modules
+COPY --from=builder /fase_3/aulas/1_ci_cd/hands_on/3_aula/app/package*.json ./
+COPY --from=builder /fase_3/aulas/1_ci_cd/hands_on/3_aula/app/src ./src
 
 # ============================================
 # SEGURANÇA: COPIAR USUÁRIO
