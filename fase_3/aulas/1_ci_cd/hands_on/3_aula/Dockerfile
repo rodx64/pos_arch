@@ -43,9 +43,9 @@ WORKDIR /fase_3/aulas/1_ci_cd/hands_on/3_aula/app/
 # ============================================
 # Copiar apenas o necessário do stage anterior
 # Reduz tamanho da imagem final
-COPY --from=builder /fase_3/aulas/1_ci_cd/hands_on/3_aula/app/node_modules ./node_modules
-COPY --from=builder /fase_3/aulas/1_ci_cd/hands_on/3_aula/app/package*.json ./
-COPY --from=builder /fase_3/aulas/1_ci_cd/hands_on/3_aula/app/src ./src
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/src ./src
 
 # ============================================
 # SEGURANÇA: COPIAR USUÁRIO
