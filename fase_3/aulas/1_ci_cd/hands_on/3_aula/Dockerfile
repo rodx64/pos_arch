@@ -3,7 +3,7 @@
 # ===========================================
 # Usa imagem Alpine (menor tamanho)
 FROM node:20-alpine AS builder
-  
+
 # Define diretório de trabalho
 WORKDIR /fase_3/aulas/1_ci_cd/hands_on/3_aula/app
 # ============================================
