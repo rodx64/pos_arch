@@ -1,8 +1,12 @@
 name: ☸️ Deploy to Kubernetes
 
+permissions:
+  actions: read
+  contents: read
+  
 on:
   workflow_run:
-    workflows: ["🐳 Docker Build and Push"]
+    workflows: ["Docker Build and Push"]
     types: [completed]
     branches: [ 'pos/*' ]
   workflow_dispatch:
