@@ -4,7 +4,6 @@ on:
   workflow_run:
     workflows: ["Docker Build and Push"]
     types: [completed]
-    branches: [ 'pos/*' ]
   workflow_dispatch:
 
 env:
@@ -47,7 +46,7 @@ jobs:
         working-directory: k8s/overlays/production
         run: |
           kustomize edit set image \
-            ${{ secrets.ECR_URI }}/fiap-todo-api:${{ github.sha }}
+            ${{ secrets.ECR_URI }}/fiap-todo-api:${{ github.event.workflow_run.head_sha }}
       
       - name: 🚀 Deploy to Kubernetes
         run: |

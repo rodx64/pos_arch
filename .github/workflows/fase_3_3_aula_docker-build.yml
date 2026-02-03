@@ -1,5 +1,9 @@
 name: Docker Build and Push
 
+permissions:
+  actions: read
+  contents: read
+
 on:
   push:
     branches: [ 'pos/*' ]
@@ -15,10 +19,6 @@ jobs:
     name: 🐳 Build and Push to ECR
     runs-on: ubuntu-latest
 
-    permissions:
-      actions: read
-      contents: read
-    
     steps:
       - name: 📥 Checkout código
         uses: actions/checkout@v4
