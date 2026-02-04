@@ -43,14 +43,14 @@ jobs:
           sudo mv kustomize /usr/local/bin/
       
       - name: 📝 Update image tag
-        working-directory: k8s/overlays/production
+        working-directory: fase_3/aulas/1_ci_cd/hands_on/3_aula/k8s/overlays/production
         run: |
           kustomize edit set image \
             ${{ secrets.ECR_URI }}/fiap-todo-api:${{ github.event.workflow_run.head_sha }}
       
       - name: 🚀 Deploy to Kubernetes
         run: |
-          kubectl apply -k k8s/overlays/production
+          kubectl apply -k fase_3/aulas/1_ci_cd/hands_on/3_aula/k8s/overlays/production
           kubectl rollout status deployment/prod-fiap-todo-api
       
       - name: 🧪 Smoke test
