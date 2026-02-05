@@ -5,8 +5,8 @@
 name: 🚀 CI with Reusable Workflows
 
 on:
-  push:
-    branches: [ pos/* ]
+  # push:
+  #   branches: [ pos/* ]
   workflow_dispatch:
 
 jobs:
