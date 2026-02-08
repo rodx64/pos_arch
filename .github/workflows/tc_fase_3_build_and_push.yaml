@@ -75,7 +75,7 @@ jobs:
           echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
 
   build-and-push:
-    name: Build and Push to ECR
+    name: Build and Push to ECR (${{ matrix.name }})
     needs: detect-changes
     if: needs.detect-changes.outputs.matrix != '{"include":[]}'
     runs-on: ubuntu-latest
