@@ -1,9 +1,5 @@
 name: Docker Build and Push
 
-permissions:
-  contents: read
-  id-token: write
-
 on:
   pull_request:
     branches: [ 'main' ]
@@ -12,34 +8,80 @@ on:
 env:
   ECR_REPOSITORY: toggle-master
 
+permissions:
+  contents: read
+
 jobs:
-  build-and-push:
+  detect-changes:
+    name: Detect changed services
     if: github.event.pull_request.merged == true
-    name: Build and Push to ECR
     runs-on: ubuntu-latest
+
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Detect changed services
+        id: set-matrix
+        shell: bash
+        run: |
+          set -e
+
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          MERGE_SHA="${{ github.event.pull_request.merge_commit_sha }}"
+
+          echo "Comparing $BASE_SHA -> $MERGE_SHA"
+
+          CHANGED_FILES=$(git diff --name-only "$BASE_SHA" "$MERGE_SHA")
+
+          SERVICES=()
+
+          add_service () {
+            SERVICES+=("$1")
+          }
+
+          if echo "$CHANGED_FILES" | grep -q "^fase_3/tech_challenge/toggle-master-microservices/analytics-service/"; then
+            add_service '{"name":"analytics","context":"fase_3/tech_challenge/toggle-master-microservices/analytics-service","dockerfile":"fase_3/tech_challenge/toggle-master-microservices/analytics-service/Dockerfile","image":"analytics-service"}'
+          fi
+
+          if echo "$CHANGED_FILES" | grep -q "^fase_3/tech_challenge/toggle-master-microservices/auth-service/"; then
+            add_service '{"name":"auth","context":"fase_3/tech_challenge/toggle-master-microservices/auth-service","dockerfile":"fase_3/tech_challenge/toggle-master-microservices/auth-service/Dockerfile","image":"auth-service"}'
+          fi
+
+          if echo "$CHANGED_FILES" | grep -q "^fase_3/tech_challenge/toggle-master-microservices/evaluation-service/"; then
+            add_service '{"name":"evaluation","context":"fase_3/tech_challenge/toggle-master-microservices/evaluation-service","dockerfile":"fase_3/tech_challenge/toggle-master-microservices/evaluation-service/Dockerfile","image":"evaluation-service"}'
+          fi
+
+          if echo "$CHANGED_FILES" | grep -q "^fase_3/tech_challenge/toggle-master-microservices/flag-service/"; then
+            add_service '{"name":"flag","context":"fase_3/tech_challenge/toggle-master-microservices/flag-service","dockerfile":"fase_3/tech_challenge/toggle-master-microservices/flag-service/Dockerfile","image":"flag-service"}'
+          fi
+
+          if echo "$CHANGED_FILES" | grep -q "^fase_3/tech_challenge/toggle-master-microservices/targeting-service/"; then
+            add_service '{"name":"targeting","context":"fase_3/tech_challenge/toggle-master-microservices/targeting-service","dockerfile":"fase_3/tech_challenge/toggle-master-microservices/targeting-service/Dockerfile","image":"targeting-service"}'
+          fi
+
+          if [ ${#SERVICES[@]} -eq 0 ]; then
+            echo 'matrix={"include":[]}' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          MATRIX=$(jq -c --argjson services "[${SERVICES[*]}]" '{include: $services}' <<< '{}')
+          echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+
+  build-and-push:
+    name: Build and Push to ECR
+    needs: detect-changes
+    if: needs.detect-changes.outputs.matrix != '{"include":[]}'
+    runs-on: ubuntu-latest
+
     strategy:
-      matrix:
-        service:
-          - name: analytics
-            dockerfile: fase_3/tech_challenge/toggle-master-microservices/analytics-service/Dockerfile
-            context: fase_3/tech_challenge/toggle-master-microservices/analytics-service
-            image: analytics-service
-          - name: auth
-            dockerfile: fase_3/tech_challenge/toggle-master-microservices/auth-service/Dockerfile
-            context: fase_3/tech_challenge/toggle-master-microservices/auth-service
-            image: auth-service
-          - name: evaluation
-            dockerfile: fase_3/tech_challenge/toggle-master-microservices/evaluation-service/Dockerfile
-            context: fase_3/tech_challenge/toggle-master-microservices/evaluation-service
-            image: evaluation-service
-          - name: flag
-            dockerfile: fase_3/tech_challenge/toggle-master-microservices/flag-service/Dockerfile
-            context: fase_3/tech_challenge/toggle-master-microservices/flag-service
-            image: flag-service
-          - name: targeting
-            dockerfile: fase_3/tech_challenge/toggle-master-microservices/targeting-service/Dockerfile
-            context: fase_3/tech_challenge/toggle-master-microservices/targeting-service
-            image: targeting-service
+      matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
 
     steps:
       - name: Checkout code
@@ -49,8 +91,8 @@ jobs:
       
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
-      
-      - name: Configure AWS credentials
+
+      - name: Configure AWS credentials # Alterar para OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -66,38 +108,27 @@ jobs:
         id: metadata
         run: |
           echo "tags<<EOF" >> $GITHUB_OUTPUT
-          echo "${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ matrix.service.image }}-latest" >> $GITHUB_OUTPUT
-          echo "${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ matrix.service.image }}-${{ github.sha }}" >> $GITHUB_OUTPUT
-          echo "${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ matrix.service.image }}-v1.${{ github.run_number }}" >> $GITHUB_OUTPUT
+          echo "${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ matrix.image }}-latest" >> $GITHUB_OUTPUT
+          echo "${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ matrix.image }}-${{ github.sha }}" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
-      
-      - name: 🐳 Build and push (${{ matrix.service.name }})
+
+      - name: 🐳 Build and push (${{ matrix.name }})
         uses: docker/build-push-action@v5
         with:
-          context: ${{ matrix.service.context }}
-          file: ${{ matrix.service.dockerfile }}
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
           push: true
           tags: ${{ steps.metadata.outputs.tags }}
           platforms: linux/amd64
-          provenance: false
-          sbom: false
           cache-from: type=gha
           cache-to: type=gha,mode=max
-      
+          provenance: false
+          sbom: false
+
       - name: 🔍 Scan image
         continue-on-error: true
         run: |
           aws ecr start-image-scan \
             --repository-name ${{ env.ECR_REPOSITORY }} \
-            --image-id imageTag=${{ matrix.service.image }}-latest \
-            --region ${{ secrets.AWS_REGION }} || echo "Image scan not supported for this image type"
-      
-      - name: Summary
-        run: |
-          echo "## Docker Build Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Repository**: ${{ env.ECR_REPOSITORY }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Tags**:" >> $GITHUB_STEP_SUMMARY
-          echo "- \`latest\`" >> $GITHUB_STEP_SUMMARY
-          echo "- \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- \`v1.${{ github.run_number }}\`" >> $GITHUB_STEP_SUMMARY
+            --image-id imageTag=${{ matrix.image }}-latest \
+            --region ${{ secrets.AWS_REGION }} || true
