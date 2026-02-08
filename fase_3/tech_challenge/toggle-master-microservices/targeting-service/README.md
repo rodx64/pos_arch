@@ -91,3 +91,4 @@ curl -X PUT http://localhost:8003/rules/enable-new-dashboard \
 }'
 ```
 Saída esperada: (O JSON da regra atualizada, com `"value": 75`).
+
