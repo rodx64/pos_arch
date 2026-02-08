@@ -1,0 +1,18 @@
+# https://docs.github.com/en/actions/how-tos/manage-workflow-runs/skip-workflow-runs
+name: Skip test
+
+on: 
+    workflow_dispatch:
+    pull_request:
+        types: [opened]
+    push:
+        branches: [main, pos/**]
+        paths-ignore: ['.github/workflows/*']
+
+jobs:
+    information:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Print github data
+              run: echo "${{ toJson(github.event) }}"
+
