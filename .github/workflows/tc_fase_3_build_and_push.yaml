@@ -71,7 +71,8 @@ jobs:
             exit 0
           fi
 
-          MATRIX=$(jq -c --argjson services "[${SERVICES[*]}]" '{include: $services}' <<< '{}')
+          JSON_ARRAY=$(printf '%s\n' "${SERVICES[@]}" | jq -s '.')
+          MATRIX=$(jq -c '{include: .}' <<< "$JSON_ARRAY")
           echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
 
   build-and-push:
