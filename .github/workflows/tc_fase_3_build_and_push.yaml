@@ -1,0 +1,103 @@
+name: Docker Build and Push
+
+permissions:
+  contents: read
+  id-token: write
+
+on:
+  pull_request:
+    branches: [ 'main' ]
+    types: [ closed ]
+
+env:
+  ECR_REPOSITORY: toggle-master
+
+jobs:
+  build-and-push:
+    if: github.event.pull_request.merged == true
+    name: Build and Push to ECR
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - name: analytics
+            dockerfile: fase_3/tech_challenge/toggle-master-microservices/analytics-service/Dockerfile
+            context: fase_3/tech_challenge/toggle-master-microservices/analytics-service
+            image: analytics-service
+          - name: auth
+            dockerfile: fase_3/tech_challenge/toggle-master-microservices/auth-service/Dockerfile
+            context: fase_3/tech_challenge/toggle-master-microservices/auth-service
+            image: auth-service
+          - name: evaluation
+            dockerfile: fase_3/tech_challenge/toggle-master-microservices/evaluation-service/Dockerfile
+            context: fase_3/tech_challenge/toggle-master-microservices/evaluation-service
+            image: evaluation-service
+          - name: flag
+            dockerfile: fase_3/tech_challenge/toggle-master-microservices/flag-service/Dockerfile
+            context: fase_3/tech_challenge/toggle-master-microservices/flag-service
+            image: flag-service
+          - name: targeting
+            dockerfile: fase_3/tech_challenge/toggle-master-microservices/targeting-service/Dockerfile
+            context: fase_3/tech_challenge/toggle-master-microservices/targeting-service
+            image: targeting-service
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: main
+      
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      
+      - name: Generate image tags
+        id: metadata
+        run: |
+          echo "tags<<EOF" >> $GITHUB_OUTPUT
+          echo "${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ matrix.service.image }}-latest" >> $GITHUB_OUTPUT
+          echo "${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ matrix.service.image }}-${{ github.sha }}" >> $GITHUB_OUTPUT
+          echo "${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ matrix.service.image }}-v1.${{ github.run_number }}" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+      
+      - name: 🐳 Build and push (${{ matrix.service.name }})
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.service.context }}
+          file: ${{ matrix.service.dockerfile }}
+          push: true
+          tags: ${{ steps.metadata.outputs.tags }}
+          platforms: linux/amd64
+          provenance: false
+          sbom: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
+      - name: 🔍 Scan image
+        continue-on-error: true
+        run: |
+          aws ecr start-image-scan \
+            --repository-name ${{ env.ECR_REPOSITORY }} \
+            --image-id imageTag=${{ matrix.service.image }}-latest \
+            --region ${{ secrets.AWS_REGION }} || echo "Image scan not supported for this image type"
+      
+      - name: Summary
+        run: |
+          echo "## Docker Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Repository**: ${{ env.ECR_REPOSITORY }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Tags**:" >> $GITHUB_STEP_SUMMARY
+          echo "- \`latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`v1.${{ github.run_number }}\`" >> $GITHUB_STEP_SUMMARY
