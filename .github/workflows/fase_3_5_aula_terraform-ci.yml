@@ -2,7 +2,7 @@ name: 🏗️ Terraform CI/CD
 
 on:
   push:
-    branches: [ main ]
+    branches: [ pos/* ]
     paths: [ 'fase_3/aulas/1_ci_cd/hands_on/4_aula/terraform/**' ]
 
 env:
