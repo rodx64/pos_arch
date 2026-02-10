@@ -3,12 +3,12 @@ name: 🏗️ Terraform CI/CD
 on:
   push:
     branches: [ pos/* ]
-    paths: [ 'fase_3/aulas/1_ci_cd/hands_on/4_aula/terraform/**' ]
+    paths: [ 'fase_3/aulas/1_ci_cd/hands_on/5_aula/terraform/**' ]
 
 env:
   AWS_REGION: us-east-1
   TF_VERSION: 1.6.0
-  WORKING_DIR: fase_3/aulas/1_ci_cd/hands_on/4_aula/terraform/environments/development
+  WORKING_DIR: fase_3/aulas/1_ci_cd/hands_on/5_aula/terraform/environments/development
 
 jobs:
   terraform-deploy:
