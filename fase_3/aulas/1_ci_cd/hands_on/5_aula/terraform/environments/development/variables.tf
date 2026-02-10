@@ -17,7 +17,7 @@ variable "project_name" {
   default     = "fiap-cicd"    # Valor padrão
 }
 
-# Nome do ambiente (development, staging, production)
+# Nome do ambiente (development, homolog, production)
 variable "environment" {
   description = "Environment name" # Nome do ambiente
   type        = string             # Tipo: string
