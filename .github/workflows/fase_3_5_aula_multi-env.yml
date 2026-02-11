@@ -1,0 +1,58 @@
+name: 🏗️ Multi-Environment
+
+on:
+  push:
+    branches: [ develop, homolog ]
+
+jobs:
+  deploy-dev:
+    name: 🔧 Development
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop'
+    
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+      
+      - name: 🔧 Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+      
+      - name: 🔑 Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: us-east-1
+      
+      - name: ⚙️ Init & Deploy Dev
+        working-directory: fase_3/aulas/1_ci_cd/hands_on/5_aula/terraform/environments/development
+        run: |
+          terraform init
+          terraform apply -auto-approve
+
+  deploy-homolog:
+    name: 🧪 homolog  
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/homolog'
+    
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+      
+      - name: 🔧 Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+      
+      - name: 🔑 Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: us-east-1
+      
+      - name: ⚙️ Init & Deploy homolog
+        working-directory: fase_3/aulas/1_ci_cd/hands_on/5_aula/terraform/environments/homolog
+        run: |
+          terraform init
+          terraform apply -auto-approve
