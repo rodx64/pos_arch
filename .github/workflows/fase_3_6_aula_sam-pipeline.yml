@@ -2,7 +2,7 @@ name: 🚀 SAM Pipeline CI/CD
 
 on:
   push:
-    branches: [ 'homolog' ]
+    branches: [ 'pos/*', 'homolog' ]
   workflow_dispatch:
 
 jobs:
@@ -33,6 +33,11 @@ jobs:
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: ${{ secrets.AWS_REGION }}
       
+      - name: Debug paths
+        run: |
+          pwd
+          ls -R
+
       - name: 🔨 SAM Build
         run: sam build --template-file fase_3/aulas/1_ci_cd/hands_on/6_aula/template.yml
       
