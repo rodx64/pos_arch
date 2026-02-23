@@ -1,0 +1,91 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: FIAP Serverless API - Simples para CI/CD Pipeline
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, hom, prod]
+    Description: Environment name
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 128
+    Runtime: python3.9
+    Environment:
+      Variables:
+        ENVIRONMENT: !Ref Environment
+
+Resources:
+  # API Gateway
+  TodoApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref Environment
+      Cors:
+        AllowMethods: "'GET,POST,OPTIONS'"
+        AllowHeaders: "'Content-Type'"
+        AllowOrigin: "'*'"
+
+  # Lambda Function - Hello
+  HelloFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "fiap-hello-${Environment}"
+      CodeUri: src/
+      Handler: handlers.hello
+      Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/LabRole"
+      Events:
+        Hello:
+          Type: Api
+          Properties:
+            RestApiId: !Ref TodoApi
+            Path: /
+            Method: get
+
+  # Lambda Function - Health
+  HealthFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "fiap-health-${Environment}"
+      CodeUri: src/
+      Handler: handlers.health
+      Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/LabRole"
+      Events:
+        Health:
+          Type: Api
+          Properties:
+            RestApiId: !Ref TodoApi
+            Path: /health
+            Method: get
+
+  # Lambda Function - Info
+  InfoFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "fiap-info-${Environment}"
+      CodeUri: src/
+      Handler: handlers.info
+      Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/LabRole"
+      Events:
+        Info:
+          Type: Api
+          Properties:
+            RestApiId: !Ref TodoApi
+            Path: /info
+            Method: get
+
+Outputs:
+  ApiUrl:
+    Description: "API Gateway endpoint URL"
+    Value: !Sub "https://${TodoApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/"
+  
+  HelloFunction:
+    Description: "Hello Lambda Function ARN"
+    Value: !GetAtt HelloFunction.Arn
+  
+  HealthFunction:
+    Description: "Health Lambda Function ARN"
+    Value: !GetAtt HealthFunction.Arn

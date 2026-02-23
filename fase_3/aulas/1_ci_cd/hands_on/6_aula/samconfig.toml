@@ -1,0 +1,31 @@
+version = 0.1
+
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "fiap-serverless-dev"
+resolve_s3 = true
+region = "us-east-1"
+confirm_changeset = false
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "Environment=dev"
+
+[homolog]
+[homolog.deploy]
+[homolog.deploy.parameters]
+stack_name = "fiap-serverless-hom"
+resolve_s3 = true
+region = "us-east-1"
+confirm_changeset = false
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "Environment=hom"
+
+[production]
+[production.deploy]
+[production.deploy.parameters]
+stack_name = "fiap-serverless-prod"
+resolve_s3 = true
+region = "us-east-1"
+confirm_changeset = false
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "Environment=prod"
