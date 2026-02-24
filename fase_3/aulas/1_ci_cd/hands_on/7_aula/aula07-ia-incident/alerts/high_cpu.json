@@ -1,0 +1,13 @@
+{
+  "alert_id": "alert-003",
+  "timestamp": "2024-01-17T10:10:00Z",
+  "severity": "warning",
+  "type": "high_cpu",
+  "message": "CPU usage sustained at 90% for 5 minutes",
+  "source": "monitoring-system",
+  "metrics": {
+    "cpu_percent": 90,
+    "duration_seconds": 300,
+    "top_process": "java"
+  }
+}

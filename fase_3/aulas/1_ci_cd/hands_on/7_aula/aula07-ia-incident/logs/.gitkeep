@@ -1,0 +1,2 @@
+# Este arquivo mantém a pasta logs/ no git
+# O arquivo incidents.log é criado automaticamente quando você roda o incident_handler.py
