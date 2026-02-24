@@ -31,11 +31,12 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
       
       - name: 🔨 SAM Build
-        run: sam build
+        run: sam build --template-file fase_3/aulas/1_ci_cd/hands_on/6_aula/template.yml
       
       - name: 🧪 Deploy homolog
         run: |
           sam deploy --config-env homolog \
+            --template-file fase_3/aulas/1_ci_cd/hands_on/6_aula/template.yml \
             --no-confirm-changeset \
             --no-fail-on-empty-changeset
       
@@ -71,11 +72,12 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
       
       - name: 🔨 SAM Build
-        run: sam build
+        run: sam build --template-file fase_3/aulas/1_ci_cd/hands_on/6_aula/template.yml \
       
       - name: 🏭 Deploy Production
         run: |
           sam deploy --config-env production \
+            --template-file fase_3/aulas/1_ci_cd/hands_on/6_aula/template.yml \
             --no-confirm-changeset \
             --no-fail-on-empty-changeset
       
