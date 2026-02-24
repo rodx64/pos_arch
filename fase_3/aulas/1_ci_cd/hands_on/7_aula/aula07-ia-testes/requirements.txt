@@ -1,0 +1,11 @@
+# Dependências do projeto
+# ========================
+
+# Para fazer requisições HTTP (Ollama e Groq)
+requests>=2.28.0
+
+# Framework de testes
+pytest>=7.0.0
+
+# Cobertura de código (opcional)
+pytest-cov>=4.0.0
