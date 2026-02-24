@@ -43,7 +43,7 @@ jobs:
       - name: 📋 URL homolog
         run: |
           aws cloudformation describe-stacks \
-            --stack-name fiap-serverless-homolog \
+            --stack-name fiap-serverless-hom \
             --query 'Stacks[0].Outputs' --output table
 
   # ========================================
