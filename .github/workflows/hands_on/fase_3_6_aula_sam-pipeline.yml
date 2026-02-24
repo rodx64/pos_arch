@@ -2,7 +2,7 @@ name: 🚀 SAM Pipeline CI/CD
 
 on:
   push:
-    branches: [ 'homolog' ]
+    branches: [ 'pos/*', 'homolog' ]
   workflow_dispatch:
 
 jobs:
