@@ -1,0 +1,13 @@
+{
+  "alert_id": "alert-001",
+  "timestamp": "2024-01-17T10:00:00Z",
+  "severity": "critical",
+  "type": "high_memory",
+  "message": "Memory usage at 95% - OutOfMemoryError imminent",
+  "source": "monitoring-system",
+  "metrics": {
+    "memory_percent": 95,
+    "memory_used_gb": 7.6,
+    "memory_total_gb": 8.0
+  }
+}

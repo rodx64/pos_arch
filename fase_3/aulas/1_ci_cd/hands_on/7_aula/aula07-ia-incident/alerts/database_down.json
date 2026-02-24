@@ -1,0 +1,13 @@
+{
+  "alert_id": "alert-002",
+  "timestamp": "2024-01-17T10:05:00Z",
+  "severity": "critical",
+  "type": "database_connection",
+  "message": "Database connection failed after 3 retries",
+  "source": "health-check",
+  "metrics": {
+    "connection_attempts": 3,
+    "last_error": "Connection refused",
+    "database": "postgres://localhost:5432/app"
+  }
+}
