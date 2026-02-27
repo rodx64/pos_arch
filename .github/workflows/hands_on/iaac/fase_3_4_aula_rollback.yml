@@ -25,4 +25,4 @@ jobs:
         run: terraform init
 
       - name: Terraform Apply Rollback
-        run: terraform apply -auto-approve -var-file="fase_3/aulas/2_iac/4_aula/hands_on/prod.tfvars"
+        run: terraform apply -auto-approve -var-file="fase_3/aulas/2_iac/hands_on/aula_4/prod.tfvars"

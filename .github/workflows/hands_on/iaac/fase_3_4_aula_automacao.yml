@@ -35,12 +35,12 @@ jobs:
 
       - name: Terraform Apply Dev
         if: github.ref == 'refs/heads/develop'
-        run: terraform apply -auto-approve -var-file="fase_3/aulas/2_iac/4_aula/hands_on/dev.tfvars"
+        run: terraform apply -auto-approve -var-file="fase_3/aulas/2_iac/hands_on/aula_4/dev.tfvars"
 
       - name: Terraform Plan Prod
         if: github.ref == 'refs/heads/main'
-        run: terraform plan -var-file="fase_3/aulas/2_iac/4_aula/hands_on/prod.tfvars"
+        run: terraform plan -var-file="fase_3/aulas/2_iac/hands_on/aula_4/prod.tfvars"
 
       - name: Terraform Apply Prod
         if: github.ref == 'refs/heads/main'
-        run: terraform apply -auto-approve -var-file="fase_3/aulas/2_iac/4_aula/hands_on/prod.tfvars"
+        run: terraform apply -auto-approve -var-file="fase_3/aulas/2_iac/hands_on/aula_4/prod.tfvars"
