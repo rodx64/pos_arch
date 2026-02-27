@@ -94,3 +94,15 @@ pkg/
 *.pem
 *.ppk
 *.key
+
+# =========================
+# Arquivos terraform / terragrunt
+# =========================
+*.terraform
+*.terragrunt-cache/
+*.terraform.lock*
+*.tfstate
+*.tfstate.*
+*.tfplan
+*_override.tf
+*_override.tf.json
