@@ -1,0 +1,46 @@
+# .github/workflows/terraform.yml
+name: Terraform CI/CD
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Lint Terraform
+        uses: terraform-linters/setup-tflint@v1
+
+      - run: tflint --recursive
+
+      - name: Terraform Plan Dev
+        if: github.ref == 'refs/heads/develop'
+        run: terraform plan -var-file="dev.tfvars"
+
+      - name: Terraform Apply Dev
+        if: github.ref == 'refs/heads/develop'
+        run: terraform apply -auto-approve -var-file="fase_3/aulas/2_iac/4_aula/hands_on/dev.tfvars"
+
+      - name: Terraform Plan Prod
+        if: github.ref == 'refs/heads/main'
+        run: terraform plan -var-file="fase_3/aulas/2_iac/4_aula/hands_on/prod.tfvars"
+
+      - name: Terraform Apply Prod
+        if: github.ref == 'refs/heads/main'
+        run: terraform apply -auto-approve -var-file="fase_3/aulas/2_iac/4_aula/hands_on/prod.tfvars"
