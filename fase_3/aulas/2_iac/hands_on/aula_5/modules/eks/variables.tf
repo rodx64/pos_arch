@@ -14,7 +14,7 @@ variable "k8s_version"    {
     default = "1.29" 
 }
 variable "instance_types" { 
-    type = list(sring)
+    type = list(string)
     default = ["t3.small"] 
 }
 variable "desired_size"   { 
