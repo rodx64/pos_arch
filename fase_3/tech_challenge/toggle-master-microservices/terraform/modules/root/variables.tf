@@ -30,18 +30,6 @@ variable "key_name" {
   type = string
 }
 
-variable "db_user" {
-  type = string
-}
-
-variable "db_name" {
-  type = string
-}
-
-variable "db_pass" {
-  type = string
-}
-
 variable "enable_eks" {
   type    = bool
   default = false
@@ -49,4 +37,13 @@ variable "enable_eks" {
 
 variable "kubernetes_version" {
   type    = string
+}
+
+variable "databases" {
+  type = map(object({
+    db_name        = string
+    db_user        = string
+    app_owner_name = string
+  }))
+  default = {}
 }

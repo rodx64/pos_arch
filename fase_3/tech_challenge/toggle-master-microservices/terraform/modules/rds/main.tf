@@ -20,6 +20,7 @@ module "db" {
 
   deletion_protection                 = false
   iam_database_authentication_enabled = true
+  manage_master_user_password         = true
 
   tags = local.common_tags
 }

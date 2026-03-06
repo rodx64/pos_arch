@@ -19,10 +19,6 @@ variable "db_name" {
   type = string
 }
 
-variable "db_pass" {
-  type = string
-}
-
 variable "engine" {
   type    = string
   default = "postgres"

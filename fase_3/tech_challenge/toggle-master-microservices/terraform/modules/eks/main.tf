@@ -15,7 +15,7 @@ module "eks" {
   enable_irsa = false
 
   eks_managed_node_groups = {
-    default = {
+    "${var.project_name}-ng" = {
       min_size       = 1
       max_size       = 3
       desired_size   = 2

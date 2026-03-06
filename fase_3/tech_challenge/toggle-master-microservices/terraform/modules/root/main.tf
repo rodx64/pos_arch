@@ -39,11 +39,14 @@ module "eks" {
 module "rds" {
   source             = "../rds"
   project_name       = "toggle-master"
-  app_owner_name     = "test-app"
   env                = var.env
-  db_name            = var.db_name 
-  db_user            = var.db_user
-  db_pass            = var.db_pass
+  for_each           = var.databases
+
+  app_owner_name     = each.value.app_owner_name
+  identifier         = each.key
+  db_name            = each.value.db_name
+  db_user            = each.value.db_user
+  
   private_subnet_ids = module.vpc.private_subnet_ids
   vpc_id             = module.vpc.vpc_id
   vpc_cidr           = module.vpc.vpc_cidr
