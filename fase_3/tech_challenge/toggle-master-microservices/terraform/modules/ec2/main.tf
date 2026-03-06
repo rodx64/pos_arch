@@ -17,13 +17,6 @@ resource "aws_security_group" "app_sg" {
   }
 }
 
-resource "aws_vpc" "toggle_vpc" {
-  cidr_block = var.vpc_cidr
-  tags = {
-    Name = "${var.project_name}-${var.env}-vpc"
-  }
-}
-
 resource "aws_instance" "bastion" {
   ami                    = var.ami_id
   instance_type          = var.instance_type
