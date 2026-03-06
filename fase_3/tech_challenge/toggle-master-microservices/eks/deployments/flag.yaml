@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flag-deployment
+  namespace: toggle-master
+  labels:
+    app: flag
+    tier: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: flag
+      tier: backend
+  template:
+    metadata:
+      labels:
+        app: flag
+        tier: backend
+    spec:
+      containers:
+        - name: flag-container
+          image: 730335657012.dkr.ecr.us-east-1.amazonaws.com/toggle-master/flag-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8002
+          envFrom:
+            - configMapRef:
+                name: flag-config
+            - secretRef:
+                name: flag-secret
+          resources:
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+            requests:
+              memory: "128Mi"
+              cpu: "250m"

@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: targeting-deployment
+  namespace: toggle-master
+  labels:
+    app: targeting
+    tier: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: targeting
+      tier: backend
+  template:
+    metadata:
+      labels:
+        app: targeting
+        tier: backend
+    spec:
+      containers:
+        - name: targeting-container
+          image: 730335657012.dkr.ecr.us-east-1.amazonaws.com/toggle-master/targeting-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8003
+          envFrom:
+            - configMapRef:
+                name: targeting-config
+            - secretRef:
+                name: targeting-secret
+          resources:
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+            requests:
+              memory: "128Mi"
+              cpu: "250m"

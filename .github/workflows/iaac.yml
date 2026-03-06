@@ -64,7 +64,6 @@ jobs:
           terragrunt plan --all
 
       - name: Terragrunt run
-        if: github.ref == 'refs/heads/develop'
         run: |
           cd fase_3/tech_challenge/toggle-master-microservices/terraform/
           terragrunt run --all --non-interactive apply
