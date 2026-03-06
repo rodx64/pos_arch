@@ -45,6 +45,14 @@ inputs = {
     }
   }
 
+  # DynamoDB
+  dynamodb_tables = {
+    analytics-events = {
+      table_name = "analytics_events"
+      hash_key   = "event_id"
+    }
+  }
+
   # EKS
   enable_eks         = true
   kubernetes_version = "1.34"

@@ -23,7 +23,6 @@ module "ec2" {
   key_name      = var.key_name
   subnet_id     = module.vpc.private_subnet_ids[0]
   vpc_id        = module.vpc.vpc_id
-  vpc_cidr      = module.vpc.vpc_cidr
 }
 
 module "eks" {
@@ -50,4 +49,15 @@ module "rds" {
   private_subnet_ids = module.vpc.private_subnet_ids
   vpc_id             = module.vpc.vpc_id
   vpc_cidr           = module.vpc.vpc_cidr
+}
+
+module "dynamodb" {
+  source             = "../dynamodb"
+  for_each           = var.dynamodb_tables
+
+  project_name       = "toggle-master"
+  env                = var.env
+  table_name         = each.value.table_name
+  hash_key           = each.value.hash_key
+  hash_key_type      = lookup(each.value, "hash_key_type", "S")
 }

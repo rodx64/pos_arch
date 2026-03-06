@@ -23,3 +23,11 @@ output "rds_secret_arns" {
   value     = { for k, v in module.rds : k => v.rds_secret_arn }
   sensitive = true
 }
+
+output "dynamodb_table_names" {
+  value = { for k, v in module.dynamodb : k => v.table_name }
+}
+
+output "dynamodb_table_arns" {
+  value = { for k, v in module.dynamodb : k => v.table_arn }
+}

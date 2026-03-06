@@ -47,3 +47,12 @@ variable "databases" {
   }))
   default = {}
 }
+
+variable "dynamodb_tables" {
+  type = map(object({
+    table_name    = string
+    hash_key      = string
+    hash_key_type = optional(string, "S")
+  }))
+  default = {}
+}
