@@ -26,7 +26,7 @@ module "db" {
 }
 
 resource "aws_security_group" "allow_bastion" {
-  name        = "${var.project_name}-${var.env}-rds-sg"
+  name   = "${var.project_name}-${var.env}-${var.identifier}-rds-sg" 
   description = "Acesso controlado ao RDS"
   vpc_id      = var.vpc_id
 
