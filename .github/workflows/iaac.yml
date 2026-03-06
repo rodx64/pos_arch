@@ -50,7 +50,7 @@ jobs:
       - name: Terraform Apply Backend
         run: |
           cd fase_3/tech_challenge/toggle-master-microservices/terraform/backend/
-          terraform apply -auto-approve"
+          terraform apply -auto-approve
 
       - name: Install Terragrunt
         uses: gruntwork-io/terragrunt-action@v3
