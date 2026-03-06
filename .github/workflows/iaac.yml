@@ -1,0 +1,53 @@
+name: Terraform CI/CD - Develop
+
+on:
+  push:
+    branches: ["develop"]
+  pull_request:
+    branches: ["develop"]
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Lint Terraform
+        uses: terraform-linters/setup-tflint@v1
+
+      - run: tflint --recursive
+
+      - name: Terraform Plan Backend
+        run: |
+          cd fase_3/tech_challenge/toggle-master-microservices/terraform/backend/
+          terraform plan
+
+      - name: Terraform Apply Backend
+        run: |
+          cd fase_3/tech_challenge/toggle-master-microservices/terraform/backend/
+          terraform apply -auto-approve"
+
+      - name: Install Terragrunt
+        uses: gruntwork-io/terragrunt-action@v3
+
+      - name: Terragrunt plan
+        run: |
+          cd fase_3/tech_challenge/toggle-master-microservices/terraform/
+          terragrunt plan --all
+
+      - name: Terragrunt run
+        if: github.ref == 'refs/heads/develop'
+        run: |
+          cd fase_3/tech_challenge/toggle-master-microservices/terraform/
+          terragrunt run --all --non-interactive apply
