@@ -61,3 +61,16 @@ module "dynamodb" {
   hash_key           = each.value.hash_key
   hash_key_type      = lookup(each.value, "hash_key_type", "S")
 }
+
+module "sqs" {
+  source   = "../sqs"
+  for_each = var.sqs_queues
+
+  project_name               = "toggle-master"
+  env                        = var.env
+  queue_name                 = each.value.queue_name
+  visibility_timeout_seconds = each.value.visibility_timeout_seconds
+  message_retention_seconds  = each.value.message_retention_seconds
+  create_dlq                 = each.value.create_dlq
+  max_receive_count          = each.value.max_receive_count
+}

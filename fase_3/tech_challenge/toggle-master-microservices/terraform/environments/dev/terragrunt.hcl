@@ -53,6 +53,17 @@ inputs = {
     }
   }
 
+  # SQS
+  sqs_queues = {
+    analytics = {
+      queue_name                 = "toggle-analytics-queue"
+      visibility_timeout_seconds = 30
+      message_retention_seconds  = 86400
+      create_dlq                 = true
+      max_receive_count          = 3
+    }
+  }
+
   # EKS
   enable_eks         = true
   kubernetes_version = "1.34"

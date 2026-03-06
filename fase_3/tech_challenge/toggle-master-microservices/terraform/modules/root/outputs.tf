@@ -31,3 +31,11 @@ output "dynamodb_table_names" {
 output "dynamodb_table_arns" {
   value = { for k, v in module.dynamodb : k => v.table_arn }
 }
+
+output "sqs_queue_urls" {
+  value = { for k, v in module.sqs : k => v.queue_url }
+}
+
+output "sqs_queue_arns" {
+  value = { for k, v in module.sqs : k => v.queue_arn }
+}

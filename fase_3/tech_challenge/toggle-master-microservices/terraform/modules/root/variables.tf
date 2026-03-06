@@ -56,3 +56,14 @@ variable "dynamodb_tables" {
   }))
   default = {}
 }
+
+variable "sqs_queues" {
+  type = map(object({
+    queue_name                 = string
+    visibility_timeout_seconds = optional(number, 30)
+    message_retention_seconds  = optional(number, 86400)
+    create_dlq                 = optional(bool, true)
+    max_receive_count          = optional(number, 3)
+  }))
+  default = {}
+}
