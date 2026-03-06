@@ -17,18 +17,22 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
 
-      - name: Terraform Init
-        run: terraform init
-
-      - name: Terraform Validate
-        run: terraform validate
-
       - name: Lint Terraform
         uses: terraform-linters/setup-tflint@v1
 
       - name: Run TFLint
         working-directory: fase_3/tech_challenge/toggle-master-microservices/terraform/
         run: tflint
+
+      - name: Terraform Init
+        run: |
+          cd fase_3/tech_challenge/toggle-master-microservices/terraform/backend/
+          terraform init
+
+      - name: Terraform Validate
+        run: |
+          cd fase_3/tech_challenge/toggle-master-microservices/terraform/backend/
+          terraform validate
 
       - name: Terraform Plan Backend
         run: |
