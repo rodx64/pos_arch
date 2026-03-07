@@ -13,6 +13,8 @@ module "eks" {
   iam_role_arn    = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/LabRole"
 
   enable_irsa = false
+  create_kms_key            = false
+  cluster_encryption_config = {}
 
   eks_managed_node_groups = {
     "${var.project_name}-ng" = {

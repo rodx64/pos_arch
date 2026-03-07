@@ -18,13 +18,10 @@ resource "aws_sqs_queue" "this" {
   delay_seconds              = var.delay_seconds
   receive_wait_time_seconds  = var.receive_wait_time_seconds
 
-  dynamic "redrive_policy" {
-    for_each = var.create_dlq ? [1] : []
-    content {
-      dead_letter_target_arn = aws_sqs_queue.dlq[0].arn
-      max_receive_count      = var.max_receive_count
-    }
-  }
+  redrive_policy = var.create_dlq ? jsonencode({
+    deadLetterTargetArn = aws_sqs_queue.dlq[0].arn
+    maxReceiveCount     = var.max_receive_count
+  }) : null
 
   tags = {
     Name    = var.queue_name
