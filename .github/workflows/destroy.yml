@@ -6,6 +6,8 @@ on:
       confirm:
         description: 'Digite DESTROY para confirmar'
         required: true
+  pull_request:
+    branches: ["destroy"]
 
 env:
   WORKING_DIR: fase_3/tech_challenge/toggle-master-microservices/terraform/
