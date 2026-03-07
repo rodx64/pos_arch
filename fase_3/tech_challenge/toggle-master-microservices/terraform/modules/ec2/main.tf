@@ -1,8 +1,15 @@
-# Instância EC2 em sub-rede privada para acesso bastion
 resource "aws_security_group" "app_sg" {
   name        = "${var.project_name}-${var.env}-app-sg"
   description = "App security group"
   vpc_id      = var.vpc_id
+
+  ingress {
+    description = "SSH"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 
   egress {
     from_port   = 0

@@ -5,7 +5,7 @@
 - [ ] Substituir a criação manual da Fase 2 por código Terraform
 
     - [x] Networking: VPC, Subnets (Públicas e Privadas), Internet Gateway e Route Tables.
-    - [ ] Cluster EKS: O cluster Kubernetes e seus Node Groups.
+    - [x] Cluster EKS: O cluster Kubernetes e seus Node Groups.
     o Atenção Academy: Lembre-se de associar a LabRole.
     - [ ] Bancos de Dados:
     o 3 instâncias RDS (PostgreSQL).
