@@ -74,3 +74,16 @@ module "sqs" {
   create_dlq                 = each.value.create_dlq
   max_receive_count          = each.value.max_receive_count
 }
+
+module "redis" {
+  source   = "../redis"
+  for_each = var.redis_clusters
+
+  project_name       = "toggle-master"
+  env                = var.env
+  cluster_id         = each.value.cluster_id
+  node_type          = each.value.node_type
+  engine_version     = each.value.engine_version
+  vpc_id             = module.vpc.vpc_id
+  private_subnet_ids = module.vpc.private_subnet_ids
+}

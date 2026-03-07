@@ -67,3 +67,12 @@ variable "sqs_queues" {
   }))
   default = {}
 }
+
+variable "redis_clusters" {
+  type = map(object({
+    cluster_id     = string
+    node_type      = optional(string, "cache.t3.micro")
+    engine_version = optional(string, "7.0")
+  }))
+  default = {}
+}

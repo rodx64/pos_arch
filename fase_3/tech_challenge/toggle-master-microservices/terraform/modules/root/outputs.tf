@@ -39,3 +39,7 @@ output "sqs_queue_urls" {
 output "sqs_queue_arns" {
   value = { for k, v in module.sqs : k => v.queue_arn }
 }
+
+output "redis_urls" {
+  value = { for k, v in module.redis : k => v.redis_url }
+}

@@ -64,6 +64,15 @@ inputs = {
     }
   }
 
+  # REDIS
+  redis_clusters = {
+    evaluation = {
+      cluster_id     = "redis-evaluation"
+      node_type      = "cache.t3.micro"
+      engine_version = "7.0"
+    }
+  }
+
   # EKS
   enable_eks         = true
   kubernetes_version = "1.34"
