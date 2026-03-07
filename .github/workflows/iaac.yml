@@ -1,4 +1,4 @@
-name: Terraform CI/CD - Develop
+name: Toggle-Master - Develop
 
 on:
   push:
@@ -6,8 +6,12 @@ on:
   pull_request:
     branches: ["develop"]
 
+env:
+  WORKING_DIR: fase_3/tech_challenge/toggle-master-microservices/terraform/
+
 jobs:
   terraform:
+    name: Infra Setup
     runs-on: ubuntu-latest
 
     steps:
@@ -29,27 +33,27 @@ jobs:
         uses: terraform-linters/setup-tflint@v1
 
       - name: Run TFLint
-        working-directory: fase_3/tech_challenge/toggle-master-microservices/terraform/
+        working-directory: ${{ env.WORKING_DIR }}
         run: tflint
 
       - name: Terraform Init
         run: |
-          cd fase_3/tech_challenge/toggle-master-microservices/terraform/backend/
+          cd ${{env.WORKING_DIR}}backend/
           terraform init
 
       - name: Terraform Validate
         run: |
-          cd fase_3/tech_challenge/toggle-master-microservices/terraform/backend/
+          cd ${{env.WORKING_DIR}}backend/
           terraform validate
 
       - name: Terraform Plan Backend
         run: |
-          cd fase_3/tech_challenge/toggle-master-microservices/terraform/backend/
+          cd ${{env.WORKING_DIR}}backend/
           terraform plan
 
       - name: Terraform Apply Backend
         run: |
-          cd fase_3/tech_challenge/toggle-master-microservices/terraform/backend/
+          cd ${{env.WORKING_DIR}}backend/
           terraform apply -auto-approve
 
       - name: Install Terragrunt
@@ -60,10 +64,10 @@ jobs:
 
       - name: Terragrunt plan
         run: |
-          cd fase_3/tech_challenge/toggle-master-microservices/terraform/
+          cd ${{env.WORKING_DIR}}
           terragrunt plan --all
 
       - name: Terragrunt run
         run: |
-          cd fase_3/tech_challenge/toggle-master-microservices/terraform/
+          cd ${{env.WORKING_DIR}}
           terragrunt run --all --non-interactive apply
