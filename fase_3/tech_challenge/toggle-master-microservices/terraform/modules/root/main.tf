@@ -98,59 +98,23 @@ module "ecr" {
   force_delete = var.force_delete
 }
 
-resource "kubernetes_secret_v1" "analytics" {
-  metadata {
-    name      = "analytics-secret"
-    namespace = "toggle-master"
-  }
-  data = {
-    AWS_DYNAMODB_TABLE = module.dynamodb["analytics-events"].table_name
-    AWS_SQS_URL        = module.sqs["analytics"].queue_url
-  }
-  depends_on = [module.eks, module.dynamodb, module.sqs]
-}
+module "k8s_secrets" {
+  count  = var.enable_eks ? 1 : 0
+  source = "../k8s-secrets"
 
-resource "kubernetes_secret_v1" "auth" {
-  metadata {
-    name      = "auth-secret"
-    namespace = "toggle-master"
-  }
-  data = {
-    DATABASE_URL = "postgresql://postgres:${local.auth_db_password}@${module.rds["auth-db"].rds_endpoint}/auth_db"
-    MASTER_KEY   = var.auth_master_key
-  }
-  depends_on = [module.eks, module.rds]
-}
+  auth_db_endpoint      = module.rds["auth-db"].rds_endpoint
+  flag_db_endpoint      = module.rds["flag-db"].rds_endpoint
+  analytics_db_endpoint = module.rds["analytics-db"].rds_endpoint
 
-resource "kubernetes_secret_v1" "flag" {
-  metadata {
-    name      = "flag-secret"
-    namespace = "toggle-master"
-  }
-  data = {
-    DATABASE_URL = "postgresql://postgres:${local.flag_db_password}@${module.rds["flag-db"].rds_endpoint}/flag_db"
-  }
-  depends_on = [module.eks, module.rds]
-}
+  auth_db_secret_arn      = module.rds["auth-db"].rds_secret_arn
+  flag_db_secret_arn      = module.rds["flag-db"].rds_secret_arn
+  analytics_db_secret_arn = module.rds["analytics-db"].rds_secret_arn
 
-resource "kubernetes_secret_v1" "targeting" {
-  metadata {
-    name      = "targeting-secret"
-    namespace = "toggle-master"
-  }
-  data = {
-    DATABASE_URL = "postgresql://postgres:${local.analytics_db_password}@${module.rds["analytics-db"].rds_endpoint}/analytics_db"
-  }
-  depends_on = [module.rds]
-}
+  dynamodb_table_name = module.dynamodb["analytics-events"].table_name
+  sqs_queue_url       = module.sqs["analytics"].queue_url
 
-resource "kubernetes_secret_v1" "evaluation" {
-  metadata {
-    name      = "evaluation-secret"
-    namespace = "toggle-master"
-  }
-  data = {
-    SERVICE_API_KEY = var.evaluation_api_key
-  }
-}
+  auth_master_key    = var.auth_master_key
+  evaluation_api_key = var.evaluation_api_key
 
+  depends_on = [module.eks, module.rds, module.dynamodb, module.sqs]
+}
