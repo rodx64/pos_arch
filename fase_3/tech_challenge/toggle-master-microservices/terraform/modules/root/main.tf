@@ -98,7 +98,7 @@ module "ecr" {
   force_delete = var.force_delete
 }
 
-resource "kubernetes_secret" "analytics" {
+resource "kubernetes_secret_v1" "analytics" {
   metadata {
     name      = "analytics-secret"
     namespace = "toggle-master"
@@ -110,7 +110,7 @@ resource "kubernetes_secret" "analytics" {
   depends_on = [module.dynamodb, module.sqs]
 }
 
-resource "kubernetes_secret" "auth" {
+resource "kubernetes_secret_v1" "auth" {
   metadata {
     name      = "auth-secret"
     namespace = "toggle-master"
@@ -122,7 +122,7 @@ resource "kubernetes_secret" "auth" {
   depends_on = [module.rds]
 }
 
-resource "kubernetes_secret" "flag" {
+resource "kubernetes_secret_v1" "flag" {
   metadata {
     name      = "flag-secret"
     namespace = "toggle-master"
@@ -133,7 +133,7 @@ resource "kubernetes_secret" "flag" {
   depends_on = [module.rds]
 }
 
-resource "kubernetes_secret" "targeting" {
+resource "kubernetes_secret_v1" "targeting" {
   metadata {
     name      = "targeting-secret"
     namespace = "toggle-master"
@@ -144,7 +144,7 @@ resource "kubernetes_secret" "targeting" {
   depends_on = [module.rds]
 }
 
-resource "kubernetes_secret" "evaluation" {
+resource "kubernetes_secret_v1" "evaluation" {
   metadata {
     name      = "evaluation-secret"
     namespace = "toggle-master"
