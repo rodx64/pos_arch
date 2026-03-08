@@ -75,6 +75,7 @@ inputs = {
 
   # ECR
   ecr_repositories = ["toggle-master"]
+  force_delete     = true
 
   # EKS
   enable_eks         = true

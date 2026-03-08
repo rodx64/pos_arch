@@ -81,3 +81,7 @@ variable "ecr_repositories" {
   type    = list(string)
   default = []
 }
+
+variable "force_delete" {
+  type = bool
+}

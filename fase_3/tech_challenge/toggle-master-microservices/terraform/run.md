@@ -23,3 +23,11 @@ após o apply
 /modules
 terragrunt init --all
 terragrunt apply --all
+
+<!-- Se o destroy falhar, mesmo usando o force_delete no ecr -->
+aws ecr batch-delete-image \
+  --repository-name toggle-master \
+  --image-ids "$(aws ecr list-images \
+    --repository-name toggle-master \
+    --query 'imageIds[*]' \
+    --output json)"

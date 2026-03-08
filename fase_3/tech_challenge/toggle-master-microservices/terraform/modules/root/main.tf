@@ -95,4 +95,5 @@ module "ecr" {
   project_name = "toggle-master"
   env          = var.env
   repositories = var.ecr_repositories
+  force_delete = var.force_delete
 }
