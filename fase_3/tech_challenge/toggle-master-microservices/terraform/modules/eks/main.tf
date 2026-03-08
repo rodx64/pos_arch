@@ -16,6 +16,10 @@ module "eks" {
   create_kms_key            = false
   cluster_encryption_config = {}
 
+  cluster_endpoint_private_access = true
+  cluster_endpoint_public_access  = false
+  cluster_additional_security_group_ids = [var.bastion_sg_id]
+
   eks_managed_node_groups = {
     "${var.project_name}-ng" = {
       min_size       = 1

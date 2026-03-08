@@ -33,6 +33,7 @@ module "eks" {
   kubernetes_version = var.kubernetes_version
   private_subnet_ids = module.vpc.private_subnet_ids
   vpc_id             = module.vpc.vpc_id
+  bastion_sg_id      = module.ec2.bastion_sg_id 
 }
 
 module "rds" {

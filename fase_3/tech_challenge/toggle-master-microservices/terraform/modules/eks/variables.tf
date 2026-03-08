@@ -28,3 +28,8 @@ variable "instance_types" {
   type    = list(string)
   default = ["t2.micro"]
 }
+
+variable "bastion_sg_id" {
+  type        = string
+  description = "Security Group ID do bastion para acesso ao EKS"
+}
