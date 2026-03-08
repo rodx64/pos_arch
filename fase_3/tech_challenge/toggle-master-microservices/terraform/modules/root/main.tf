@@ -88,3 +88,11 @@ module "redis" {
   vpc_id             = module.vpc.vpc_id
   private_subnet_ids = module.vpc.private_subnet_ids
 }
+
+module "ecr" {
+  source = "../ecr"
+
+  project_name = "toggle-master"
+  env          = var.env
+  repositories = var.ecr_repositories
+}

@@ -76,3 +76,8 @@ variable "redis_clusters" {
   }))
   default = {}
 }
+
+variable "ecr_repositories" {
+  type    = list(string)
+  default = []
+}

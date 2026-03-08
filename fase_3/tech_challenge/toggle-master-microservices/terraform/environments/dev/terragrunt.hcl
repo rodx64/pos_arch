@@ -73,6 +73,9 @@ inputs = {
     }
   }
 
+  # ECR
+  ecr_repositories = ["toggle-master"]
+
   # EKS
   enable_eks         = true
   kubernetes_version = "1.34"

@@ -161,13 +161,6 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Create ECR repository
-        run: |
-          aws ecr describe-repositories \
-            --repository-names ${{ env.ECR_REPOSITORY }} 2>/dev/null || \
-          aws ecr create-repository \
-            --repository-name ${{ env.ECR_REPOSITORY }}
-
       - name: Generate image tags
         id: metadata
         run: |
