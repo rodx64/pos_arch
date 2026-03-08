@@ -77,6 +77,9 @@ inputs = {
   ecr_repositories = ["toggle-master"]
   force_delete     = true
 
+  auth_master_key       = get_env("TF_VAR_AUTH_MASTER_KEY", "")
+  evaluation_api_key    = get_env("TF_VAR_EVALUATION_API_KEY", "")
+
   # EKS
   enable_eks         = true
   kubernetes_version = "1.34"

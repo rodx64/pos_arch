@@ -70,6 +70,9 @@ jobs:
           terragrunt plan --all
 
       - name: Terragrunt Apply
+        env:
+          TF_VAR_AUTH_MASTER_KEY: ${{ secrets.AUTH_MASTER_KEY }}
+          TF_VAR_EVALUATION_API_KEY: ${{ secrets.EVALUATION_API_KEY }}
         run: |
           cd ${{ env.WORKING_DIR }}
           terragrunt run --all --non-interactive apply
@@ -256,7 +259,6 @@ jobs:
         working-directory: ${{ env.SERVICES_DIR }}/eks
         run: |
           kubectl apply -f namespace.yaml
-          kubectl apply -f secrets/
           kubectl apply -f configmaps/
           kubectl apply -f services/
           kubectl apply -f deployments/

@@ -97,3 +97,60 @@ module "ecr" {
   repositories = var.ecr_repositories
   force_delete = var.force_delete
 }
+
+resource "kubernetes_secret" "analytics" {
+  metadata {
+    name      = "analytics-secret"
+    namespace = "toggle-master"
+  }
+  data = {
+    AWS_DYNAMODB_TABLE = module.dynamodb["analytics-events"].table_name
+    AWS_SQS_URL        = module.sqs["analytics"].queue_url
+  }
+  depends_on = [module.dynamodb, module.sqs]
+}
+
+resource "kubernetes_secret" "auth" {
+  metadata {
+    name      = "auth-secret"
+    namespace = "toggle-master"
+  }
+  data = {
+    DATABASE_URL = "postgresql://postgres:${local.auth_db_password}@${module.rds["auth-db"].rds_endpoint}/auth_db"
+    MASTER_KEY   = var.auth_master_key
+  }
+  depends_on = [module.rds]
+}
+
+resource "kubernetes_secret" "flag" {
+  metadata {
+    name      = "flag-secret"
+    namespace = "toggle-master"
+  }
+  data = {
+    DATABASE_URL = "postgresql://postgres:${local.flag_db_password}@${module.rds["flag-db"].rds_endpoint}/flag_db"
+  }
+  depends_on = [module.rds]
+}
+
+resource "kubernetes_secret" "targeting" {
+  metadata {
+    name      = "targeting-secret"
+    namespace = "toggle-master"
+  }
+  data = {
+    DATABASE_URL = "postgresql://postgres:${local.analytics_db_password}@${module.rds["analytics-db"].rds_endpoint}/analytics_db"
+  }
+  depends_on = [module.rds]
+}
+
+resource "kubernetes_secret" "evaluation" {
+  metadata {
+    name      = "evaluation-secret"
+    namespace = "toggle-master"
+  }
+  data = {
+    SERVICE_API_KEY = var.evaluation_api_key
+  }
+}
+

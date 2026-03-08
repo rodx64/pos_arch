@@ -85,3 +85,28 @@ variable "ecr_repositories" {
 variable "force_delete" {
   type = bool
 }
+
+variable "auth_db_password" {
+  type      = string
+  sensitive = true
+}
+
+variable "flag_db_password" {
+  type      = string
+  sensitive = true
+}
+
+variable "targeting_db_password" {
+  type      = string
+  sensitive = true
+}
+
+variable "auth_master_key" {
+  type      = string
+  sensitive = true
+}
+
+variable "evaluation_api_key" {
+  type      = string
+  sensitive = true
+}
