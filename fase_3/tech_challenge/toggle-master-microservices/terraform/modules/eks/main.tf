@@ -39,3 +39,13 @@ module "eks" {
 }
 
 data "aws_caller_identity" "current" {}
+
+resource "aws_security_group_rule" "bastion_to_eks" {
+  type                     = "ingress"
+  from_port                = 443
+  to_port                  = 443
+  protocol                 = "tcp"
+  source_security_group_id = var.bastion_sg_id
+  security_group_id        = module.eks.cluster_security_group_id
+  description              = "Allow bastion to reach EKS API"
+}
