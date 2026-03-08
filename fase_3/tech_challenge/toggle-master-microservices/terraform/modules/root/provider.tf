@@ -12,15 +12,20 @@ terraform {
 }
 
 data "aws_eks_cluster" "this" {
-  name = module.eks[0].cluster_name
+  count = var.enable_eks ? 1 : 0
+  name  = "${var.project_name}-eks"
 }
 
 data "aws_eks_cluster_auth" "this" {
-  name = module.eks[0].cluster_name
+  count = var.enable_eks ? 1 : 0
+  name  = "${var.project_name}-eks"
 }
 
 provider "kubernetes" {
-  host                   = data.aws_eks_cluster.this.endpoint
-  cluster_ca_certificate = base64decode(data.aws_eks_cluster.this.certificate_authority[0].data)
-  token                  = data.aws_eks_cluster_auth.this.token
+  host = try(data.aws_eks_cluster.this[0].endpoint, "")
+  cluster_ca_certificate = try(
+    base64decode(data.aws_eks_cluster.this[0].certificate_authority[0].data),
+    ""
+  )
+  token = try(data.aws_eks_cluster_auth.this[0].token, "")
 }

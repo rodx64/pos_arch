@@ -107,7 +107,7 @@ resource "kubernetes_secret_v1" "analytics" {
     AWS_DYNAMODB_TABLE = module.dynamodb["analytics-events"].table_name
     AWS_SQS_URL        = module.sqs["analytics"].queue_url
   }
-  depends_on = [module.dynamodb, module.sqs]
+  depends_on = [module.eks, module.dynamodb, module.sqs]
 }
 
 resource "kubernetes_secret_v1" "auth" {
@@ -119,7 +119,7 @@ resource "kubernetes_secret_v1" "auth" {
     DATABASE_URL = "postgresql://postgres:${local.auth_db_password}@${module.rds["auth-db"].rds_endpoint}/auth_db"
     MASTER_KEY   = var.auth_master_key
   }
-  depends_on = [module.rds]
+  depends_on = [module.eks, module.rds]
 }
 
 resource "kubernetes_secret_v1" "flag" {
@@ -130,7 +130,7 @@ resource "kubernetes_secret_v1" "flag" {
   data = {
     DATABASE_URL = "postgresql://postgres:${local.flag_db_password}@${module.rds["flag-db"].rds_endpoint}/flag_db"
   }
-  depends_on = [module.rds]
+  depends_on = [module.eks, module.rds]
 }
 
 resource "kubernetes_secret_v1" "targeting" {

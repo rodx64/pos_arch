@@ -14,6 +14,10 @@ variable "private_subnets" {
   type = list(string)
 }
 
+variable "project_name" {
+  type = string
+}
+
 variable "azs" {
   type = list(string)
 }
