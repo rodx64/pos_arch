@@ -4,11 +4,11 @@ include "root" {
 }
 
 terraform {
-  source = "${get_parent_terragrunt_dir()}//modules/k8s-secrets"
+  source = "${get_parent_terragrunt_dir()}/../terraform/modules/k8s-secrets"
 }
 
 dependency "infra" {
-  config_path  = "../../environments/dev/"
+  config_path  = "../../terraform/environments/dev/"
   skip_outputs = false
 
   mock_outputs_allowed_terraform_commands = ["validate"]

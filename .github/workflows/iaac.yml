@@ -221,7 +221,7 @@ jobs:
           TF_VAR_AUTH_MASTER_KEY: ${{ secrets.AUTH_MASTER_KEY }}
           TF_VAR_EVALUATION_API_KEY: ${{ secrets.EVALUATION_API_KEY }}
         run: |
-          cd ${{ env.WORKING_DIR }}k8s-secrets/dev/
+          cd ${{ env.SERVICES_DIR }}/k8s-secrets/dev/
           terragrunt apply -auto-approve
 
   k8s-manifests:
