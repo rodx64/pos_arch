@@ -193,10 +193,41 @@ jobs:
             --image-id imageTag=${{ matrix.image }}-latest \
             --region ${{ secrets.AWS_REGION }} || true
 
+  k8s-secrets:
+    name: Apply Kubernetes Secrets
+    runs-on: ubuntu-latest
+    needs: terraform
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Install Terragrunt
+        uses: gruntwork-io/terragrunt-action@v3
+        with:
+          tg_version: '0.82.2'
+          tofu_version: '1.10.1'
+
+      - name: Terragrunt Apply K8s Secrets
+        env:
+          TF_VAR_AUTH_MASTER_KEY: ${{ secrets.AUTH_MASTER_KEY }}
+          TF_VAR_EVALUATION_API_KEY: ${{ secrets.EVALUATION_API_KEY }}
+        run: |
+          cd ${{ env.WORKING_DIR }}environments/dev/k8s-secrets/
+          terragrunt apply -auto-approve
+
   k8s-manifests:
     name: Apply Kubernetes Manifests
     runs-on: ubuntu-latest
-    needs: terraform
+    needs: [terraform, k8s-secrets]
 
     steps:
       - name: Checkout
@@ -219,6 +250,11 @@ jobs:
               "Name=instance-state-name,Values=running" \
             --query 'Reservations[0].Instances[0].PublicIpAddress' \
             --output text)
+
+          if [ -z "$BASTION_IP" ] || [ "$BASTION_IP" = "None" ]; then
+            echo "ERROR: Bastion IP not found."
+            exit 1
+          fi
 
           EKS_ENDPOINT=$(aws eks describe-cluster \
             --name toggle-master-eks \
@@ -294,6 +330,11 @@ jobs:
               "Name=instance-state-name,Values=running" \
             --query 'Reservations[0].Instances[0].PublicIpAddress' \
             --output text)
+
+          if [ -z "$BASTION_IP" ] || [ "$BASTION_IP" = "None" ]; then
+            echo "ERROR: Bastion IP not found."
+            exit 1
+          fi
 
           EKS_ENDPOINT=$(aws eks describe-cluster \
             --name toggle-master-eks \

@@ -44,3 +44,16 @@ variable "namespace" {
   type    = string
   default = "toggle-master"
 }
+
+variable "eks_cluster_endpoint" {
+  type = string
+}
+
+variable "eks_cluster_ca" {
+  type = string
+}
+
+variable "eks_cluster_token" {
+  type      = string
+  sensitive = true
+}

@@ -43,3 +43,16 @@ output "sqs_queue_arns" {
 output "redis_urls" {
   value = { for k, v in module.redis : k => v.redis_url }
 }
+
+output "eks_cluster_endpoint" {
+  value = try(data.aws_eks_cluster.this[0].endpoint, "")
+}
+
+output "eks_cluster_ca" {
+  value = try(data.aws_eks_cluster.this[0].certificate_authority[0].data, "")
+}
+
+output "eks_cluster_token" {
+  value     = try(data.aws_eks_cluster_auth.this[0].token, "")
+  sensitive = true
+}

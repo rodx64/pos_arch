@@ -97,24 +97,3 @@ module "ecr" {
   repositories = var.ecr_repositories
   force_delete = var.force_delete
 }
-
-module "k8s_secrets" {
-  count  = var.enable_eks ? 1 : 0
-  source = "../k8s-secrets"
-
-  auth_db_endpoint      = module.rds["auth-db"].rds_endpoint
-  flag_db_endpoint      = module.rds["flag-db"].rds_endpoint
-  analytics_db_endpoint = module.rds["analytics-db"].rds_endpoint
-
-  auth_db_secret_arn      = module.rds["auth-db"].rds_secret_arn
-  flag_db_secret_arn      = module.rds["flag-db"].rds_secret_arn
-  analytics_db_secret_arn = module.rds["analytics-db"].rds_secret_arn
-
-  dynamodb_table_name = module.dynamodb["analytics-events"].table_name
-  sqs_queue_url       = module.sqs["analytics"].queue_url
-
-  auth_master_key    = var.auth_master_key
-  evaluation_api_key = var.evaluation_api_key
-
-  depends_on = [module.eks, module.rds, module.dynamodb, module.sqs]
-}
