@@ -3,23 +3,26 @@ include "root" {
   expose = true
 }
 
-skip = false
-
 terraform {
   source = "${get_parent_terragrunt_dir()}//modules/k8s-secrets"
 }
 
+exclude {
+  if      = true
+  actions = ["run-all"]
+}
+
 dependency "infra" {
-  config_path = "../"
+  config_path  = "../"
   skip_outputs = false
 
-  mock_outputs_merge_strategy_with_state = "shallow"
+  mock_outputs_merge_strategy_with_state  = "shallow"
   mock_outputs_allowed_terraform_commands = ["validate"]
   mock_outputs = {
-    rds_endpoints        = { auth-db = "mock:5432", flag-db = "mock:5432", analytics-db = "mock:5432" }
-    rds_secret_arns      = { auth-db = "arn:aws:secretsmanager:us-east-1:123456789:secret:mock", flag-db = "arn:aws:secretsmanager:us-east-1:123456789:secret:mock", analytics-db = "arn:aws:secretsmanager:us-east-1:123456789:secret:mock" }
-    dynamodb_table_names = { analytics-events = "mock_table" }
-    sqs_queue_urls       = { analytics = "https://mock" }
+    rds_endpoints        = { "auth-db" = "mock:5432", "flag-db" = "mock:5432", "analytics-db" = "mock:5432" }
+    rds_secret_arns      = { "auth-db" = "mock", "flag-db" = "mock", "analytics-db" = "mock" }
+    dynamodb_table_names = { "analytics-events" = "mock_table" }
+    sqs_queue_urls       = { "analytics" = "https://mock" }
     eks_cluster_endpoint = "https://mock"
     eks_cluster_ca       = "bW9jaw=="
     eks_cluster_token    = "mock"
