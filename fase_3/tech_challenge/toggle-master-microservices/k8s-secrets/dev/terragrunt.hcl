@@ -1,14 +1,13 @@
 include "root" {
-  path   = find_in_parent_folders("root.hcl")
-  expose = true
+  path = "${get_repo_root()}/fase_3/tech_challenge/toggle-master-microservices/terraform/root.hcl"
 }
 
 terraform {
-  source = "${get_parent_terragrunt_dir()}/../terraform/modules/k8s-secrets"
+  source = "${get_repo_root()}/fase_3/tech_challenge/toggle-master-microservices/terraform/modules/k8s-secrets"
 }
 
 dependency "infra" {
-  config_path  = "../../terraform/environments/dev/"
+  config_path  = "${get_repo_root()}/fase_3/tech_challenge/toggle-master-microservices/terraform/environments/dev/"
   skip_outputs = false
 
   mock_outputs_allowed_terraform_commands = ["validate"]
