@@ -7,14 +7,8 @@ terraform {
   source = "${get_parent_terragrunt_dir()}//modules/k8s-secrets"
 }
 
-exclude {
-  if      = true
-  actions = ["all"]
-  exclude_dependencies = true
-}
-
 dependency "infra" {
-  config_path  = "../"
+  config_path  = "../../environments/dev/"
   skip_outputs = false
 
   mock_outputs_merge_strategy_with_state  = "shallow"
