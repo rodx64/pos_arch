@@ -9,7 +9,8 @@ terraform {
 
 exclude {
   if      = true
-  actions = ["run-all"]
+  actions = ["all"]
+  exclude_dependencies = true
 }
 
 dependency "infra" {
