@@ -11,8 +11,7 @@ dependency "infra" {
   config_path  = "../../environments/dev/"
   skip_outputs = false
 
-  mock_outputs_merge_strategy_with_state  = "shallow"
-  mock_outputs_allowed_terraform_commands = ["plan", "apply", "validate"]
+  mock_outputs_allowed_terraform_commands = ["validate"]
   mock_outputs = {
     rds_endpoints        = { "auth-db" = "mock:5432", "flag-db" = "mock:5432", "analytics-db" = "mock:5432" }
     rds_secret_arns      = { "auth-db" = "mock", "flag-db" = "mock", "analytics-db" = "mock" }
