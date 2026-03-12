@@ -52,6 +52,7 @@ inputs = {
   eks_cluster_endpoint = dependency.infra.outputs.eks_cluster_endpoint
   eks_cluster_ca       = dependency.infra.outputs.eks_cluster_ca
   eks_cluster_token    = dependency.infra.outputs.eks_cluster_token
+  eks_tunnel_host      = "https://127.0.0.1:6443"
 
   auth_master_key    = get_env("TF_VAR_AUTH_MASTER_KEY", "")
   evaluation_api_key = get_env("TF_VAR_EVALUATION_API_KEY", "")

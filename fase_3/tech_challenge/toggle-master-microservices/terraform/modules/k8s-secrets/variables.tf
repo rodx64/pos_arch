@@ -57,3 +57,8 @@ variable "eks_cluster_token" {
   type      = string
   sensitive = true
 }
+
+variable "eks_tunnel_host" {
+  type    = string
+  default = ""
+}

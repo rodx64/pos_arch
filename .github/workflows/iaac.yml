@@ -216,10 +216,50 @@ jobs:
           tg_version: '0.82.2'
           tofu_version: '1.10.1'
 
+      - name: Get bastion IP and EKS endpoint
+        id: infra
+        run: |
+          BASTION_IP=$(aws ec2 describe-instances \
+            --filters \
+              "Name=tag:Name,Values=toggle-master-dev-bastion" \
+              "Name=instance-state-name,Values=running" \
+            --query 'Reservations[0].Instances[0].PublicIpAddress' \
+            --output text)
+
+          if [ -z "$BASTION_IP" ] || [ "$BASTION_IP" = "None" ]; then
+            echo "ERROR: Bastion IP not found."
+            exit 1
+          fi
+
+          EKS_ENDPOINT=$(aws eks describe-cluster \
+            --name toggle-master-eks \
+            --query 'cluster.endpoint' \
+            --output text | sed 's|https://||')
+
+          echo "bastion_ip=$BASTION_IP" >> $GITHUB_OUTPUT
+          echo "eks_endpoint=$EKS_ENDPOINT" >> $GITHUB_OUTPUT
+
+      - name: Save SSH key
+        run: |
+          echo "${{ secrets.EC2_SSH_KEY }}" > /tmp/iac-key.pem
+          chmod 400 /tmp/iac-key.pem
+
+      - name: Open SSH tunnel via bastion
+        run: |
+          ssh -i /tmp/iac-key.pem \
+            -o StrictHostKeyChecking=no \
+            -o ServerAliveInterval=60 \
+            -L 6443:${{ steps.infra.outputs.eks_endpoint }}:443 \
+            ubuntu@${{ steps.infra.outputs.bastion_ip }} \
+            -N -f
+          sleep 5
+
       - name: Terragrunt Apply K8s Secrets
         env:
           TF_VAR_AUTH_MASTER_KEY: ${{ secrets.AUTH_MASTER_KEY }}
           TF_VAR_EVALUATION_API_KEY: ${{ secrets.EVALUATION_API_KEY }}
+          KUBE_HOST: "https://127.0.0.1:6443"
+          KUBE_INSECURE: "true"
         run: |
           cd ${{ env.SERVICES_DIR }}/k8s-secrets/dev/
           terragrunt apply -auto-approve
