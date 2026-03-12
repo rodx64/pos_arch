@@ -413,12 +413,12 @@ jobs:
 
       - name: Update deployment image
         run: |
-          kubectl set image deployment/${{ matrix.name }}-service \
-            ${{ matrix.name }}-service=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ matrix.image }}-${{ github.sha }} \
+          kubectl set image deployment/${{ matrix.name }} \
+            ${{ matrix.name }}=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ matrix.image }}-${{ github.sha }} \
             -n toggle-master
 
       - name: Wait for rollout
         run: |
-          kubectl rollout status deployment/${{ matrix.name }}-service \
+          kubectl rollout status deployment/${{ matrix.name }} \
             -n toggle-master \
             --timeout=120s
