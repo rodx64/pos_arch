@@ -2,7 +2,7 @@
 set -e
 
 AWS_REGION="us-east-1"
-AWS_ACCOUNT_ID="730335657012"
+AWS_ACCOUNT_ID="447941455905"
 ECR_BASE="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/toggle-master"
 
 IMAGES=(

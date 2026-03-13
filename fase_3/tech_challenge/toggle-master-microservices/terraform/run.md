@@ -31,3 +31,6 @@ aws ecr batch-delete-image \
     --repository-name toggle-master \
     --query 'imageIds[*]' \
     --output json)"
+
+<!-- Atualizando kubectl local -->
+aws eks update-kubeconfig --region us-east-1 --name toggle-master-eks

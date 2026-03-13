@@ -414,7 +414,7 @@ jobs:
       - name: Update deployment image
         run: |
           kubectl set image deployment/${{ matrix.name }}-deployment \
-            ${{ matrix.name }}-deployment=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ matrix.image }}-${{ github.sha }} \
+            ${{ matrix.name }}-container=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ matrix.image }}-${{ github.sha }} \
             -n toggle-master
 
       - name: Wait for rollout
