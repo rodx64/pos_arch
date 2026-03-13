@@ -22,7 +22,7 @@ inputs = {
 
   # EC2
   ami_id        = "ami-0b6c6ebed2801a5cb" # Ubuntu Server 24.04 (x64)
-  instance_type = "t2.micro"
+  instance_type = "t3.small"
   key_name      = "iac-key"
   project_name  = "toggle-master"
 
