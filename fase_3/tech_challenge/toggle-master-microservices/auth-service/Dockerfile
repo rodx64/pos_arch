@@ -29,6 +29,9 @@ RUN go build -o auth-service .
 # Container final leve, apenas com o binário compilado (Por ser binário não precisa do Go)
 FROM alpine:3.23
 
+# Atualiza pacotes do sistema para corrigir vulnerabilidades conhecidas
+RUN apk update && apk upgrade --no-cache
+
 RUN apk add --no-cache curl
 
 # Diretório de trabalho
