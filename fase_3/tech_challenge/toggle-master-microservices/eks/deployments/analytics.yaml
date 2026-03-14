@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analytics-deployment
+  namespace: toggle-master
+  labels:
+    app: analytics
+    tier: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: analytics
+      tier: backend
+  template:
+    metadata:
+      labels:
+        app: analytics
+        tier: backend
+    spec:
+      containers:
+        - name: analytics-container
+          image: 447941455905.dkr.ecr.us-east-1.amazonaws.com/toggle-master/analytics-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8005
+          envFrom:
+            - configMapRef:
+                name: analytics-config
+            - secretRef:
+                name: analytics-secret
+          resources:
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+            requests:
+              memory: "128Mi"
+              cpu: "250m"
+          
+          # PROBES
+          startupProbe:
+            httpGet:
+              path: /health/startup
+              port: 8005
+            periodSeconds: 5 # intervalo entre as checagens
+            failureThreshold: 30 # falhas antes de marcar como falha (5s * 30 = 150s total)
+
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 8005
+            initialDelaySeconds: 5 # aguarda o startup completar
+            periodSeconds: 10 # intervalo entre as checagens
+            failureThreshold: 3 # falhas antes de marcar como não pronto
+
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 8005
+            initialDelaySeconds: 15 # deve ser a soma de startup + readiness
+            periodSeconds: 10 # intervalo entre as checagens
+            failureThreshold: 3 # falhas antes de reiniciar o container

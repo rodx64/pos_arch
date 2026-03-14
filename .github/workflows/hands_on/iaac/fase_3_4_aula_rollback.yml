@@ -1,0 +1,28 @@
+# .github/workflows/rollback.yml
+name: Rollback Infra
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Tag da versão de rollback (ex: infra-v1.0)'
+        required: true
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.inputs.version }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Apply Rollback
+        run: terraform apply -auto-approve -var-file="fase_3/aulas/2_iac/hands_on/aula_4/prod.tfvars"
