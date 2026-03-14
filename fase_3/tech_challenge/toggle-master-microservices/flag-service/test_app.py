@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch, MagicMock, call
+from unittest.mock import patch, MagicMock
 import json
 import sys
 
@@ -34,6 +34,7 @@ def make_auth_fail(mock_requests_get, status=403):
 
 AUTH_HEADER = {'Authorization': 'Bearer valid-key'}
 JSON_CT = 'application/json'
+
 
 class TestHealth(unittest.TestCase):
 
