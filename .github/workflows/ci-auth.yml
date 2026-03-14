@@ -67,35 +67,26 @@ jobs:
           format: table
 
   sast:
-    name: SAST — SonarCloud
+    name: SAST — Gosec
     runs-on: ubuntu-latest
     needs: lint
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
           go-version-file: ${{ env.SERVICE_DIR }}/go.mod
 
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
-        env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-            SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-          projectBaseDir: ${{ env.SERVICE_DIR }}
-          args: >
-            -Dsonar.projectKey=rodx64_pos_arch
-            -Dsonar.organization=rodx64
-            -Dsonar.projectName=toggle-master
-            -Dsonar.sources=.
-            -Dsonar.exclusions=**/vendor/**,**/*_test.go,**/db/**
-            -Dsonar.qualitygate.wait=true
-            -Dsonar.terraform.provider.aws.version=5
-            
+      - name: Install gosec
+        run: |
+          go install github.com/securego/gosec/v2/cmd/gosec@latest
+
+      - name: Run gosec
+        working-directory: ${{ env.SERVICE_DIR }}
+        run: |
+          ~/go/bin/gosec ./... -severity high -confidence high
+
   build-push:
     name: Build & Push
     runs-on: ubuntu-latest
