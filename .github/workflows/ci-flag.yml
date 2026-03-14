@@ -1,0 +1,161 @@
+name: CI — flag-service
+
+on:
+  push:
+    branches: ["develop"]
+    paths:
+      - "fase_3/tech_challenge/toggle-master-microservices/flag-service/**"
+  pull_request:
+    branches: ["develop"]
+    paths:
+      - "fase_3/tech_challenge/toggle-master-microservices/flag-service/**"
+
+env:
+  SERVICE_DIR: fase_3/tech_challenge/toggle-master-microservices/flag-service
+  SERVICE_NAME: flag-service
+  ECR_REPOSITORY: toggle-master
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Set environment variables for tests
+        run: |
+          echo "AWS_REGION=us-east-1" >> $GITHUB_ENV
+          echo "AWS_SQS_URL=https://sqs.fake-url/test-queue" >> $GITHUB_ENV
+          echo "AWS_DYNAMODB_TABLE=test-table" >> $GITHUB_ENV
+          echo "AWS_ENDPOINT_URL=http://localhost:4566" >> $GITHUB_ENV
+          echo "ENVIRONMENT=local" >> $GITHUB_ENV
+
+      - name: Install dependencies
+        working-directory: ${{ env.SERVICE_DIR }}
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run tests with unittest
+        working-directory: ${{ env.SERVICE_DIR }}
+        run: python -m unittest discover -s . -p "test_*.py" -v
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        working-directory: ${{ env.SERVICE_DIR }}
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install flake8
+
+      - name: Run flake8
+        working-directory: ${{ env.SERVICE_DIR }}
+        run: flake8 . --max-line-length=120 --statistics
+
+  sca:
+    name: SCA — Trivy fs
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Trivy SCA
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          scan-ref: ${{ env.SERVICE_DIR }}
+          severity: CRITICAL
+          exit-code: 1
+          format: table
+
+  sast:
+    name: SAST — Bandit
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Bandit
+        run: pip install bandit
+
+      - name: Run Bandit
+        working-directory: ${{ env.SERVICE_DIR }}
+        run: bandit -r . -ll -ii
+
+  build-push:
+    name: Build & Push
+    runs-on: ubuntu-latest
+    needs: [sca, sast]
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ env.SERVICE_DIR }}
+          file: ${{ env.SERVICE_DIR }}/Dockerfile
+          push: false
+          tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.SERVICE_NAME }}-${{ github.sha }}
+          platforms: linux/amd64
+          load: true
+          provenance: false
+          sbom: false
+
+      - name: Run Trivy container scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: image
+          image-ref: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.SERVICE_NAME }}-${{ github.sha }}
+          severity: CRITICAL
+          exit-code: 1
+          format: table
+
+      - name: Push image
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ env.SERVICE_DIR }}
+          file: ${{ env.SERVICE_DIR }}/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.SERVICE_NAME }}-${{ github.sha }}
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.SERVICE_NAME }}-latest
+          platforms: linux/amd64
+          provenance: false
+          sbom: false
