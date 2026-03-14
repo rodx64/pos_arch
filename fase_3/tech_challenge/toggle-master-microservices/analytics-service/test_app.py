@@ -1,14 +1,13 @@
 # test_app.py
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 import time
 import json
-import builtins
-import threading
 
 import app
 
 class TestProcessMessage(unittest.TestCase):
+
 
     @patch('app.dynamodb_client')
     @patch('app.sqs_client')
