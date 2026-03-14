@@ -14,10 +14,6 @@ variable "private_subnets" {
   type = list(string)
 }
 
-variable "project_name" {
-  type = string
-}
-
 variable "azs" {
   type = list(string)
 }
@@ -88,14 +84,4 @@ variable "ecr_repositories" {
 
 variable "force_delete" {
   type = bool
-}
-
-variable "auth_master_key" {
-  type      = string
-  sensitive = true
-}
-
-variable "evaluation_api_key" {
-  type      = string
-  sensitive = true
 }
