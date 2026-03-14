@@ -38,7 +38,7 @@ RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 # ==========================
 # Este é o container final e leve, usado em execução (ex: docker compose up flag-service)
 # Ele contém apenas o Python, as dependências prontas e o código-fonte da aplicação.
-FROM python:3.11-slim AS runtime
+FROM python:3.11-alpine AS runtime
 
 # Define diretório de trabalho
 WORKDIR /app
