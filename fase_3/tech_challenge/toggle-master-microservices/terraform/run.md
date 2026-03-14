@@ -34,3 +34,10 @@ aws ecr batch-delete-image \
 
 <!-- Atualizando kubectl local -->
 aws eks update-kubeconfig --region us-east-1 --name toggle-master-eks
+
+CLUSTER_NAME=$(kubectl config get-clusters | grep eks | tail -1)
+kubectl config set-cluster $CLUSTER_NAME \
+  --server=https://127.0.0.1:6443 \
+  --insecure-skip-tls-verify=true
+
+kubectl get deployments -n toggle-master

@@ -3,7 +3,7 @@
 # ==========================
 # Este estágio monta um ambiente temporário para COMPILAR a aplicação Go.
 # Inclui o Go completo para build
-FROM golang:1.21-alpine AS builder
+FROM golang:1.24-alpine AS builder
 
 # Diretório de trabalho
 WORKDIR /app
@@ -27,7 +27,7 @@ RUN go build -o auth-service .
 # 🧩 STAGE 2 — Runtime final
 # ==========================
 # Container final leve, apenas com o binário compilado (Por ser binário não precisa do Go)
-FROM alpine:latest
+FROM alpine:3.23
 
 RUN apk add --no-cache curl
 
