@@ -57,7 +57,9 @@ func (a *App) getCombinedFlagInfo(flagName string) (*CombinedFlagInfo, error) {
 	// 3. Salvar no Cache
 	jsonData, err := json.Marshal(info)
 	if err == nil {
-		a.RedisClient.Set(ctx, cacheKey, jsonData, CACHE_TTL).Err()
+		if setErr := a.RedisClient.Set(ctx, cacheKey, jsonData, CACHE_TTL).Err(); setErr != nil {
+			log.Printf("Erro ao salvar cache para flag '%s': %v", flagName, setErr)
+		}
 	}
 
 	return info, nil
