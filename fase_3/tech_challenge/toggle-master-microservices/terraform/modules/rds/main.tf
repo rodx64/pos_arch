@@ -1,6 +1,6 @@
 module "db" {
-  source = "terraform-aws-modules/rds/aws"
-  version           = "6.10.0"
+  source  = "terraform-aws-modules/rds/aws"
+  version = "6.10.0"
 
   identifier        = var.identifier
   engine            = var.engine
@@ -14,9 +14,9 @@ module "db" {
   username             = var.db_user
   port                 = tostring(var.port)
 
-  vpc_security_group_ids              = [aws_security_group.allow_bastion.id]
-  subnet_ids                          = var.private_subnet_ids
-  create_db_subnet_group              = true
+  vpc_security_group_ids = [aws_security_group.allow_bastion.id]
+  subnet_ids             = var.private_subnet_ids
+  create_db_subnet_group = true
 
   deletion_protection                 = false
   iam_database_authentication_enabled = true
@@ -26,7 +26,7 @@ module "db" {
 }
 
 resource "aws_security_group" "allow_bastion" {
-  name   = "${var.project_name}-${var.env}-${var.identifier}-rds-sg" 
+  name        = "${var.project_name}-${var.env}-${var.identifier}-rds-sg"
   description = "Acesso controlado ao RDS"
   vpc_id      = var.vpc_id
 

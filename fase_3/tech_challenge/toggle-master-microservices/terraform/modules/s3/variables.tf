@@ -7,7 +7,7 @@ variable "project_name" {
 }
 
 variable "versioning_configuration" {
-  type = string
-  default = "Enabled"
+  type        = string
+  default     = "Enabled"
   description = "Configuração de versionamento do Bucket. (Enabled, Disabled)"
 }

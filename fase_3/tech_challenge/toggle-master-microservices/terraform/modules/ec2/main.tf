@@ -18,8 +18,8 @@ resource "aws_security_group" "app_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = { 
-    Name = "${var.project_name}-${var.env}-app-sg"
+  tags = {
+    Name    = "${var.project_name}-${var.env}-app-sg"
     Project = var.project_name
   }
 }
@@ -31,8 +31,8 @@ resource "aws_instance" "bastion" {
   key_name               = var.key_name
   vpc_security_group_ids = [aws_security_group.app_sg.id]
 
-  tags = { 
-    Name = "${var.project_name}-${var.env}-bastion" 
+  tags = {
+    Name    = "${var.project_name}-${var.env}-bastion"
     Project = var.project_name
   }
 }

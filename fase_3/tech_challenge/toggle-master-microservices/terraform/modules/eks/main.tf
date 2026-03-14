@@ -12,12 +12,12 @@ module "eks" {
   create_iam_role = false
   iam_role_arn    = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/LabRole"
 
-  enable_irsa = false
+  enable_irsa               = false
   create_kms_key            = false
   cluster_encryption_config = {}
 
-  cluster_endpoint_private_access = true
-  cluster_endpoint_public_access  = false
+  cluster_endpoint_private_access       = true
+  cluster_endpoint_public_access        = false
   cluster_additional_security_group_ids = [var.bastion_sg_id]
 
   eks_managed_node_groups = {

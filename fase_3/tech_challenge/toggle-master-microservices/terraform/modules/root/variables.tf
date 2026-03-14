@@ -36,7 +36,7 @@ variable "enable_eks" {
 }
 
 variable "kubernetes_version" {
-  type    = string
+  type = string
 }
 
 variable "databases" {
