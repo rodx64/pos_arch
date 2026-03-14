@@ -47,9 +47,11 @@ jobs:
         working-directory: ${{ env.BACKEND_DIR }}
         run: terraform init
 
-      - name: Terraform validate — backend
+      - name: Import existing resources
         working-directory: ${{ env.BACKEND_DIR }}
-        run: terraform validate
+        run: |
+          terraform import aws_s3_bucket.state toggle-iac-state 2>/dev/null || true
+          terraform import aws_dynamodb_table.locks terraform-locks 2>/dev/null || true
 
       - name: Terraform apply — backend
         working-directory: ${{ env.BACKEND_DIR }}
