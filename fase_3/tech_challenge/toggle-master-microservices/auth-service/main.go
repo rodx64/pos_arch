@@ -69,6 +69,7 @@ func main() {
 		IdleTimeout:  15 * time.Second,
 	}
 
+	// #nosec G706 -- port vem de env controlado
 	log.Printf("Serviço de Autenticação (Go) rodando na porta %q", port)
 	if err := server.ListenAndServe(); err != nil {
 		log.Fatal(err)
