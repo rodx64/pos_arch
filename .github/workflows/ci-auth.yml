@@ -48,6 +48,7 @@ jobs:
         with:
           working-directory: ${{ env.SERVICE_DIR }}
           version: latest
+          cache-invalidate: true
 
   sca:
     name: SCA — Trivy fs
