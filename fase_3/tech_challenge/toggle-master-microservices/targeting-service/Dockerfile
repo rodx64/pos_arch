@@ -43,6 +43,9 @@ FROM python:3.11-slim AS runtime
 # Define diretório de trabalho
 WORKDIR /app
 
+# Atualiza pacotes do sistema para corrigir vulnerabilidades (ex: CVE-2026-22184 no zlib)
+RUN apk upgrade --no-cache
+
 # Instala apenas o curl (necessário para healthcheck)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \

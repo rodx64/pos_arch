@@ -43,6 +43,9 @@ FROM python:3.11-alpine AS runtime
 # Define diretório de trabalho
 WORKDIR /app
 
+# Atualiza pacotes do sistema para corrigir vulnerabilidades (ex: CVE-2026-22184 no zlib)
+RUN apk upgrade --no-cache
+
 # Copia as dependências já instaladas no builder (sem o ambiente pesado)
 COPY --from=builder /install /usr/local
 
