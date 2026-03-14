@@ -1,4 +1,3 @@
-# test_app.py
 import unittest
 from unittest.mock import patch
 import time
@@ -6,8 +5,8 @@ import json
 
 import app
 
-class TestProcessMessage(unittest.TestCase):
 
+class TestProcessMessage(unittest.TestCase):
 
     @patch('app.dynamodb_client')
     @patch('app.sqs_client')
@@ -53,6 +52,7 @@ class TestProcessMessage(unittest.TestCase):
 
 
 class TestHealthChecks(unittest.TestCase):
+
     def setUp(self):
         # Test client do Flask
         self.client = app.app.test_client()
@@ -107,6 +107,7 @@ class TestHealthChecks(unittest.TestCase):
 
 
 class TestWorkerHeartbeat(unittest.TestCase):
+
     def test_worker_heartbeat_updates_last_heartbeat(self):
         old_heartbeat = app.last_heartbeat
         app.worker_heartbeat()
