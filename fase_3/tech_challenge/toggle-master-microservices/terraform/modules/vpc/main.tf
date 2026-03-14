@@ -5,7 +5,7 @@ resource "aws_vpc" "main" {
   
   tags = { 
     Name = "${var.project_name}-${var.env}-vpc" 
-    Project = "${var.project_name}"
+    Project = var.project_name
   }
 }
 
@@ -18,7 +18,7 @@ resource "aws_subnet" "public" {
   
   tags = { 
     Name = "${var.project_name}-${var.env}-public-${count.index}" 
-    Project = "${var.project_name}"
+    Project = var.project_name
   }
 }
 
@@ -30,7 +30,7 @@ resource "aws_subnet" "private" {
   
   tags = { 
     Name = "${var.project_name}-${var.env}-private-${count.index}" 
-    Project = "${var.project_name}"
+    Project = var.project_name
   }
 }
 
@@ -39,7 +39,7 @@ resource "aws_internet_gateway" "igw" {
 
   tags = { 
     Name = "${var.project_name}-${var.env}-igw" 
-    Project = "${var.project_name}"
+    Project = var.project_name
   }
 }
 
@@ -49,7 +49,7 @@ resource "aws_eip" "nat_eip" {
   
   tags = { 
     Name = "${var.project_name}-${var.env}-nat-eip" 
-    Project = "${var.project_name}"
+    Project = var.project_name
   }
 }
 
@@ -59,7 +59,7 @@ resource "aws_nat_gateway" "nat" {
   
   tags = { 
     Name = "${var.project_name}-${var.env}-nat" 
-    Project = "${var.project_name}"
+    Project = var.project_name
   }
 }
 
@@ -72,7 +72,7 @@ resource "aws_route_table" "public" {
   
   tags = { 
     Name = "${var.project_name}-${var.env}-public-rt" 
-    Project = "${var.project_name}"
+    Project = var.project_name
   }
 }
 
@@ -91,7 +91,7 @@ resource "aws_route_table" "private" {
   
   tags = { 
     Name = "${var.project_name}-${var.env}-private-rt" 
-    Project = "${var.project_name}"
+    Project = var.project_name
   }
 }
 

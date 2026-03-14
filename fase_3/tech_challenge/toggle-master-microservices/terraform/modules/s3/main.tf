@@ -4,7 +4,7 @@ resource "aws_s3_bucket" "state" {
 
   tags = { 
     Name = "${var.project_name}-${var.env}-app" 
-    Project = "${var.project_name}"
+    Project = var.project_name
   }
 }
 
