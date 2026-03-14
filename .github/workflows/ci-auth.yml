@@ -88,10 +88,11 @@ jobs:
         with:
           projectBaseDir: ${{ env.SERVICE_DIR }}
           args: >
-            -Dsonar.projectKey=toggle-master_${{ env.SERVICE_NAME }}
-            -Dsonar.organization=SEU_ORG
+            -Dsonar.projectKey=rodx64_pos_arch
+            -Dsonar.organization=rodx64
+            -Dsonar.projectName=toggle-master
             -Dsonar.sources=.
-            -Dsonar.language=go
+            -Dsonar.exclusions=**/vendor/**,**/*_test.go,**/db/**
             -Dsonar.qualitygate.wait=true
             
   build-push:
