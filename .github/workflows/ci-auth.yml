@@ -86,7 +86,7 @@ jobs:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
             SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
-          projectBaseDir: ${{ env.SERVICE_DIR }}/auth-service
+          projectBaseDir: ${{ env.SERVICE_DIR }}
           args: >
             -Dsonar.projectKey=rodx64_pos_arch
             -Dsonar.organization=rodx64
