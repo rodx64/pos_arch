@@ -83,10 +83,10 @@ jobs:
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
-          projectBaseDir: ${{ env.SERVICE_DIR }}
+          projectBaseDir: ${{ env.SERVICE_DIR }}/auth-service
           args: >
             -Dsonar.projectKey=rodx64_pos_arch
             -Dsonar.organization=rodx64
@@ -94,6 +94,7 @@ jobs:
             -Dsonar.sources=.
             -Dsonar.exclusions=**/vendor/**,**/*_test.go,**/db/**
             -Dsonar.qualitygate.wait=true
+            -Dsonar.terraform.provider.aws.version=5
             
   build-push:
     name: Build & Push
