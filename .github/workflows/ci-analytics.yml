@@ -27,16 +27,23 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Set environment variables for tests
+        run: |
+          echo "AWS_REGION=us-east-1" >> $GITHUB_ENV
+          echo "AWS_SQS_URL=https://sqs.fake-url/test-queue" >> $GITHUB_ENV
+          echo "AWS_DYNAMODB_TABLE=test-table" >> $GITHUB_ENV
+          echo "AWS_ENDPOINT_URL=http://localhost:4566" >> $GITHUB_ENV
+          echo "ENVIRONMENT=local" >> $GITHUB_ENV
+
       - name: Install dependencies
         working-directory: ${{ env.SERVICE_DIR }}
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest pytest-cov
 
-      - name: Run tests
+      - name: Run tests with unittest
         working-directory: ${{ env.SERVICE_DIR }}
-        run: pytest -v --tb=short
+        run: python -m unittest discover -s . -p "test_*.py" -v
 
   lint:
     name: Lint
@@ -100,7 +107,7 @@ jobs:
     name: Build & Push
     runs-on: ubuntu-latest
     needs: [sca, sast]
-
+    
     steps:
       - uses: actions/checkout@v4
 
