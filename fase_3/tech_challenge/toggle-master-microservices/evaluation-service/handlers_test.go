@@ -79,7 +79,7 @@ func TestEvaluationHandler_Success_FlagEnabled(t *testing.T) {
 	db, redisMock := redismock.NewClientMock()
 
 	flagServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(Flag{Name: "my-flag", IsEnabled: true})
+		_ = json.NewEncoder(w).Encode(Flag{Name: "my-flag", IsEnabled: true})
 	}))
 	defer flagServer.Close()
 
@@ -178,7 +178,7 @@ func TestEvaluationHandler_ServiceError_Returns502(t *testing.T) {
 
 	ruleServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(TargetingRule{FlagName: "err-flag"})
+		_ = json.NewEncoder(w).Encode(TargetingRule{FlagName: "err-flag"})
 	}))
 	defer ruleServer.Close()
 

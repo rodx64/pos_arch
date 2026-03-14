@@ -11,6 +11,8 @@ import (
 	"github.com/go-redis/redismock/v8"
 )
 
+// --- getDeterministicBucket Tests ---
+
 func TestGetDeterministicBucket_IsDeterministic(t *testing.T) {
 	input := "user123my-flag"
 	b1 := getDeterministicBucket(input)
@@ -210,7 +212,7 @@ func TestFetchFlag_Success(t *testing.T) {
 			t.Errorf("path esperado /flags/my-flag, obteve %s", r.URL.Path)
 		}
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(flag)
+		_ = json.NewEncoder(w).Encode(flag)
 	}))
 	defer server.Close()
 
@@ -271,7 +273,7 @@ func TestFetchFlag_ServerError(t *testing.T) {
 func TestFetchFlag_InvalidJSON(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("not json"))
+		_, _ = w.Write([]byte("not json"))
 	}))
 	defer server.Close()
 
@@ -307,7 +309,7 @@ func TestFetchFlag_AuthorizationHeader(t *testing.T) {
 			t.Errorf("Authorization header esperado 'Bearer test-api-key', obteve '%s'", authHeader)
 		}
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(Flag{Name: "test"})
+		_ = json.NewEncoder(w).Encode(Flag{Name: "test"})
 	}))
 	defer server.Close()
 
@@ -334,7 +336,7 @@ func TestFetchRule_Success(t *testing.T) {
 			t.Errorf("path esperado /rules/my-flag, obteve %s", r.URL.Path)
 		}
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(rule)
+		_ = json.NewEncoder(w).Encode(rule)
 	}))
 	defer server.Close()
 
@@ -395,7 +397,7 @@ func TestFetchRule_ServerError(t *testing.T) {
 func TestFetchRule_InvalidJSON(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("not json"))
+		_, _ = w.Write([]byte("not json"))
 	}))
 	defer server.Close()
 
@@ -424,12 +426,12 @@ func TestFetchRule_ConnectionError(t *testing.T) {
 
 func TestFetchFromServices_BothSuccess(t *testing.T) {
 	flagServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(Flag{Name: "my-flag", IsEnabled: true})
+		_ = json.NewEncoder(w).Encode(Flag{Name: "my-flag", IsEnabled: true})
 	}))
 	defer flagServer.Close()
 
 	ruleServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(TargetingRule{
+		_ = json.NewEncoder(w).Encode(TargetingRule{
 			FlagName:  "my-flag",
 			IsEnabled: true,
 			Rules:     Rule{Type: "PERCENTAGE", Value: float64(50)},
@@ -462,7 +464,7 @@ func TestFetchFromServices_FlagError_ReturnsError(t *testing.T) {
 	defer flagServer.Close()
 
 	ruleServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(TargetingRule{FlagName: "my-flag"})
+		_ = json.NewEncoder(w).Encode(TargetingRule{FlagName: "my-flag"})
 	}))
 	defer ruleServer.Close()
 
@@ -480,7 +482,7 @@ func TestFetchFromServices_FlagError_ReturnsError(t *testing.T) {
 
 func TestFetchFromServices_RuleNotFound_ReturnsNilRule(t *testing.T) {
 	flagServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(Flag{Name: "my-flag", IsEnabled: true})
+		_ = json.NewEncoder(w).Encode(Flag{Name: "my-flag", IsEnabled: true})
 	}))
 	defer flagServer.Close()
 
@@ -536,7 +538,7 @@ func TestGetCombinedFlagInfo_CacheMiss_FetchesFromServices(t *testing.T) {
 	db, redisMock := redismock.NewClientMock()
 
 	flagServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(Flag{Name: "new-flag", IsEnabled: true})
+		_ = json.NewEncoder(w).Encode(Flag{Name: "new-flag", IsEnabled: true})
 	}))
 	defer flagServer.Close()
 
@@ -578,7 +580,7 @@ func TestGetCombinedFlagInfo_CacheInvalidJSON_FetchesFromServices(t *testing.T) 
 	db, redisMock := redismock.NewClientMock()
 
 	flagServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(Flag{Name: "bad-cache", IsEnabled: true})
+		_ = json.NewEncoder(w).Encode(Flag{Name: "bad-cache", IsEnabled: true})
 	}))
 	defer flagServer.Close()
 
@@ -616,7 +618,7 @@ func TestGetDecision_FlagEnabled_NoRule_ReturnsTrue(t *testing.T) {
 	db, redisMock := redismock.NewClientMock()
 
 	flagServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(Flag{Name: "simple-flag", IsEnabled: true})
+		_ = json.NewEncoder(w).Encode(Flag{Name: "simple-flag", IsEnabled: true})
 	}))
 	defer flagServer.Close()
 
