@@ -266,6 +266,16 @@ jobs:
             -N -f
           sleep 5
 
+      - name: Import existing resources
+        working-directory: ${{ env.TERRAGRUNT_DIR }}
+        env:
+          TF_VAR_AUTH_MASTER_KEY: ${{ secrets.AUTH_MASTER_KEY }}
+          TF_VAR_EVALUATION_API_KEY: ${{ secrets.EVALUATION_API_KEY }}
+        run: |
+          terragrunt run --all --non-interactive import \
+            'module.ecr.aws_ecr_repository.this["toggle-master"]' \
+            toggle-master 2>/dev/null || true
+
       - name: Terragrunt apply — k8s secrets
         working-directory: ${{ env.K8S_SECRETS_DIR }}
         env:
