@@ -49,8 +49,12 @@ COPY --from=builder /install /usr/local
 # Copia o código da aplicação
 COPY . .
 
-# Expõe a porta do Flask (ou Gunicorn)
-EXPOSE 5000
+# Cria usuário não-root
+RUN useradd -m appuser
+USER appuser
 
-# Define o comando padrão (executa o app)
-CMD ["python", "app.py"]
+# Expõe a porta do Flask (ou Gunicorn)
+EXPOSE 8005
+
+# Gunicorn para produção
+CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:8005", "app:app"]
