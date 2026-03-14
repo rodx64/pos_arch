@@ -29,7 +29,6 @@ module "eks" {
   source             = "../eks"
   project_name       = "toggle-master"
   count              = var.enable_eks ? 1 : 0
-  env                = var.env
   kubernetes_version = var.kubernetes_version
   private_subnet_ids = module.vpc.private_subnet_ids
   vpc_id             = module.vpc.vpc_id
