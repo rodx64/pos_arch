@@ -43,14 +43,21 @@ FROM python:3.11-alpine AS runtime
 # Define diretório de trabalho
 WORKDIR /app
 
+# Atualiza pacotes do sistema para corrigir vulnerabilidades (ex: CVE-2026-22184 no zlib)
+RUN apk upgrade --no-cache
+
 # Copia as dependências já instaladas no builder (sem o ambiente pesado)
 COPY --from=builder /install /usr/local
 
 # Copia o código da aplicação
 COPY . .
 
-# Expõe a porta do Flask (ou Gunicorn)
-EXPOSE 5000
+# Cria usuário não-root
+RUN adduser -D appuser
+USER appuser
 
-# Define o comando padrão (executa o app)
-CMD ["python", "app.py"]
+# Expõe a porta do Flask (ou Gunicorn)
+EXPOSE 8005
+
+# Gunicorn para produção
+CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:8005", "app:app"]

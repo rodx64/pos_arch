@@ -38,15 +38,13 @@ RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 # ==========================
 # Este é o container final e leve, usado em execução (ex: docker compose up targeting-service)
 # Ele contém apenas o Python, as dependências prontas e o código-fonte da aplicação.
-FROM python:3.11-slim AS runtime
+FROM python:3.11-alpine AS runtime
 
 # Define diretório de trabalho
 WORKDIR /app
 
-# Instala apenas o curl (necessário para healthcheck)
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+# Atualiza pacotes e instala curl (necessário para healthcheck)
+RUN apk upgrade --no-cache && apk add --no-cache curl
 
 # Copia as dependências já instaladas no builder (sem o ambiente pesado)
 COPY --from=builder /install /usr/local
@@ -54,8 +52,12 @@ COPY --from=builder /install /usr/local
 # Copia o código da aplicação
 COPY . .
 
-# Expõe a porta do Flask (ou Gunicorn)
-EXPOSE 5000
+# Cria usuário não-root
+RUN adduser -D appuser
+USER appuser
 
-# Define o comando padrão (executa o app)
-CMD ["python", "app.py"]
+# Expõe a porta do Flask (ou Gunicorn)
+EXPOSE 8003
+
+# Gunicorn para produção
+CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:8003", "app:app"]
