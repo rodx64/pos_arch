@@ -55,7 +55,7 @@ COPY --from=builder /install /usr/local
 COPY . .
 
 # Cria usuário não-root
-RUN useradd -m appuser
+RUN adduser -D appuser
 USER appuser
 
 # Expõe a porta do Flask (ou Gunicorn)
