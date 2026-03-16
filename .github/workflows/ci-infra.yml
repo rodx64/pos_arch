@@ -330,8 +330,20 @@ jobs:
         run: |
           kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
 
-          kubectl apply -n argocd \
-            -f https://raw.githubusercontent.com/argoproj/argo-cd/v2.14.2/manifests/install.yaml
+          if kubectl get deployment argocd-server -n argocd &>/dev/null; then
+            echo "ArgoCD já instalado — pulando instalação."
+          else
+            echo "Instalando ArgoCD..."
+            kubectl apply -n argocd \
+              -f https://raw.githubusercontent.com/argoproj/argo-cd/v2.14.2/manifests/install.yaml
+          fi
+
+          kubectl -n argocd patch secret argocd-secret \
+            --type='json' \
+            -p='[{"op":"add","path":"/data/server.secretkey","value":"'$(openssl rand -base64 32 | tr -d '\n' | base64 | tr -d '\n')'"}]' \
+            2>/dev/null || \
+          kubectl -n argocd create secret generic argocd-secret \
+            --from-literal=server.secretkey="$(openssl rand -base64 32)"
 
           kubectl rollout status deployment/argocd-server \
             -n argocd \
