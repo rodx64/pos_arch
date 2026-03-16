@@ -331,9 +331,8 @@ jobs:
           kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
 
           kubectl apply -n argocd \
-            -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/install.yaml
+            -f https://raw.githubusercontent.com/argoproj/argo-cd/v2.14.2/manifests/install.yaml
 
-          # Aguarda ArgoCD estar pronto
           kubectl rollout status deployment/argocd-server \
             -n argocd \
             --timeout=300s
