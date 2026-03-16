@@ -23,11 +23,6 @@ permissions:
   pull-requests: write
 
 jobs:
-  # ------------------------------------------------------------------
-  # JOB 1 — Bootstrap
-  # Cria o bucket S3 + tabela DynamoDB para o backend remoto.
-  # É idempotente: re-executar não quebra nada se já existir.
-  # ------------------------------------------------------------------
   bootstrap:
     name: Bootstrap — S3 + DynamoDB
     runs-on: ubuntu-latest
@@ -61,10 +56,6 @@ jobs:
         working-directory: ${{ env.BACKEND_DIR }}
         run: terraform apply -auto-approve
 
-  # ------------------------------------------------------------------
-  # JOB 2 — Validate
-  # fmt check + tflint + terragrunt validate
-  # ------------------------------------------------------------------
   validate:
     name: Validate
     runs-on: ubuntu-latest
@@ -106,10 +97,6 @@ jobs:
         working-directory: ${{ env.TERRAGRUNT_DIR }}
         run: terragrunt validate --all --terragrunt-non-interactive
 
-  # ------------------------------------------------------------------
-  # JOB 3 — Plan
-  # Gera o plan e posta no PR como comentário.
-  # ------------------------------------------------------------------
   plan:
     name: Plan
     runs-on: ubuntu-latest
@@ -164,11 +151,6 @@ jobs:
           path: ${{ env.TERRAGRUNT_DIR }}/plan_output.txt
           retention-days: 7
 
-  # ------------------------------------------------------------------
-  # JOB 4 — Apply
-  # Gate manual via GitHub Environment "production".
-  # Só roda em push (não em PR).
-  # ------------------------------------------------------------------
   apply:
     name: Apply — Infrastructure
     runs-on: ubuntu-latest
@@ -200,12 +182,6 @@ jobs:
         run: |
           terragrunt run --all --terragrunt-non-interactive apply
 
-  # ------------------------------------------------------------------
-  # JOB 5 — K8s Secrets
-  # Aplica os secrets no EKS via tunnel SSH pelo bastion.
-  # Migrado do workflow monolítico anterior.
-  # Só roda após apply bem-sucedido.
-  # ------------------------------------------------------------------
   k8s-secrets:
     name: Apply — Kubernetes Secrets
     runs-on: ubuntu-latest

@@ -9,6 +9,10 @@ on:
     branches: ["develop"]
     paths:
       - "fase_3/tech_challenge/toggle-master-microservices/auth-service/**"
+  workflow_run:
+    workflows: ["CI/CD — Terraform Infrastructure"]
+    types: [completed]
+    branches: ["develop", "main"]
 
 env:
   SERVICE_DIR: fase_3/tech_challenge/toggle-master-microservices/auth-service
@@ -102,6 +106,17 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Ensure ECR repository exists
+        run: |
+          aws ecr describe-repositories \
+            --repository-names ${{ env.ECR_REPOSITORY }} \
+            --region ${{ secrets.AWS_REGION }} 2>/dev/null \
+          || aws ecr create-repository \
+            --repository-name ${{ env.ECR_REPOSITORY }} \
+            --region ${{ secrets.AWS_REGION }} \
+            --image-scanning-configuration scanOnPush=true \
+            --image-tag-mutability MUTABLE
 
       - name: Login to Amazon ECR
         id: login-ecr
