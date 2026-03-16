@@ -110,13 +110,15 @@ configure_kubectl() {
     --region "$AWS_REGION" \
     --name "$EKS_CLUSTER"
 
-  CLUSTER_NAME=$(kubectl config get-clusters | grep eks | tail -1)
+  CLUSTER_ARN="arn:aws:eks:${AWS_REGION}:$(aws sts get-caller-identity --query Account --output text):cluster/${EKS_CLUSTER}"
 
-  kubectl config set-cluster "$CLUSTER_NAME" \
+  kubectl config set-cluster "$CLUSTER_ARN" \
     --server="https://127.0.0.1:${LOCAL_PORT}" \
     --insecure-skip-tls-verify=true
 
-  log "kubectl configurado para cluster: ${CLUSTER_NAME}"
+  kubectl config use-context "$CLUSTER_ARN"
+
+  log "kubectl configurado para cluster: ${CLUSTER_ARN}"
 }
 
 verify_connection() {
@@ -157,4 +159,37 @@ cmd_stop() {
     fi
   else
     warn "Nenhum tunnel registrado. Verificando por processos SSH ativos..."
-    pkill -f "L ${LOCAL_PORT}:" 2>
+    pkill -f "L ${LOCAL_PORT}:" 2>/dev/null && log "Processos SSH encerrados." || warn "Nenhum processo encontrado."
+  fi
+}
+
+cmd_status() {
+  if [ -f "$TUNNEL_PID_FILE" ]; then
+    PID=$(cat "$TUNNEL_PID_FILE")
+    if kill -0 "$PID" 2>/dev/null; then
+      log "Tunnel ativo (PID: ${PID}) em localhost:${LOCAL_PORT}"
+      echo ""
+      kubectl get nodes 2>/dev/null || warn "kubectl não conseguiu conectar — tunnel pode estar instável."
+    else
+      warn "PID file existe mas processo não está rodando."
+      rm -f "$TUNNEL_PID_FILE"
+    fi
+  else
+    warn "Nenhum tunnel ativo."
+  fi
+}
+
+# --------------------------------------------------------------
+case "${1:-start}" in
+  start)  cmd_start  ;;
+  stop)   cmd_stop   ;;
+  status) cmd_status ;;
+  *)
+    echo "Uso: $0 [start|stop|status]"
+    echo ""
+    echo "  start   Abre tunnel SSH e configura kubectl (padrão)"
+    echo "  stop    Encerra o tunnel"
+    echo "  status  Verifica se o tunnel está ativo"
+    exit 1
+    ;;
+esac
