@@ -8,22 +8,6 @@ aws ec2 create-key-pair \
 chmod 400 iac-key.pem
 
 
-Como executar:
-
-1. Entrar na pasta backend e executar o terraform
-cd /backend
-```
-terraform init 
-terraform plan 
-terraform apply
-```
-
-após o apply
-
-/modules
-terragrunt init --all
-terragrunt apply --all
-
 <!-- Se o destroy falhar, mesmo usando o force_delete no ecr -->
 aws ecr batch-delete-image \
   --repository-name toggle-master \
