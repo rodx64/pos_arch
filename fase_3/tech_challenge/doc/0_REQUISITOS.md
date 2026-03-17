@@ -15,6 +15,9 @@
     - [x] [Repositórios](../toggle-master-microservices/terraform/modules/ecr/): 5 repositórios no ECR (opcional via Terraform, mas recomendado).
     - [x] [Requisito de Estado](../toggle-master-microservices/terraform/backend/): O terraform.tfstate não pode ficar local. Configure o Backend Remoto usando um Bucket S3 (e opcionalmente a flag use_lockfile para Lock).
 
+    - [x] Foi adicionado um modulo [root](../toggle-master-microservices/terraform/modules/root/) para integrar os módulos terraform.
+    - [x] Foi adicionado uma estrutura de [environments](../toggle-master-microservices/terraform/environments/) para uso com terragrunt.
+
 ## 2. Pipeline de Integração Contínua (CI) & DevSecOps
 
 - [x] Crie workflows para cada um dos 5 microsserviços ([Analytics](../../../.github/workflows/ci-analytics.yml), [Auth](../../../.github/workflows/ci-auth.yml), [Evaluation](../../../.github/workflows/ci-evaluation.yml), [Flag](../../../.github/workflows/ci-flag.yml), [Targeting](../../../.github/workflows/ci-targeting.yml)). A pipeline deve rodar a cada Pull Request e Push na Main. 
