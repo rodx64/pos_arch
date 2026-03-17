@@ -346,7 +346,7 @@ jobs:
 
           kubectl rollout status deployment/argocd-server \
             -n argocd \
-            --timeout=720s
+            --timeout=300s
 
       - name: Expose ArgoCD via LoadBalancer
         run: |
