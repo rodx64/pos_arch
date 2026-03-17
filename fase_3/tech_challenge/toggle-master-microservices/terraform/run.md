@@ -23,3 +23,11 @@ CLUSTER_NAME=$(kubectl config get-clusters | grep eks | tail -1)
 kubectl config set-cluster $CLUSTER_NAME \
   --server=https://127.0.0.1:6443 \
   --insecure-skip-tls-verify=true
+
+<!-- Pega o external IP/hostname do LoadBalancer -->
+kubectl get svc argocd-server -n argocd
+
+<!-- usuário: admin -->
+<!-- senha: -->
+kubectl -n argocd get secret argocd-initial-admin-secret \
+  -o jsonpath="{.data.password}" | base64 -d && echo
