@@ -9,6 +9,10 @@ resource "aws_ecr_repository" "this" {
     scan_on_push = true
   }
 
+  lifecycle {
+    ignore_changes = all
+  }
+
   tags = {
     Project = var.project_name
     Env     = var.env
