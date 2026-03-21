@@ -181,19 +181,9 @@ jobs:
           TF_VAR_AUTH_MASTER_KEY: ${{ secrets.AUTH_MASTER_KEY }}
           TF_VAR_EVALUATION_API_KEY: ${{ secrets.EVALUATION_API_KEY }}
         run: |
-          terragrunt run --all --non-interactive init
-
-          # Busca o diretório de cache onde o root module foi inicializado
-          CACHE_DIR=$(find .terragrunt-cache -path "*/modules/root" -type d | head -1)
-
-          if [ -n "$CACHE_DIR" ]; then
-            cd "$CACHE_DIR"
-            tofu import \
-              -var="auth_master_key=${TF_VAR_AUTH_MASTER_KEY}" \
-              -var="evaluation_api_key=${TF_VAR_EVALUATION_API_KEY}" \
-              'module.ecr.aws_ecr_repository.this["toggle-master"]' \
-              toggle-master 2>/dev/null || true
-          fi
+          terragrunt import \
+            'module.ecr.aws_ecr_repository.this["toggle-master"]' \
+            toggle-master 2>/dev/null || true
 
       - name: Terragrunt apply
         working-directory: ${{ env.TERRAGRUNT_DIR }}
