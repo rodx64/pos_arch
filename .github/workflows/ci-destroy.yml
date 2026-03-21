@@ -1,0 +1,249 @@
+name: Destroy — Infrastructure & Services
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Ambiente a destruir"
+        required: true
+        type: choice
+        options: ["develop", "main"]
+      confirm:
+        description: "Digite DESTROY para confirmar"
+        required: true
+        type: string
+
+  push:
+    branches: ["destroy/develop", "destroy/main"]
+
+env:
+  TERRAFORM_DIR: fase_3/tech_challenge/toggle-master-microservices/terraform
+  BACKEND_DIR: fase_3/tech_challenge/toggle-master-microservices/terraform/backend
+  TERRAGRUNT_DIR: fase_3/tech_challenge/toggle-master-microservices/terraform/environments/dev
+  K8S_SECRETS_DIR: fase_3/tech_challenge/toggle-master-microservices/k8s-secrets/dev
+  TG_VERSION: "0.82.2"
+  TOFU_VERSION: "1.10.1"
+  ECR_REPOSITORY: toggle-master
+  EKS_CLUSTER: toggle-master-eks
+  EKS_NAMESPACE: toggle-master
+  BASTION_TAG: toggle-master-dev-bastion
+  AWS_REGION_DEFAULT: "us-east-1"
+
+jobs:
+  # ------------------------------------------------------------------
+  # JOB 1 — Guard
+  # Valida a confirmação e determina se precisa de gate.
+  # ------------------------------------------------------------------
+  guard:
+    name: Guard — Validate confirmation
+    runs-on: ubuntu-latest
+    outputs:
+      requires_gate: ${{ steps.check.outputs.requires_gate }}
+    steps:
+      - name: Validate confirmation
+        id: check
+        run: |
+          # Validação só se for workflow_dispatch
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            if [ "${{ github.event.inputs.confirm }}" != "DESTROY" ]; then
+              echo "Confirmação inválida. Digite exatamente: DESTROY"
+              exit 1
+            fi
+          fi
+
+          # Gate obrigatório para main
+          BRANCH="${{ github.ref_name }}"
+          if [ "$BRANCH" = "main" ] || [ "$BRANCH" = "destroy/main" ] || \
+             [ "${{ github.event.inputs.environment }}" = "main" ]; then
+            echo "requires_gate=true" >> $GITHUB_OUTPUT
+          else
+            echo "requires_gate=false" >> $GITHUB_OUTPUT
+          fi
+
+  # ------------------------------------------------------------------
+  # JOB 2 — Approve (gate manual para main)
+  # ------------------------------------------------------------------
+  approve:
+    name: Approve — Manual gate (main only)
+    runs-on: ubuntu-latest
+    needs: guard
+    environment: ${{ needs.guard.outputs.requires_gate == 'true' && 'production' || '' }}
+    steps:
+      - name: Approved
+        run: echo "Destroy aprovado."
+
+  # ------------------------------------------------------------------
+  # JOB 3 — EKS Cleanup
+  # Deleta namespace e todos os recursos do EKS antes de destruir a infra.
+  # ------------------------------------------------------------------
+  eks-cleanup:
+    name: Cleanup — EKS namespace
+    runs-on: ubuntu-latest
+    needs: approve
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Get bastion IP and EKS endpoint
+        id: infra
+        run: |
+          BASTION_IP=$(aws ec2 describe-instances \
+            --filters \
+              "Name=tag:Name,Values=${{ env.BASTION_TAG }}" \
+              "Name=instance-state-name,Values=running" \
+            --query 'Reservations[0].Instances[0].PublicIpAddress' \
+            --output text)
+
+          EKS_ENDPOINT=$(aws eks describe-cluster \
+            --name ${{ env.EKS_CLUSTER }} \
+            --query 'cluster.endpoint' \
+            --output text 2>/dev/null | sed 's|https://||' || echo "")
+
+          echo "bastion_ip=$BASTION_IP" >> $GITHUB_OUTPUT
+          echo "eks_endpoint=$EKS_ENDPOINT" >> $GITHUB_OUTPUT
+
+      - name: Skip if EKS not found
+        if: steps.infra.outputs.eks_endpoint == '' || steps.infra.outputs.eks_endpoint == 'None'
+        run: |
+          echo "EKS cluster não encontrado — pulando cleanup."
+          exit 0
+
+      - name: Save SSH key
+        run: |
+          echo "${{ secrets.EC2_SSH_KEY }}" > /tmp/iac-key.pem
+          chmod 400 /tmp/iac-key.pem
+
+      - name: Open SSH tunnel via bastion
+        run: |
+          ssh -i /tmp/iac-key.pem \
+            -o StrictHostKeyChecking=no \
+            -o ServerAliveInterval=60 \
+            -L 6443:${{ steps.infra.outputs.eks_endpoint }}:443 \
+            ubuntu@${{ steps.infra.outputs.bastion_ip }} \
+            -N -f
+          sleep 5
+
+      - name: Configure kubectl
+        run: |
+          aws eks update-kubeconfig \
+            --region ${{ secrets.AWS_REGION }} \
+            --name ${{ env.EKS_CLUSTER }}
+
+          CLUSTER_NAME=$(kubectl config get-clusters | grep eks | tail -1)
+          kubectl config set-cluster $CLUSTER_NAME \
+            --server=https://127.0.0.1:6443 \
+            --insecure-skip-tls-verify=true
+
+      - name: Delete namespace
+        run: |
+          if kubectl get namespace ${{ env.EKS_NAMESPACE }} &>/dev/null; then
+            kubectl delete namespace ${{ env.EKS_NAMESPACE }} --timeout=120s
+            echo "Namespace '${{ env.EKS_NAMESPACE }}' deletado."
+          else
+            echo "Namespace '${{ env.EKS_NAMESPACE }}' não existe — nada a fazer."
+          fi
+
+  # ------------------------------------------------------------------
+  # JOB 4 — ECR Cleanup
+  # Deleta todas as imagens de todos os serviços do repositório ECR.
+  # ------------------------------------------------------------------
+  ecr-cleanup:
+    name: Cleanup — ECR images
+    runs-on: ubuntu-latest
+    needs: approve
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Delete all images from ECR
+        run: |
+          REPO="${{ env.ECR_REPOSITORY }}"
+
+          IMAGE_IDS=$(aws ecr list-images \
+            --repository-name "$REPO" \
+            --query 'imageIds[*]' \
+            --output json 2>/dev/null || echo "[]")
+
+          if [ "$IMAGE_IDS" = "[]" ] || [ -z "$IMAGE_IDS" ]; then
+            echo "Repositório '$REPO' vazio ou não encontrado — nada a deletar."
+            exit 0
+          fi
+
+          echo "Deletando imagens do repositório: $REPO"
+          aws ecr batch-delete-image \
+            --repository-name "$REPO" \
+            --image-ids "$IMAGE_IDS"
+
+          echo "Imagens deletadas com sucesso."
+
+  # ------------------------------------------------------------------
+  # JOB 5 — Terraform Destroy
+  # Roda após cleanup do EKS e ECR para evitar recursos dependentes.
+  # ------------------------------------------------------------------
+  terraform-destroy:
+    name: Destroy — Terraform infrastructure
+    runs-on: ubuntu-latest
+    needs: [eks-cleanup, ecr-cleanup]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Setup Terragrunt
+        uses: gruntwork-io/terragrunt-action@v3
+        with:
+          tg_version: ${{ env.TG_VERSION }}
+          tofu_version: ${{ env.TOFU_VERSION }}
+
+      - name: Terragrunt destroy
+        working-directory: ${{ env.TERRAGRUNT_DIR }}
+        env:
+          TF_VAR_AUTH_MASTER_KEY: ${{ secrets.AUTH_MASTER_KEY }}
+          TF_VAR_EVALUATION_API_KEY: ${{ secrets.EVALUATION_API_KEY }}
+        run: |
+          terragrunt run --all --non-interactive destroy
+
+  # ------------------------------------------------------------------
+  # JOB 6 — Bootstrap Destroy (opcional)
+  # Destrói o bucket S3 e a tabela DynamoDB do backend.
+  # Separado e comentado por segurança — habilite só se quiser
+  # remover também o estado remoto.
+  # ------------------------------------------------------------------
+  bootstrap-destroy:
+    name: Destroy — S3 backend + DynamoDB lock
+    runs-on: ubuntu-latest
+    needs: terraform-destroy
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.0"
+      - name: Terraform destroy — backend
+        working-directory: ${{ env.BACKEND_DIR }}
+        run: |
+          terraform init
+          terraform destroy -auto-approve

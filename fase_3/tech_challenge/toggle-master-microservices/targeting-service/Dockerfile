@@ -43,9 +43,9 @@ FROM python:3.11-slim AS runtime
 # Define diretório de trabalho
 WORKDIR /app
 
-# Instala apenas o curl (necessário para healthcheck)
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
+# Atualiza pacotes e instala curl (necessário para healthcheck)
+RUN apt-get update && apt-get upgrade -y --no-install-recommends \
+    && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copia as dependências já instaladas no builder (sem o ambiente pesado)
@@ -54,8 +54,12 @@ COPY --from=builder /install /usr/local
 # Copia o código da aplicação
 COPY . .
 
-# Expõe a porta do Flask (ou Gunicorn)
-EXPOSE 5000
+# Cria usuário não-root
+RUN useradd -m appuser
+USER appuser
 
-# Define o comando padrão (executa o app)
-CMD ["python", "app.py"]
+# Expõe a porta do Flask (ou Gunicorn)
+EXPOSE 8003
+
+# Gunicorn para produção
+CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:8003", "app:app"]
