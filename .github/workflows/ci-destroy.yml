@@ -276,6 +276,20 @@ jobs:
       - name: Terraform destroy — backend
         working-directory: ${{ env.BACKEND_DIR }}
         run: |
+          aws s3api delete-objects \
+            --bucket toggle-iac-state \
+            --delete "$(aws s3api list-object-versions \
+              --bucket toggle-iac-state \
+              --query '{Objects: Versions[].{Key:Key,VersionId:VersionId}}' \
+              --output json)" 2>/dev/null || true
+
+          aws s3api delete-objects \
+            --bucket toggle-iac-state \
+            --delete "$(aws s3api list-object-versions \
+              --bucket toggle-iac-state \
+              --query '{Objects: DeleteMarkers[].{Key:Key,VersionId:VersionId}}' \
+              --output json)" 2>/dev/null || true
+
           terraform init -backend=false
           terraform import aws_s3_bucket.state toggle-iac-state 2>/dev/null || true
           terraform import aws_dynamodb_table.locks terraform-locks 2>/dev/null || true
