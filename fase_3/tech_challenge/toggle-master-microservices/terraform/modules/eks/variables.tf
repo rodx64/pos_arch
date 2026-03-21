@@ -17,7 +17,7 @@ variable "kubernetes_version" {
 
 variable "instance_types" {
   type    = list(string)
-  default = ["t2.micro"]
+  default = ["t3.medium"]
 }
 
 variable "bastion_sg_id" {
