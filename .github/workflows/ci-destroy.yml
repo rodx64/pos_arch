@@ -27,7 +27,6 @@ env:
   EKS_CLUSTER: toggle-master-eks
   EKS_NAMESPACE: toggle-master
   BASTION_TAG: toggle-master-dev-bastion
-  AWS_REGION_DEFAULT: "us-east-1"
 
 jobs:
   # ------------------------------------------------------------------
@@ -134,10 +133,14 @@ jobs:
             --region ${{ secrets.AWS_REGION }} \
             --name ${{ env.EKS_CLUSTER }}
 
-          CLUSTER_NAME=$(kubectl config get-clusters | grep eks | tail -1)
-          kubectl config set-cluster $CLUSTER_NAME \
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          CLUSTER_ARN="arn:aws:eks:${{ secrets.AWS_REGION }}:${ACCOUNT_ID}:cluster/${{ env.EKS_CLUSTER }}"
+
+          kubectl config set-cluster "$CLUSTER_ARN" \
             --server=https://127.0.0.1:6443 \
             --insecure-skip-tls-verify=true
+
+          kubectl config use-context "$CLUSTER_ARN"
 
       - name: Delete namespace
         run: |
@@ -148,10 +151,15 @@ jobs:
             echo "Namespace '${{ env.EKS_NAMESPACE }}' não existe — nada a fazer."
           fi
 
-  # ------------------------------------------------------------------
-  # JOB 4 — ECR Cleanup
-  # Deleta todas as imagens de todos os serviços do repositório ECR.
-  # ------------------------------------------------------------------
+      - name: Delete ArgoCD namespace
+        run: |
+          if kubectl get namespace argocd &>/dev/null; then
+            kubectl delete namespace argocd --timeout=120s
+            echo "Namespace 'argocd' deletado."
+          else
+            echo "Namespace 'argocd' não existe — nada a fazer."
+          fi
+
   ecr-cleanup:
     name: Cleanup — ECR images
     runs-on: ubuntu-latest
@@ -211,6 +219,15 @@ jobs:
           tg_version: ${{ env.TG_VERSION }}
           tofu_version: ${{ env.TOFU_VERSION }}
 
+      - name: Upload errored state on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: errored-tfstate-${{ github.sha }}
+          path: |
+            ${{ env.TERRAGRUNT_DIR }}/.terragrunt-cache/**/errored.tfstate
+          retention-days: 7
+
       - name: Terragrunt destroy
         working-directory: ${{ env.TERRAGRUNT_DIR }}
         env:
@@ -231,6 +248,7 @@ jobs:
     needs: terraform-destroy
     steps:
       - uses: actions/checkout@v4
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -238,12 +256,16 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: ${{ secrets.AWS_REGION }}
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.9.0"
+
       - name: Terraform destroy — backend
         working-directory: ${{ env.BACKEND_DIR }}
         run: |
-          terraform init
+          terraform init -backend=false
+          terraform import aws_s3_bucket.state toggle-iac-state 2>/dev/null || true
+          terraform import aws_dynamodb_table.locks terraform-locks 2>/dev/null || true
           terraform destroy -auto-approve
