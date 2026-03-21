@@ -41,12 +41,12 @@ Para o deploy, abandonaremos o push direto via CI. Vamos adotar o
 GitOps.
 
 - [x] [Repositório de GitOps](../toggle-master-microservices/eks/): Crie um repositório separado (ou uma pasta separada no monorepo) contendo apenas os manifestos Kubernetes (YAMLs) ou Helm Charts das aplicações.
-- [ ] Instalação do ArgoCD: Instale o ArgoCD no seu cluster EKS (pode
+- [x] Instalação do ArgoCD: Instale o ArgoCD no seu cluster EKS (pode
 usar Helm ou Terraform com provider helm/kubectl).
-- [ ] Atualização Automática:
+- [x] Atualização Automática:
 o Ao final do pipeline de CI (passo anterior), adicione um passo que
 atualiza a tag da imagem no repositório de GitOps (alterando o
 arquivo deployment.yaml com a nova tag da imagem gerada).
-- [ ] Sync: Configure o ArgoCD para monitorar esse repositório e
+- [x] Sync: Configure o ArgoCD para monitorar esse repositório e
 sincronizar automaticamente as mudanças para o cluster EKS.
 o Mostre a interface do ArgoCD gerenciando os 5 microsserviços.    
