@@ -83,4 +83,5 @@ inputs = {
   # EKS
   enable_eks         = true
   kubernetes_version = "1.34"
+  instance_types     = ["t3.medium"]
 }
