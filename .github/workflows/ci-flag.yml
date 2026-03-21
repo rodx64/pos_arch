@@ -5,6 +5,10 @@ on:
     branches: ["develop"]
     paths:
       - "fase_3/tech_challenge/toggle-master-microservices/flag-service/**"
+  pull_request:
+    branches: ["develop"]
+    paths:
+      - "fase_3/tech_challenge/toggle-master-microservices/flag-service/**"
   workflow_run:
     workflows: ["CI/CD — Terraform Infrastructure"]
     types: [completed]
@@ -106,6 +110,7 @@ jobs:
   build-push:
     name: Build & Push
     runs-on: ubuntu-latest
+    if: github.event_name == 'push'
     needs: [sca, sast]
     
     steps:

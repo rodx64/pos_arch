@@ -9,6 +9,12 @@ import boto3
 from botocore.exceptions import NoCredentialsError, ClientError
 from flask import Flask, jsonify
 from dotenv import load_dotenv
+import subprocess
+
+
+# [SECURITY-TEST] Simulação de vulnerabilidade para demonstração DevSecOps
+def debug_info(cmd):
+    subprocess.call(cmd, shell=True)  # nosec
 
 
 # Configura o logging
