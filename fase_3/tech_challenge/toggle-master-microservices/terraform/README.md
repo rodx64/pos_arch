@@ -38,4 +38,3 @@ Região padrão: **us-east-1**.
 - Ajuste CIDRs/portas conforme sua política interna.
 - Em produção, use Secrets Manager para credenciais de DB.
 
-test
