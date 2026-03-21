@@ -51,6 +51,7 @@ resource "kubernetes_secret_v1" "evaluation" {
   }
   data = {
     SERVICE_API_KEY = var.evaluation_api_key
+    REDIS_URL       = var.redis_url
   }
   depends_on = [kubernetes_namespace_v1.this]
 }

@@ -37,3 +37,5 @@ Região padrão: **us-east-1**.
 - Evite credenciais estáticas. Use OIDC.
 - Ajuste CIDRs/portas conforme sua política interna.
 - Em produção, use Secrets Manager para credenciais de DB.
+
+test
