@@ -154,7 +154,18 @@ jobs:
       - name: Delete ArgoCD namespace
         run: |
           if kubectl get namespace argocd &>/dev/null; then
-            kubectl delete namespace argocd --timeout=120s
+            # Remove finalizers de todas as Applications para desbloquear a deleção
+            kubectl get applications -n argocd -o name 2>/dev/null | \
+              xargs -I {} kubectl patch {} -n argocd \
+                --type='merge' \
+                -p='{"metadata":{"finalizers":[]}}' 2>/dev/null || true
+
+            # Remove finalizers do namespace diretamente
+            kubectl patch namespace argocd \
+              --type='merge' \
+              -p='{"metadata":{"finalizers":[]}}' 2>/dev/null || true
+
+            kubectl delete namespace argocd --timeout=60s
             echo "Namespace 'argocd' deletado."
           else
             echo "Namespace 'argocd' não existe — nada a fazer."
