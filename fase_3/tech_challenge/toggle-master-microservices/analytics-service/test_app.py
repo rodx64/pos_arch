@@ -63,7 +63,7 @@ class TestHealthChecks(unittest.TestCase):
     def test_health_startup_started(self):
         app.worker_started = True
         resp = self.client.get('/health/startup')
-        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.json['status'], 'started')
 
     def test_health_startup_not_started(self):
