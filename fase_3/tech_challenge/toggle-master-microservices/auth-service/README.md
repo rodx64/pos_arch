@@ -90,3 +90,4 @@ curl http://localhost:8001/validate \
 
 Saída esperada: `Chave de API inválida ou inativa`
 
+test 21/03
