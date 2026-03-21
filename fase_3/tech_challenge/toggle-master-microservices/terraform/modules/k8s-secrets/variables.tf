@@ -62,3 +62,7 @@ variable "eks_tunnel_host" {
   type    = string
   default = ""
 }
+
+variable "redis_url" {
+  type = string
+}

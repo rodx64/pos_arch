@@ -38,24 +38,21 @@ dependency "infra" {
 }
 
 inputs = {
-  auth_db_endpoint      = dependency.infra.outputs.rds_endpoints["auth-db"]
-  flag_db_endpoint      = dependency.infra.outputs.rds_endpoints["flag-db"]
-  analytics_db_endpoint = dependency.infra.outputs.rds_endpoints["analytics-db"]
+  namespace = "toggle-master"
 
+  auth_db_endpoint        = dependency.infra.outputs.rds_endpoints["auth-db"]
+  flag_db_endpoint        = dependency.infra.outputs.rds_endpoints["flag-db"]
+  analytics_db_endpoint   = dependency.infra.outputs.rds_endpoints["analytics-db"]
   auth_db_secret_arn      = dependency.infra.outputs.rds_secret_arns["auth-db"]
   flag_db_secret_arn      = dependency.infra.outputs.rds_secret_arns["flag-db"]
   analytics_db_secret_arn = dependency.infra.outputs.rds_secret_arns["analytics-db"]
-
-  dynamodb_table_name = dependency.infra.outputs.dynamodb_table_names["analytics-events"]
-  sqs_queue_url       = dependency.infra.outputs.sqs_queue_urls["analytics"]
-
-  eks_cluster_endpoint = dependency.infra.outputs.eks_cluster_endpoint
-  eks_cluster_ca       = dependency.infra.outputs.eks_cluster_ca
-  eks_cluster_token    = dependency.infra.outputs.eks_cluster_token
-  eks_tunnel_host      = "https://127.0.0.1:6443"
-
-  auth_master_key    = get_env("TF_VAR_AUTH_MASTER_KEY", "")
-  evaluation_api_key = get_env("TF_VAR_EVALUATION_API_KEY", "")
-
-  namespace = "toggle-master"
+  dynamodb_table_name     = dependency.infra.outputs.dynamodb_table_names["analytics-events"]
+  sqs_queue_url           = dependency.infra.outputs.sqs_queue_urls["analytics"]
+  redis_url               = dependency.infra.outputs.redis_urls["evaluation"]
+  eks_cluster_endpoint    = dependency.infra.outputs.eks_cluster_endpoint
+  eks_cluster_ca          = dependency.infra.outputs.eks_cluster_ca
+  eks_cluster_token       = dependency.infra.outputs.eks_cluster_token
+  eks_tunnel_host         = "https://127.0.0.1:6443"
+  auth_master_key         = get_env("TF_VAR_AUTH_MASTER_KEY", "")
+  evaluation_api_key      = get_env("TF_VAR_EVALUATION_API_KEY", "")
 }
