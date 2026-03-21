@@ -368,6 +368,14 @@ jobs:
           echo "::add-mask::$ARGOCD_PASSWORD"
           echo "ArgoCD initial password obtida — salve em um secret se necessário."
 
+      - name: Install Metrics Server
+        run: |
+          if kubectl get deployment metrics-server -n kube-system &>/dev/null; then
+            echo "Metrics Server já instalado — pulando."
+          else
+            kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+          fi
+
   argocd-app:
     name: Configure — ArgoCD Application
     runs-on: ubuntu-latest
@@ -451,6 +459,8 @@ jobs:
               repoURL: ${REPO_URL}
               targetRevision: ${TARGET_BRANCH}
               path: ${{ env.EKS_DIR }}
+              directory:
+                recurse: true
             destination:
               server: https://kubernetes.default.svc
               namespace: toggle-master
