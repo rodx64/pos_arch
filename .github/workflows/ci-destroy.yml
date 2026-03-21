@@ -112,6 +112,12 @@ jobs:
           echo "EKS cluster não encontrado — pulando cleanup."
           exit 0
 
+      - name: Skip if bastion not found
+        if: steps.infra.outputs.bastion_ip == '' || steps.infra.outputs.bastion_ip == 'None'
+        run: |
+          echo "Bastion não encontrado — pulando cleanup do EKS."
+          exit 0
+
       - name: Save SSH key
         run: |
           echo "${{ secrets.EC2_SSH_KEY }}" > /tmp/iac-key.pem
