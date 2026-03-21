@@ -16,7 +16,7 @@ resource "kubernetes_secret_v1" "auth" {
     namespace = var.namespace
   }
   data = {
-    DATABASE_URL = "postgresql://postgres:${local.auth_db_password}@${var.auth_db_endpoint}/auth_db"
+    DATABASE_URL = "postgresql://postgres:${local.auth_db_password_encoded}@${var.auth_db_endpoint}/auth_db"
     MASTER_KEY   = var.auth_master_key
   }
   depends_on = [kubernetes_namespace_v1.this]
@@ -28,7 +28,7 @@ resource "kubernetes_secret_v1" "flag" {
     namespace = var.namespace
   }
   data = {
-    DATABASE_URL = "postgresql://postgres:${local.flag_db_password}@${var.flag_db_endpoint}/flag_db"
+    DATABASE_URL = "postgresql://postgres:${local.flag_db_password_encoded}@${var.flag_db_endpoint}/flag_db"
   }
   depends_on = [kubernetes_namespace_v1.this]
 }
@@ -39,7 +39,7 @@ resource "kubernetes_secret_v1" "targeting" {
     namespace = var.namespace
   }
   data = {
-    DATABASE_URL = "postgresql://postgres:${local.analytics_db_password}@${var.analytics_db_endpoint}/analytics_db"
+    DATABASE_URL = "postgresql://postgres:${local.analytics_db_password_encoded}@${var.analytics_db_endpoint}/analytics_db"
   }
   depends_on = [kubernetes_namespace_v1.this]
 }
