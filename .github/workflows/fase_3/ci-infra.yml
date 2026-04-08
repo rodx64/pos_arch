@@ -1,0 +1,486 @@
+name: CI/CD — Terraform Infrastructure
+
+on:
+  push:
+    branches: ["main", "develop"]
+    paths:
+      - "fase_3/tech_challenge/toggle-master-microservices/terraform/**"
+  pull_request:
+    branches: ["main", "develop"]
+    paths:
+      - "fase_3/tech_challenge/toggle-master-microservices/terraform/**"
+
+env:
+  TERRAFORM_DIR: fase_3/tech_challenge/toggle-master-microservices/terraform
+  BACKEND_DIR: fase_3/tech_challenge/toggle-master-microservices/terraform/backend
+  TERRAGRUNT_DIR: fase_3/tech_challenge/toggle-master-microservices/terraform/environments/dev
+  K8S_SECRETS_DIR: fase_3/tech_challenge/toggle-master-microservices/k8s-secrets/dev
+  EKS_DIR: fase_3/tech_challenge/toggle-master-microservices/eks
+  TG_VERSION: "0.82.2"
+  TOFU_VERSION: "1.10.1"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  bootstrap:
+    name: Bootstrap — S3 + DynamoDB
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.0"
+
+      - name: Terraform init — backend
+        working-directory: ${{ env.BACKEND_DIR }}
+        run: terraform init
+
+      - name: Import existing resources
+        working-directory: ${{ env.BACKEND_DIR }}
+        run: |
+          terraform import aws_s3_bucket.state toggle-iac-state 2>/dev/null || true
+          terraform import aws_dynamodb_table.locks terraform-locks 2>/dev/null || true
+
+      - name: Terraform apply — backend
+        working-directory: ${{ env.BACKEND_DIR }}
+        run: terraform apply -auto-approve
+
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    needs: bootstrap
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.0"
+
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v4
+
+      - name: Run TFLint
+        working-directory: ${{ env.TERRAFORM_DIR }}
+        run: tflint --recursive
+
+      - name: Terraform format check
+        working-directory: ${{ env.TERRAFORM_DIR }}
+        run: terraform fmt -check -recursive
+
+      - name: Setup Terragrunt
+        uses: gruntwork-io/terragrunt-action@v3
+        with:
+          tg_version: ${{ env.TG_VERSION }}
+          tofu_version: ${{ env.TOFU_VERSION }}
+
+      - name: Terragrunt validate
+        working-directory: ${{ env.TERRAGRUNT_DIR }}
+        run: terragrunt validate --all --terragrunt-non-interactive
+
+  plan:
+    name: Plan
+    runs-on: ubuntu-latest
+    needs: validate
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Setup Terragrunt
+        uses: gruntwork-io/terragrunt-action@v3
+        with:
+          tg_version: ${{ env.TG_VERSION }}
+          tofu_version: ${{ env.TOFU_VERSION }}
+
+      - name: Terragrunt plan
+        working-directory: ${{ env.TERRAGRUNT_DIR }}
+        env:
+          TF_VAR_AUTH_MASTER_KEY: ${{ secrets.AUTH_MASTER_KEY }}
+          TF_VAR_EVALUATION_API_KEY: ${{ secrets.EVALUATION_API_KEY }}
+        run: |
+          terragrunt run --all --terragrunt-non-interactive plan \
+            -no-color 2>&1 | tee plan_output.txt
+
+      - name: Post plan to PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const plan = fs.readFileSync('${{ env.TERRAGRUNT_DIR }}/plan_output.txt', 'utf8');
+            const truncated = plan.length > 60000
+              ? plan.slice(0, 60000) + '\n\n... (truncado)'
+              : plan;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## Terraform Plan\n\`\`\`hcl\n${truncated}\n\`\`\``
+            });
+
+      - name: Upload plan artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan-${{ github.sha }}
+          path: ${{ env.TERRAGRUNT_DIR }}/plan_output.txt
+          retention-days: 7
+
+  apply:
+    name: Apply — Infrastructure
+    runs-on: ubuntu-latest
+    needs: plan
+    environment: ${{ github.ref_name == 'main' && 'production' || '' }}
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Setup Terragrunt
+        uses: gruntwork-io/terragrunt-action@v3
+        with:
+          tg_version: ${{ env.TG_VERSION }}
+          tofu_version: ${{ env.TOFU_VERSION }}
+
+      - name: Import existing ECR repository
+        working-directory: ${{ env.TERRAGRUNT_DIR }}
+        env:
+          TF_VAR_AUTH_MASTER_KEY: ${{ secrets.AUTH_MASTER_KEY }}
+          TF_VAR_EVALUATION_API_KEY: ${{ secrets.EVALUATION_API_KEY }}
+        run: |
+          terragrunt import \
+            'module.ecr.aws_ecr_repository.this["toggle-master"]' \
+            toggle-master 2>/dev/null || true
+
+      - name: Terragrunt apply
+        working-directory: ${{ env.TERRAGRUNT_DIR }}
+        env:
+          TF_VAR_AUTH_MASTER_KEY: ${{ secrets.AUTH_MASTER_KEY }}
+          TF_VAR_EVALUATION_API_KEY: ${{ secrets.EVALUATION_API_KEY }}
+        run: |
+          terragrunt run --all --terragrunt-non-interactive apply
+
+  k8s-secrets:
+    name: Apply — Kubernetes Secrets
+    runs-on: ubuntu-latest
+    needs: apply
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Setup Terragrunt
+        uses: gruntwork-io/terragrunt-action@v3
+        with:
+          tg_version: ${{ env.TG_VERSION }}
+          tofu_version: ${{ env.TOFU_VERSION }}
+
+      - name: Get bastion IP and EKS endpoint
+        id: infra
+        run: |
+          BASTION_IP=$(aws ec2 describe-instances \
+            --filters \
+              "Name=tag:Name,Values=toggle-master-dev-bastion" \
+              "Name=instance-state-name,Values=running" \
+            --query 'Reservations[0].Instances[0].PublicIpAddress' \
+            --output text)
+
+          if [ -z "$BASTION_IP" ] || [ "$BASTION_IP" = "None" ]; then
+            echo "ERROR: Bastion IP not found."
+            exit 1
+          fi
+
+          EKS_ENDPOINT=$(aws eks describe-cluster \
+            --name toggle-master-eks \
+            --query 'cluster.endpoint' \
+            --output text | sed 's|https://||')
+
+          echo "bastion_ip=$BASTION_IP" >> $GITHUB_OUTPUT
+          echo "eks_endpoint=$EKS_ENDPOINT" >> $GITHUB_OUTPUT
+
+      - name: Save SSH key
+        run: |
+          echo "${{ secrets.EC2_SSH_KEY }}" > /tmp/iac-key.pem
+          chmod 400 /tmp/iac-key.pem
+
+      - name: Open SSH tunnel via bastion
+        run: |
+          ssh -i /tmp/iac-key.pem \
+            -o StrictHostKeyChecking=no \
+            -o ServerAliveInterval=60 \
+            -L 6443:${{ steps.infra.outputs.eks_endpoint }}:443 \
+            ubuntu@${{ steps.infra.outputs.bastion_ip }} \
+            -N -f
+          sleep 5
+
+      - name: Terragrunt apply — k8s secrets
+        working-directory: ${{ env.K8S_SECRETS_DIR }}
+        env:
+          TF_VAR_AUTH_MASTER_KEY: ${{ secrets.AUTH_MASTER_KEY }}
+          TF_VAR_EVALUATION_API_KEY: ${{ secrets.EVALUATION_API_KEY }}
+          KUBE_HOST: "https://127.0.0.1:6443"
+          KUBE_INSECURE: "true"
+        run: terragrunt apply -auto-approve
+
+  argocd-install:
+    name: Install — ArgoCD
+    runs-on: ubuntu-latest
+    needs: k8s-secrets
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Get bastion IP and EKS endpoint
+        id: infra
+        run: |
+          BASTION_IP=$(aws ec2 describe-instances \
+            --filters \
+              "Name=tag:Name,Values=toggle-master-dev-bastion" \
+              "Name=instance-state-name,Values=running" \
+            --query 'Reservations[0].Instances[0].PublicIpAddress' \
+            --output text)
+
+          EKS_ENDPOINT=$(aws eks describe-cluster \
+            --name toggle-master-eks \
+            --query 'cluster.endpoint' \
+            --output text | sed 's|https://||')
+
+          echo "bastion_ip=$BASTION_IP" >> $GITHUB_OUTPUT
+          echo "eks_endpoint=$EKS_ENDPOINT" >> $GITHUB_OUTPUT
+
+      - name: Save SSH key
+        run: |
+          echo "${{ secrets.EC2_SSH_KEY }}" > /tmp/iac-key.pem
+          chmod 400 /tmp/iac-key.pem
+
+      - name: Open SSH tunnel via bastion
+        run: |
+          ssh -i /tmp/iac-key.pem \
+            -o StrictHostKeyChecking=no \
+            -o ServerAliveInterval=60 \
+            -L 6443:${{ steps.infra.outputs.eks_endpoint }}:443 \
+            ubuntu@${{ steps.infra.outputs.bastion_ip }} \
+            -N -f
+          sleep 5
+
+      - name: Configure kubectl
+        run: |
+          aws eks update-kubeconfig \
+            --region ${{ secrets.AWS_REGION }} \
+            --name toggle-master-eks
+
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          CLUSTER_ARN="arn:aws:eks:${{ secrets.AWS_REGION }}:${ACCOUNT_ID}:cluster/toggle-master-eks"
+
+          kubectl config set-cluster "$CLUSTER_ARN" \
+            --server=https://127.0.0.1:6443 \
+            --insecure-skip-tls-verify=true
+
+          kubectl config use-context "$CLUSTER_ARN"
+
+      - name: Install ArgoCD
+        run: |
+          kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
+
+          if kubectl get deployment argocd-server -n argocd &>/dev/null; then
+            echo "ArgoCD já instalado — pulando instalação."
+          else
+            echo "Instalando ArgoCD..."
+            kubectl apply -n argocd \
+              -f https://raw.githubusercontent.com/argoproj/argo-cd/v2.14.2/manifests/install.yaml
+          fi
+
+          SECRET_KEY=$(openssl rand -base64 32)
+          kubectl -n argocd patch secret argocd-secret \
+            --type='merge' \
+            -p="{\"data\":{\"server.secretkey\":\"$(echo -n $SECRET_KEY | base64 | tr -d '\n')\"}}" \
+            2>/dev/null || true
+
+          kubectl rollout status deployment/argocd-server \
+            -n argocd \
+            --timeout=720s
+
+      - name: Expose ArgoCD via LoadBalancer
+        run: |
+          kubectl patch svc argocd-server \
+            -n argocd \
+            -p '{"spec":{"type":"LoadBalancer"}}'
+
+      - name: Get ArgoCD initial password
+        run: |
+          # Aguarda o secret existir
+          kubectl wait --for=condition=Ready \
+            pod -l app.kubernetes.io/name=argocd-server \
+            -n argocd \
+            --timeout=120s
+
+          ARGOCD_PASSWORD=$(kubectl -n argocd get secret argocd-initial-admin-secret \
+            -o jsonpath="{.data.password}" | base64 -d)
+
+          echo "::add-mask::$ARGOCD_PASSWORD"
+          echo "ArgoCD initial password obtida — salve em um secret se necessário."
+
+      - name: Install Metrics Server
+        run: |
+          if kubectl get deployment metrics-server -n kube-system &>/dev/null; then
+            echo "Metrics Server já instalado — pulando."
+          else
+            kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+          fi
+
+  argocd-app:
+    name: Configure — ArgoCD Application
+    runs-on: ubuntu-latest
+    needs: argocd-install
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Get bastion IP and EKS endpoint
+        id: infra
+        run: |
+          BASTION_IP=$(aws ec2 describe-instances \
+            --filters \
+              "Name=tag:Name,Values=toggle-master-dev-bastion" \
+              "Name=instance-state-name,Values=running" \
+            --query 'Reservations[0].Instances[0].PublicIpAddress' \
+            --output text)
+
+          EKS_ENDPOINT=$(aws eks describe-cluster \
+            --name toggle-master-eks \
+            --query 'cluster.endpoint' \
+            --output text | sed 's|https://||')
+
+          echo "bastion_ip=$BASTION_IP" >> $GITHUB_OUTPUT
+          echo "eks_endpoint=$EKS_ENDPOINT" >> $GITHUB_OUTPUT
+
+      - name: Save SSH key
+        run: |
+          echo "${{ secrets.EC2_SSH_KEY }}" > /tmp/iac-key.pem
+          chmod 400 /tmp/iac-key.pem
+
+      - name: Open SSH tunnel via bastion
+        run: |
+          ssh -i /tmp/iac-key.pem \
+            -o StrictHostKeyChecking=no \
+            -o ServerAliveInterval=60 \
+            -L 6443:${{ steps.infra.outputs.eks_endpoint }}:443 \
+            ubuntu@${{ steps.infra.outputs.bastion_ip }} \
+            -N -f
+          sleep 5
+
+      - name: Configure kubectl
+        run: |
+          aws eks update-kubeconfig \
+            --region ${{ secrets.AWS_REGION }} \
+            --name toggle-master-eks
+
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          CLUSTER_ARN="arn:aws:eks:${{ secrets.AWS_REGION }}:${ACCOUNT_ID}:cluster/toggle-master-eks"
+
+          kubectl config set-cluster "$CLUSTER_ARN" \
+            --server=https://127.0.0.1:6443 \
+            --insecure-skip-tls-verify=true
+
+          kubectl config use-context "$CLUSTER_ARN"
+
+      - name: Create ArgoCD Application
+        env:
+          REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+          TARGET_BRANCH: ${{ github.ref_name }}
+        run: |
+          kubectl apply -f - <<EOF
+          apiVersion: argoproj.io/v1alpha1
+          kind: Application
+          metadata:
+            name: toggle-master
+            namespace: argocd
+            finalizers:
+              - resources-finalizer.argocd.argoproj.io
+          spec:
+            project: default
+            source:
+              repoURL: ${REPO_URL}
+              targetRevision: ${TARGET_BRANCH}
+              path: ${{ env.EKS_DIR }}
+              directory:
+                recurse: true
+            destination:
+              server: https://kubernetes.default.svc
+              namespace: toggle-master
+            syncPolicy:
+              automated:
+                prune: true
+                selfHeal: true
+              syncOptions:
+                - CreateNamespace=true
+          EOF
+
+      - name: Trigger initial sync
+        run: |
+          # Aguarda a Application ser registrada
+          sleep 10
+
+          kubectl -n argocd wait \
+            --for=jsonpath='{.status.health.status}'=Healthy \
+            application/toggle-master \
+            --timeout=300s || true
+
+          echo "ArgoCD Application 'toggle-master' configurada."
+          kubectl -n argocd get application toggle-master

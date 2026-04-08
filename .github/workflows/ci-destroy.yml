@@ -17,10 +17,10 @@ on:
     branches: ["destroy/develop", "destroy/main"]
 
 env:
-  TERRAFORM_DIR: fase_3/tech_challenge/toggle-master-microservices/terraform
-  BACKEND_DIR: fase_3/tech_challenge/toggle-master-microservices/terraform/backend
-  TERRAGRUNT_DIR: fase_3/tech_challenge/toggle-master-microservices/terraform/environments/dev
-  K8S_SECRETS_DIR: fase_3/tech_challenge/toggle-master-microservices/k8s-secrets/dev
+  TERRAFORM_DIR: fase_4/tech_challenge/toggle-master-microservices/terraform
+  BACKEND_DIR: fase_4/tech_challenge/toggle-master-microservices/terraform/backend
+  TERRAGRUNT_DIR: fase_4/tech_challenge/toggle-master-microservices/terraform/environments/dev
+  K8S_SECRETS_DIR: fase_4/tech_challenge/toggle-master-microservices/k8s-secrets/dev
   TG_VERSION: "0.82.2"
   TOFU_VERSION: "1.10.1"
   ECR_REPOSITORY: toggle-master

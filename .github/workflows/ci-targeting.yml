@@ -4,18 +4,18 @@ on:
   push:
     branches: ["develop"]
     paths:
-      - "fase_3/tech_challenge/toggle-master-microservices/targeting-service/**"
+      - "fase_4/tech_challenge/toggle-master-microservices/services/targeting-service/**"
   pull_request:
     branches: ["develop"]
     paths:
-      - "fase_3/tech_challenge/toggle-master-microservices/targeting-service/**"
+      - "fase_4/tech_challenge/toggle-master-microservices/services/targeting-service/**"
   workflow_run:
     workflows: ["CI/CD — Terraform Infrastructure"]
     types: [completed]
     branches: ["develop", "main"]
 
 env:
-  SERVICE_DIR: fase_3/tech_challenge/toggle-master-microservices/targeting-service
+  SERVICE_DIR: fase_4/tech_challenge/toggle-master-microservices/services/targeting-service
   SERVICE_NAME: targeting-service
   ECR_REPOSITORY: toggle-master
 
@@ -196,7 +196,7 @@ jobs:
           IMAGE_TAG: ${{ env.SERVICE_NAME }}-${{ github.sha }}
         run: |
           SERVICE_SHORT=$(echo "${{ env.SERVICE_NAME }}" | sed 's/-service//')
-          DEPLOY_FILE="fase_3/tech_challenge/toggle-master-microservices/eks/deployments/${SERVICE_SHORT}.yaml"
+          DEPLOY_FILE="fase_4/tech_challenge/toggle-master-microservices/services/eks/deployments/${SERVICE_SHORT}.yaml"
 
           sed -i "s|toggle-master:${{ env.SERVICE_NAME }}-.*|toggle-master:${IMAGE_TAG}|g" \
             "$DEPLOY_FILE"
