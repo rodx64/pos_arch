@@ -17,6 +17,11 @@ spec:
       labels:
         app: flag
         tier: backend
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8002"
+        prometheus.io/path: "/metrics"
+        admission.datadoghq.com/enabled: "true"
     spec:
       containers:
         - name: flag-container

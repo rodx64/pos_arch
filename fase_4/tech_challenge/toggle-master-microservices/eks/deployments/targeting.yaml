@@ -17,6 +17,11 @@ spec:
       labels:
         app: targeting
         tier: backend
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8003"
+        prometheus.io/path: "/metrics"
+        admission.datadoghq.com/enabled: "true"
     spec:
       containers:
         - name: targeting-container

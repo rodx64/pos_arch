@@ -17,6 +17,11 @@ spec:
       labels:
         app: evaluation
         tier: backend
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8004"
+        prometheus.io/path: "/metrics"
+        admission.datadoghq.com/enabled: "true"
     spec:
       containers:
         - name: evaluation-container

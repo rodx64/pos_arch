@@ -3,6 +3,9 @@ kind: Service
 metadata:
   name: evaluation-service
   namespace: toggle-master
+  labels:
+    app: evaluation
+    monitored: "true"   # selecionado pelo ServiceMonitor
 spec:
   type: ClusterIP
   selector:
@@ -11,3 +14,4 @@ spec:
     - protocol: TCP
       port: 8004
       targetPort: 8004
+      name: http          # obrigatório para o ServiceMonitor referenciar por nome

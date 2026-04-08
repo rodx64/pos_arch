@@ -2,21 +2,6 @@ include "root" {
   path = "${get_repo_root()}/fase_4/tech_challenge/toggle-master-microservices/terraform/root.hcl"
 }
 
-remote_state {
-  backend = "s3"
-  config = {
-    bucket         = "toggle-iac-state"
-    key            = "k8s-secrets/dev/terraform.tfstate"
-    region         = "us-east-1"
-    encrypt        = true
-    dynamodb_table = "terraform-locks"
-  }
-  generate = {
-    path      = "backend.tf"
-    if_exists = "overwrite"
-  }
-}
-
 terraform {
   source = "${get_repo_root()}/fase_4/tech_challenge/toggle-master-microservices/terraform/modules/k8s-secrets"
 }
@@ -25,7 +10,8 @@ dependency "infra" {
   config_path  = "${get_repo_root()}/fase_4/tech_challenge/toggle-master-microservices/terraform/environments/dev/"
   skip_outputs = false
 
-  mock_outputs_allowed_terraform_commands = ["validate"]
+  # mock - "somente para os comandos validate e plan. Se o output real não estiver disponível, use os valores fictícios abaixo em vez de falhar."
+  mock_outputs_allowed_terraform_commands = ["validate", "plan"]
   mock_outputs = {
     rds_endpoints        = { "auth-db" = "mock:5432", "flag-db" = "mock:5432", "analytics-db" = "mock:5432" }
     rds_secret_arns      = { "auth-db" = "mock", "flag-db" = "mock", "analytics-db" = "mock" }
@@ -53,6 +39,6 @@ inputs = {
   eks_cluster_ca          = dependency.infra.outputs.eks_cluster_ca
   eks_cluster_token       = dependency.infra.outputs.eks_cluster_token
   eks_tunnel_host         = "https://127.0.0.1:6443"
-  auth_master_key         = get_env("TF_VAR_AUTH_MASTER_KEY", "")
-  evaluation_api_key      = get_env("TF_VAR_EVALUATION_API_KEY", "")
+  auth_master_key         = get_env("AUTH_MASTER_KEY", "")
+  evaluation_api_key      = get_env("EVALUATION_API_KEY", "")
 }

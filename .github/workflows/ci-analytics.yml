@@ -1,14 +1,14 @@
 name: CI — analytics-service
 
 on:
-  # push:
-    # branches: ["develop"]
-    # paths:
-      # - "fase_4/tech_challenge/toggle-master-microservices/services/analytics-service/**"
-  # pull_request:
-    # branches: ["develop"]
-    # paths:
-      # - "fase_4/tech_challenge/toggle-master-microservices/services/analytics-service/**"
+  push:
+    branches: ["develop"]
+    paths:
+      - "fase_4/tech_challenge/toggle-master-microservices/services/analytics-service/**"
+  pull_request:
+    branches: ["develop"]
+    paths:
+      - "fase_4/tech_challenge/toggle-master-microservices/services/analytics-service/**"
   workflow_run:
     workflows: ["CI/CD — Terraform Infrastructure"]
     types: [completed]

@@ -1,14 +1,14 @@
 name: CI — targeting-service
 
 on:
-  # push:
-  #   branches: ["develop"]
-  #   paths:
-  #     - "fase_4/tech_challenge/toggle-master-microservices/services/targeting-service/**"
-  # pull_request:
-  #   branches: ["develop"]
-  #   paths:
-  #     - "fase_4/tech_challenge/toggle-master-microservices/services/targeting-service/**"
+  push:
+    branches: ["develop"]
+    paths:
+      - "fase_4/tech_challenge/toggle-master-microservices/services/targeting-service/**"
+  pull_request:
+    branches: ["develop"]
+    paths:
+      - "fase_4/tech_challenge/toggle-master-microservices/services/targeting-service/**"
   workflow_run:
     workflows: ["CI/CD — Terraform Infrastructure"]
     types: [completed]

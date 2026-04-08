@@ -5,4 +5,4 @@ metadata:
   namespace: toggle-master
 data:
   PORT: "8001"
-  LOG_LEVEL: "DEBUG"
+  LOG_LEVEL: "INFO"

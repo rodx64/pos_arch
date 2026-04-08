@@ -3,6 +3,9 @@ kind: Service
 metadata:
   name: flag-service
   namespace: toggle-master
+  labels:
+    app: flag
+    monitored: "true"   # selecionado pelo ServiceMonitor
 spec:
   type: ClusterIP
   selector:
@@ -11,3 +14,4 @@ spec:
     - protocol: TCP
       port: 8002
       targetPort: 8002
+      name: http          # obrigatório para o ServiceMonitor referenciar por nome

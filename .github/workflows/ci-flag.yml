@@ -1,14 +1,14 @@
 name: CI — flag-service
 
 on:
-  # push:
-  #   branches: ["develop"]
-  #   paths:
-  #     - "fase_4/tech_challenge/toggle-master-microservices/services/flag-service/**"
-  # pull_request:
-  #   branches: ["develop"]
-  #   paths:
-  #     - "fase_4/tech_challenge/toggle-master-microservices/services/flag-service/**"
+  push:
+    branches: ["develop"]
+    paths:
+      - "fase_4/tech_challenge/toggle-master-microservices/services/flag-service/**"
+  pull_request:
+    branches: ["develop"]
+    paths:
+      - "fase_4/tech_challenge/toggle-master-microservices/services/flag-service/**"
   workflow_run:
     workflows: ["CI/CD — Terraform Infrastructure"]
     types: [completed]

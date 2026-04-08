@@ -1,0 +1,62 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: monitoring
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: ${scrape_interval}
+      evaluation_interval: ${scrape_interval}
+      external_labels:
+        environment: dev
+        cluster: toggle-master
+
+    # Datadog aceita Prometheus remote_write no endpoint abaixo.
+    # A autenticação usa DD-API-KEY no header — NÃO bearer token.
+    remote_write:
+      - url: https://api.datadoghq.com/api/v1/series
+        headers:
+          DD-API-KEY: "${datadog_api_key}"
+        queue_config:
+          max_samples_per_send: 1000
+          max_shards: 5
+        write_relabel_configs:
+          - source_labels: [__name__]
+            regex: "http_requests_total|http_request_duration_seconds|process_cpu_seconds_total|process_resident_memory_bytes|up"
+            action: keep
+
+    scrape_configs:
+      # Scrape via ServiceMonitors — Prometheus descobre os serviços pelo label
+      - job_name: "toggle-master-services"
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names: ["toggle-master"]
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+            action: keep
+            regex: "true"
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+            action: replace
+            target_label: __metrics_path__
+            regex: (.+)
+          - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+            action: replace
+            regex: "([^:]+)(?::\\d+)?;(\\d+)"
+            replacement: "$1:$2"
+            target_label: __address__
+          - source_labels: [__meta_kubernetes_namespace]
+            action: replace
+            target_label: namespace
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            action: replace
+            target_label: service
+          - source_labels: [__meta_kubernetes_pod_name]
+            action: replace
+            target_label: pod
+
+      # Self-scrape do próprio Prometheus
+      - job_name: "prometheus"
+        static_configs:
+          - targets: ["localhost:9090"]

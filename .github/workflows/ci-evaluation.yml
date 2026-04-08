@@ -1,14 +1,14 @@
 name: CI — evaluation-service
 
 on:
-  # push:
-  #   branches: ["develop"]
-  #   paths:
-  #     - "fase_4/tech_challenge/toggle-master-microservices/services/evaluation-service/**"
-  # pull_request:
-  #   branches: ["develop"]
-  #   paths:
-  #     - "fase_4/tech_challenge/toggle-master-microservices/services/evaluation-service/**"
+  push:
+    branches: ["develop"]
+    paths:
+      - "fase_4/tech_challenge/toggle-master-microservices/services/evaluation-service/**"
+  pull_request:
+    branches: ["develop"]
+    paths:
+      - "fase_4/tech_challenge/toggle-master-microservices/services/evaluation-service/**"
   workflow_run:
     workflows: ["CI/CD — Terraform Infrastructure"]
     types: [completed]
