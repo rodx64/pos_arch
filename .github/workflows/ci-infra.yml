@@ -178,6 +178,16 @@ jobs:
           tg_version: ${{ env.TG_VERSION }}
           tofu_version: ${{ env.TOFU_VERSION }}
 
+      - name: Import existing ECR repository
+        working-directory: ${{ env.TERRAGRUNT_DIR }}
+        env:
+          TF_VAR_AUTH_MASTER_KEY: ${{ secrets.AUTH_MASTER_KEY }}
+          TF_VAR_EVALUATION_API_KEY: ${{ secrets.EVALUATION_API_KEY }}
+        run: |
+          terragrunt import \
+            'module.ecr.aws_ecr_repository.this["toggle-master"]' \
+            toggle-master 2>/dev/null || true
+
       - name: Terragrunt apply
         working-directory: ${{ env.TERRAGRUNT_DIR }}
         env:
