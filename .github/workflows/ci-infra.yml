@@ -187,19 +187,16 @@ jobs:
           if aws ecr describe-repositories \
               --repository-names toggle-master \
               --region ${{ secrets.AWS_REGION }} > /dev/null 2>&1; then
-            echo "ECR existe — verificando state..."
-
-            # state list também precisa rodar sem --all
-            IN_STATE=$(terragrunt state list 2>/dev/null \
-              | grep -c 'module.ecr.aws_ecr_repository.this\["toggle-master"\]' || true)
-
-            if [ "$IN_STATE" -eq "0" ]; then
-              echo "Importando ECR para o state..."
-              terragrunt import \
+            echo "ECR existe — importando para o state..."
+            terragrunt run --all --terragrunt-non-interactive init
+            
+            if ! terragrunt run --all --terragrunt-non-interactive state list \
+                2>/dev/null | grep -q 'module.ecr.aws_ecr_repository.this\["toggle-master"\]'; then
+              terragrunt run --all --terragrunt-non-interactive -- import \
                 'module.ecr.aws_ecr_repository.this["toggle-master"]' \
                 toggle-master
             else
-              echo "ECR já está no state — pulando."
+              echo "ECR já está no state — pulando import."
             fi
           else
             echo "ECR não existe — será criado pelo apply."
@@ -210,8 +207,8 @@ jobs:
         env:
           TF_VAR_AUTH_MASTER_KEY: ${{ secrets.AUTH_MASTER_KEY }}
           TF_VAR_EVALUATION_API_KEY: ${{ secrets.EVALUATION_API_KEY }}
-          DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
-        run: terragrunt run --all --non-interactive apply
+        run: |
+          terragrunt run --all --terragrunt-non-interactive apply
 
   k8s-secrets:
     name: Apply — Kubernetes Secrets
