@@ -178,6 +178,31 @@ jobs:
           tg_version: ${{ env.TG_VERSION }}
           tofu_version: ${{ env.TOFU_VERSION }}
 
+      - name: Import ECR if exists
+        working-directory: ${{ env.TERRAGRUNT_DIR }}
+        env:
+          TF_VAR_AUTH_MASTER_KEY: ${{ secrets.AUTH_MASTER_KEY }}
+          TF_VAR_EVALUATION_API_KEY: ${{ secrets.EVALUATION_API_KEY }}
+          DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
+        run: |
+          if aws ecr describe-repositories \
+              --repository-names toggle-master \
+              --region ${{ secrets.AWS_REGION }} > /dev/null 2>&1; then
+            echo "ECR existe — importando para o state..."
+            terragrunt run --all --terragrunt-non-interactive init
+            
+            if ! terragrunt run --all --terragrunt-non-interactive state list \
+                2>/dev/null | grep -q 'module.ecr.aws_ecr_repository.this\["toggle-master"\]'; then
+              terragrunt run --all --terragrunt-non-interactive -- import \
+                'module.ecr.aws_ecr_repository.this["toggle-master"]' \
+                toggle-master
+            else
+              echo "ECR já está no state — pulando import."
+            fi
+          else
+            echo "ECR não existe — será criado pelo apply."
+          fi
+
       - name: Terragrunt apply
         working-directory: ${{ env.TERRAGRUNT_DIR }}
         env:
