@@ -4,6 +4,7 @@ include "root" {
 
 terraform {
   source = "${get_repo_root()}/fase_4/tech_challenge/toggle-master-microservices/terraform/modules/k8s-secrets"
+  backend "s3" {}
 }
 
 dependency "infra" {
