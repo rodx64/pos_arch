@@ -102,4 +102,4 @@ INFO:Evento ... (Flag: enable-new-dashboard) salvo no DynamoDB.
 
 Vá até o console da AWS, abra o **DynamoDB**, selecione a tabela `ToggleMasterAnalytics` e clique em "Explore table items".
 
-<!-- teste 1 -->
+<!-- teste -->
