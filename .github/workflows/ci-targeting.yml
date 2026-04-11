@@ -196,7 +196,7 @@ jobs:
           IMAGE_TAG: ${{ env.SERVICE_NAME }}-${{ github.sha }}
         run: |
           SERVICE_SHORT=$(echo "${{ env.SERVICE_NAME }}" | sed 's/-service//')
-          DEPLOY_FILE="fase_4/tech_challenge/toggle-master-microservices/services/eks/deployments/${SERVICE_SHORT}.yaml"
+          DEPLOY_FILE="fase_4/tech_challenge/toggle-master-microservices/eks/deployments/${SERVICE_SHORT}.yaml"
 
           sed -i "s|toggle-master:${{ env.SERVICE_NAME }}-.*|toggle-master:${IMAGE_TAG}|g" \
             "$DEPLOY_FILE"
