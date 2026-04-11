@@ -541,40 +541,6 @@ jobs:
 
           kubectl config use-context "$CLUSTER_ARN"
 
-      - name: Update ingress host with LoadBalancer DNS
-        run: |
-          echo "Aguardando LoadBalancer DNS do ingress-nginx..."
-          for i in $(seq 1 20); do
-            DNS=$(kubectl get svc ingress-nginx-controller \
-              -n ingress-nginx \
-              -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null)
-            if [ -n "$DNS" ] && [ "$DNS" != "null" ]; then
-              echo "DNS obtido: $DNS"
-              break
-            fi
-            echo "Tentativa $i/20 — aguardando..."
-            sleep 15
-          done
-
-          if [ -z "$DNS" ]; then
-            echo "ERROR: LoadBalancer DNS não disponível após timeout"
-            exit 1
-          fi
-
-          sed -i "s|host:.*elb.us-east-1.amazonaws.com|host: $DNS|g" \
-            ${{ env.EKS_DIR }}/ingress.yaml
-
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          if git diff --quiet ${{ env.EKS_DIR }}/ingress.yaml; then
-            echo "DNS não mudou — sem commit necessário."
-          else
-            git add ${{ env.EKS_DIR }}/ingress.yaml
-            git commit -m "ci: update ingress host to $DNS [skip ci]"
-            git push
-          fi
-          
       - name: Create ArgoCD Application
         env:
           REPO_URL: ${{ github.server_url }}/${{ github.repository }}
