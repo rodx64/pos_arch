@@ -28,9 +28,9 @@ spec:
                   name: datadog-secret
                   key: api-key
             - name: DD_SITE
-              value: "${datadog_site}"
+              value: ${datadog_site}
             - name: DD_ENV
-              value: "${environment}"
+              value: ${environment}
             - name: DD_CLUSTER_NAME
               value: "toggle-master"
             - name: DD_LOGS_ENABLED
