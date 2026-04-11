@@ -21,7 +21,7 @@ env:
   TOFU_VERSION: "1.10.1"
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: write
 
 jobs:
@@ -277,8 +277,8 @@ jobs:
       - name: Terragrunt apply — k8s secrets
         working-directory: ${{ env.K8S_SECRETS_DIR }}
         env:
-          TF_VAR_AUTH_MASTER_KEY: ${{ secrets.AUTH_MASTER_KEY }}
-          TF_VAR_EVALUATION_API_KEY: ${{ secrets.EVALUATION_API_KEY }}
+          AUTH_MASTER_KEY: ${{ secrets.AUTH_MASTER_KEY }} # Terragrunt não le TF_VAR, apenas o Terraform
+          EVALUATION_API_KEY: ${{ secrets.EVALUATION_API_KEY }}
           KUBE_HOST: "https://127.0.0.1:6443"
           KUBE_INSECURE: "true"
         run: terragrunt apply -auto-approve
@@ -462,6 +462,20 @@ jobs:
           else
             kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
           fi
+      
+      - name: Install ingress-nginx
+        run: |
+          if kubectl get deployment ingress-nginx-controller \
+              -n ingress-nginx &>/dev/null; then
+            echo "ingress-nginx já instalado — pulando."
+          else
+            kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.0/deploy/static/provider/aws/deploy.yaml
+
+            kubectl wait --namespace ingress-nginx \
+              --for=condition=ready pod \
+              --selector=app.kubernetes.io/component=controller \
+              --timeout=120s
+          fi
 
   argocd-app:
     name: Configure — ArgoCD Application
@@ -527,6 +541,40 @@ jobs:
 
           kubectl config use-context "$CLUSTER_ARN"
 
+      - name: Update ingress host with LoadBalancer DNS
+        run: |
+          echo "Aguardando LoadBalancer DNS do ingress-nginx..."
+          for i in $(seq 1 20); do
+            DNS=$(kubectl get svc ingress-nginx-controller \
+              -n ingress-nginx \
+              -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null)
+            if [ -n "$DNS" ] && [ "$DNS" != "null" ]; then
+              echo "DNS obtido: $DNS"
+              break
+            fi
+            echo "Tentativa $i/20 — aguardando..."
+            sleep 15
+          done
+
+          if [ -z "$DNS" ]; then
+            echo "ERROR: LoadBalancer DNS não disponível após timeout"
+            exit 1
+          fi
+
+          sed -i "s|host:.*elb.us-east-1.amazonaws.com|host: $DNS|g" \
+            ${{ env.EKS_DIR }}/ingress.yaml
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          if git diff --quiet ${{ env.EKS_DIR }}/ingress.yaml; then
+            echo "DNS não mudou — sem commit necessário."
+          else
+            git add ${{ env.EKS_DIR }}/ingress.yaml
+            git commit -m "ci: update ingress host to $DNS [skip ci]"
+            git push
+          fi
+          
       - name: Create ArgoCD Application
         env:
           REPO_URL: ${{ github.server_url }}/${{ github.repository }}
