@@ -32,11 +32,6 @@ variable "datadog_api_key" {
   default   = ""
 }
 
-variable "datadog_site" {
-  type    = string
-  default = "datadoghq.com"
-}
-
 variable "prometheus_retention" {
   type    = string
   default = "7d"

@@ -46,6 +46,5 @@ inputs = {
   prometheus_retention = "2d"
   scrape_interval      = "30s"
 
-  datadog_site         = "datadoghq.com"
   datadog_api_key      = get_env("DATADOG_API_KEY", "")
 }

@@ -28,16 +28,6 @@ resource "kubernetes_manifest" "prometheus" {
   depends_on = [kubernetes_namespace.monitoring]
 }
 
-resource "kubernetes_manifest" "service_monitors" {
-  for_each = {
-    for f in fileset("${local.manifests_path}/prometheus/service-monitors", "*.yaml") :
-    f => f
-  }
-
-  manifest   = yamldecode(file("${local.manifests_path}/prometheus/service-monitors/${each.value}"))
-  depends_on = [kubernetes_manifest.prometheus]
-}
-
 resource "kubernetes_manifest" "datadog" {
   for_each = {
     for f in fileset("${local.manifests_path}/datadog", "*.yaml") :
@@ -48,7 +38,6 @@ resource "kubernetes_manifest" "datadog" {
     "${local.manifests_path}/datadog/${each.value}",
     {
       datadog_api_key = var.datadog_api_key
-      datadog_site    = var.datadog_site
       environment     = var.environment
     }
   ))
