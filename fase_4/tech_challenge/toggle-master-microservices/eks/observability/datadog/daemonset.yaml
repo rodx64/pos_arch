@@ -49,6 +49,10 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
+            - name: DD_HOSTNAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
             - name: DD_CRI_SOCKET_PATH
               value: "/var/run/containerd/containerd.sock"
           resources:
