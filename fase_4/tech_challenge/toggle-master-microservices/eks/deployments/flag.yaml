@@ -25,7 +25,7 @@ spec:
     spec:
       containers:
         - name: flag-container
-          image: 951619424825.dkr.ecr.us-east-1.amazonaws.com/toggle-master:flag-service-00ef57ea94a1d2dfc276dbc68f89699b7e6446aa
+          image: 951619424825.dkr.ecr.us-east-1.amazonaws.com/toggle-master:flag-service-f86fdac356476f687c260532b625328b5904105e
           imagePullPolicy: Always
           ports:
             - containerPort: 8002
