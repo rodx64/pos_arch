@@ -5,7 +5,6 @@ metadata:
   namespace: toggle-master
   labels:
     app: analytics
-    monitored: "true"   # selecionado pelo ServiceMonitor
 spec:
   type: ClusterIP
   selector:
@@ -14,4 +13,3 @@ spec:
     - protocol: TCP
       port: 8005         
       targetPort: 8005
-      name: http          # obrigatório para o ServiceMonitor referenciar por nome

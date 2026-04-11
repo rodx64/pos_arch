@@ -5,8 +5,7 @@ metadata:
   namespace: toggle-master
   labels:
     app: targeting
-    monitored: "true"   # selecionado pelo ServiceMonitor
-sspec:
+spec:
   type: ClusterIP
   selector:
     app: targeting
@@ -14,4 +13,3 @@ sspec:
     - protocol: TCP
       port: 8003
       targetPort: 8003
-      name: http          # obrigatório para o ServiceMonitor referenciar por nome
