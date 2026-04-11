@@ -28,7 +28,6 @@ resource "kubernetes_manifest" "prometheus" {
   depends_on = [kubernetes_namespace.monitoring]
 }
 
-# cria secret como resource dedicado com o valor direto
 resource "kubernetes_secret_v1" "datadog" {
   metadata {
     name      = "datadog-secret"
@@ -46,8 +45,7 @@ resource "kubernetes_manifest" "datadog" {
   for_each = {
     for f in fileset("${local.manifests_path}/datadog", "*.yaml") :
     f => f
-    # Exclui o secret.yaml do loop
-    if f != "secret.yaml" 
+    if f != "secret.yaml"
   }
 
   manifest = yamldecode(templatefile(
