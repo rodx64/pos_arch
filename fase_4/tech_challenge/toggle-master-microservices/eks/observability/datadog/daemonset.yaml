@@ -29,7 +29,7 @@ spec:
             - name: DD_SITE
               value: "datadoghq.com"
             - name: DD_ENV
-              value: ${environment}
+              value: "dev"
             - name: DD_CLUSTER_NAME
               value: "toggle-master"
             - name: DD_LOGS_ENABLED
