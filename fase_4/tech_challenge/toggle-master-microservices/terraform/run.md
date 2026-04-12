@@ -23,3 +23,6 @@ kubectl get svc argocd-server -n argocd
 <!-- senha: -->
 kubectl -n argocd get secret argocd-initial-admin-secret \
   -o jsonpath="{.data.password}" | base64 -d && echo
+
+
+kubectl get secret datadog-secret -n monitoring -o jsonpath='{.data.api-key}' | base64 -d
