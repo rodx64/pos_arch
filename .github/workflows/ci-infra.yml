@@ -347,7 +347,13 @@ jobs:
         working-directory: ${{ env.OBSERVABILITY_DIR }}
         env:
           DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
-        run: terragrunt apply -auto-approve
+        run: |
+          if [ -z "$DATADOG_API_KEY" ]; then
+            echo "ERROR: DATADOG_API_KEY vazio — verifique o secret no GitHub"
+            exit 1
+          fi
+          rm -rf .terragrunt-cache
+          terragrunt apply -auto-approve
 
   argocd-install:
     name: Install — ArgoCD
