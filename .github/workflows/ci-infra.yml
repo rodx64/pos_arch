@@ -26,7 +26,7 @@ permissions:
 
 jobs:
   bootstrap:
-    name: Bootstrap — S3 + DynamoDB
+    name: Bootstrap
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
