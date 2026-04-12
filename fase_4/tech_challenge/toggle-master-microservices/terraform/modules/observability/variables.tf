@@ -41,3 +41,7 @@ variable "scrape_interval" {
   type    = string
   default = "15s"
 }
+
+variable "manifests_path" {
+  type = string
+}

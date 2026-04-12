@@ -47,4 +47,5 @@ inputs = {
   scrape_interval      = "30s"
 
   datadog_api_key      = get_env("DATADOG_API_KEY", "")
+  manifests_path = "${get_repo_root()}/fase_4/tech_challenge/toggle-master-microservices/eks/observability"
 }
