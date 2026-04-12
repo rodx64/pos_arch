@@ -17,7 +17,7 @@ data:
     remote_write:
       - url: https://api.datadoghq.com/api/v1/series
         headers:
-          DD-API-KEY: "${datadog_api_key}"
+          DD-API-KEY: ${datadog_api_key}
         queue_config:
           max_samples_per_send: 1000
           max_shards: 5
