@@ -31,17 +31,3 @@ variable "datadog_api_key" {
   sensitive = true
   default   = ""
 }
-
-variable "prometheus_retention" {
-  type    = string
-  default = "7d"
-}
-
-variable "scrape_interval" {
-  type    = string
-  default = "15s"
-}
-
-variable "manifests_path" {
-  type = string
-}

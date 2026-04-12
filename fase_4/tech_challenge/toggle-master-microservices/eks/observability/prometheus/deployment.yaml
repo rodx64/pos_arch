@@ -19,7 +19,7 @@ spec:
           image: prom/prometheus:v2.51.0
           args:
             - "--config.file=/etc/prometheus/prometheus.yml"
-            - "--storage.tsdb.retention.time=${prometheus_retention}"
+            - "--storage.tsdb.retention.time=2d"
             - "--storage.tsdb.path=/prometheus"
             - "--web.enable-lifecycle"         # permite reload via POST /-/reload
             - "--web.console.libraries=/etc/prometheus/console_libraries"

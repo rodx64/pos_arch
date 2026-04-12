@@ -42,10 +42,5 @@ inputs = {
   eks_cluster_token    = dependency.infra.outputs.eks_cluster_token
   eks_tunnel_host      = "https://127.0.0.1:6443"
 
-  # dev: retenção curta e scrape menos frequente
-  prometheus_retention = "2d"
-  scrape_interval      = "30s"
-
   datadog_api_key      = get_env("DATADOG_API_KEY", "")
-  manifests_path = "${get_repo_root()}/fase_4/tech_challenge/toggle-master-microservices/eks/observability"
 }
