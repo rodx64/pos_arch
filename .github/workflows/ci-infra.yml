@@ -183,7 +183,7 @@ jobs:
           AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
           TF_VAR_AUTH_MASTER_KEY: ${{ secrets.AUTH_MASTER_KEY }}
           TF_VAR_EVALUATION_API_KEY: ${{ secrets.EVALUATION_API_KEY }}
-          DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
+          TF_VAR_DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
         run: |
           if aws ecr describe-repositories \
               --repository-names toggle-master \
@@ -346,10 +346,10 @@ jobs:
       - name: Terragrunt apply — observability
         working-directory: ${{ env.OBSERVABILITY_DIR }}
         env:
-          DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
+          TF_VAR_DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
         run: |
-          if [ -z "$DATADOG_API_KEY" ]; then
-            echo "ERROR: DATADOG_API_KEY vazio — verifique o secret no GitHub"
+          if [ -z "${{ secrets.DATADOG_API_KEY }}" ]; then
+            echo "ERROR: DATADOG_API_KEY vazio no GitHub Secrets"
             exit 1
           fi
           rm -rf .terragrunt-cache

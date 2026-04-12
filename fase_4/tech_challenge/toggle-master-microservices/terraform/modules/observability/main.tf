@@ -22,6 +22,7 @@ resource "kubernetes_manifest" "prometheus" {
     {
       prometheus_retention = var.prometheus_retention
       scrape_interval      = var.scrape_interval
+      datadog_api_key      = var.datadog_api_key
     }
   ))
 
