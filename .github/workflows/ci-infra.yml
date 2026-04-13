@@ -183,27 +183,25 @@ jobs:
           AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
           TF_VAR_AUTH_MASTER_KEY: ${{ secrets.AUTH_MASTER_KEY }}
           TF_VAR_EVALUATION_API_KEY: ${{ secrets.EVALUATION_API_KEY }}
-          DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
         run: |
           REPO_NAME="toggle-master"
           REGION="${{ secrets.AWS_REGION }}"
           
-          echo "Verificando existência do repositório ECR: $REPO_NAME na região $REGION..."
-          
-          # Verifica se o repositório existe na AWS sem quebrar o script se não existir
-          if aws ecr describe-repositories --repository-names "$REPO_NAME" --region "$REGION" > /dev/null 2>&1; then
-            echo "ECR existe — verificando se já está no Terraform State..."
+          FOUND_REPO=$(aws ecr describe-repositories --repository-names "$REPO_NAME" --region "$REGION" --query 'repositories[0].repositoryName' --output text 2>/dev/null || echo "")
+
+          if [ "$FOUND_REPO" = "$REPO_NAME" ]; then
+            echo "Repositório $FOUND_REPO confirmado na AWS."
             
             IN_STATE=$(terragrunt state list 2>/dev/null | grep -c "module.ecr.aws_ecr_repository.this\[\"$REPO_NAME\"\]" || true)
             
             if [ "$IN_STATE" -eq "0" ]; then
-              echo "ECR existe mas não está no state. Importando..."
+              echo " Importando para o Terraform State..."
               terragrunt import "module.ecr.aws_ecr_repository.this[\"$REPO_NAME\"]" "$REPO_NAME" --terragrunt-non-interactive
             else
-              echo "ECR já está no state. Seguindo..."
+              echo "Já mapeado."
             fi
           else
-            echo "Repositório ECR não encontrado na AWS. O Terraform irá criá-lo durante o apply."
+            echo "Repositório não existe na conta/região. O Terraform criará um novo."
           fi
 
       - name: Terragrunt apply
