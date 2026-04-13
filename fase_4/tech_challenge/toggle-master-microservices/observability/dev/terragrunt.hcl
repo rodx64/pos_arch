@@ -42,5 +42,5 @@ inputs = {
   eks_cluster_token    = dependency.infra.outputs.eks_cluster_token
   eks_tunnel_host      = "https://127.0.0.1:6443"
 
-  datadog_api_key = get_env("TF_VAR_DATADOG_API_KEY", get_env("DATADOG_API_KEY"))
+  datadog_api_key      = get_env("DATADOG_API_KEY")
 }

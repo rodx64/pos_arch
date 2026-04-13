@@ -340,7 +340,8 @@ jobs:
       - name: Terragrunt apply — observability
         working-directory: ${{ env.OBSERVABILITY_DIR }}
         env:
-          TF_VAR_DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
+          DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }} # Terragrunt
+          TF_VAR_DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }} # Terraform
         run: |
           if [ -z "${{ secrets.DATADOG_API_KEY }}" ]; then
             echo "ERROR: DATADOG_API_KEY vazio no GitHub Secrets"
