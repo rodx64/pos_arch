@@ -179,20 +179,16 @@ jobs:
 
       - name: Import ECR if exists
         working-directory: ${{ env.TERRAGRUNT_DIR }}
-        env:
-          AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
-          TF_VAR_AUTH_MASTER_KEY: ${{ secrets.AUTH_MASTER_KEY }}
-          TF_VAR_EVALUATION_API_KEY: ${{ secrets.EVALUATION_API_KEY }}
         run: |
           REPO_NAME="toggle-master"
           REGION="${{ secrets.AWS_REGION }}"
           
-          FOUND_REPO=$(aws ecr describe-repositories --repository-names "$REPO_NAME" --region "$REGION" --query 'repositories[0].repositoryName' --output text 2>/dev/null || echo "")
+          CHECK=$(aws ecr describe-repositories --repository-names "$REPO_NAME" --region "$REGION" 2>&1 || true)
 
-          if [ "$FOUND_REPO" = "$REPO_NAME" ]; then
+          if [[ "$CHECK" == *"$REPO_NAME"* && "$CHECK" != *"RepositoryNotFoundException"* ]]; then
             echo "Repositório $FOUND_REPO confirmado na AWS."
             
-            IN_STATE=$(terragrunt state list 2>/dev/null | grep -c "module.ecr.aws_ecr_repository.this\[\"$REPO_NAME\"\]" || true)
+            IN_STATE=$(terragrunt state list 2>/dev/null | grep -c "module.ecr.aws_ecr_repository.this" || true)
             
             if [ "$IN_STATE" -eq "0" ]; then
               echo " Importando para o Terraform State..."

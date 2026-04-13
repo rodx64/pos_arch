@@ -96,8 +96,3 @@ module "ecr" {
   repositories = var.ecr_repositories
   force_delete = var.force_delete
 }
-
-import {
-  to = module.ecr.aws_ecr_repository.this["toggle-master"]
-  id = "toggle-master"
-}
