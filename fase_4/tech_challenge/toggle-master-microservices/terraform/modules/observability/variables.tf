@@ -29,5 +29,4 @@ variable "eks_tunnel_host" {
 variable "datadog_api_key" {
   type      = string
   sensitive = true
-  default   = ""
 }

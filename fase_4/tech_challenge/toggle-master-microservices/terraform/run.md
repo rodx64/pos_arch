@@ -26,3 +26,7 @@ kubectl -n argocd get secret argocd-initial-admin-secret \
 
 
 kubectl get secret datadog-secret -n monitoring -o jsonpath='{.data.api-key}' | base64 -d
+
+kubectl create secret generic datadog-secret \
+  -n monitoring \
+  --from-literal=api-key='xxxx'
