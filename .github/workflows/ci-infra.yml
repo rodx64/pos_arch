@@ -183,27 +183,27 @@ jobs:
           AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
           TF_VAR_AUTH_MASTER_KEY: ${{ secrets.AUTH_MASTER_KEY }}
           TF_VAR_EVALUATION_API_KEY: ${{ secrets.EVALUATION_API_KEY }}
-          TF_VAR_DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
+          DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
         run: |
-          if aws ecr describe-repositories \
-              --repository-names toggle-master \
-              --region ${{ secrets.AWS_REGION }} > /dev/null 2>&1; then
-
-            echo "ECR existe — verificando state..."
-
-            IN_STATE=$(terragrunt state list 2>/dev/null \
-              | grep -c 'module.ecr.aws_ecr_repository.this\["toggle-master"\]' || true)
-
+          REPO_NAME="toggle-master"
+          REGION="${{ secrets.AWS_REGION }}"
+          
+          echo "Verificando existência do repositório ECR: $REPO_NAME na região $REGION..."
+          
+          # Verifica se o repositório existe na AWS sem quebrar o script se não existir
+          if aws ecr describe-repositories --repository-names "$REPO_NAME" --region "$REGION" > /dev/null 2>&1; then
+            echo "ECR existe — verificando se já está no Terraform State..."
+            
+            IN_STATE=$(terragrunt state list 2>/dev/null | grep -c "module.ecr.aws_ecr_repository.this\[\"$REPO_NAME\"\]" || true)
+            
             if [ "$IN_STATE" -eq "0" ]; then
-              echo "Importando ECR para o state..."
-              terragrunt import \
-                'module.ecr.aws_ecr_repository.this["toggle-master"]' \
-                toggle-master
+              echo "ECR existe mas não está no state. Importando..."
+              terragrunt import "module.ecr.aws_ecr_repository.this[\"$REPO_NAME\"]" "$REPO_NAME" --terragrunt-non-interactive
             else
-              echo "ECR já está no state — pulando."
+              echo "ECR já está no state. Seguindo..."
             fi
           else
-            echo "ECR não existe — será criado pelo apply."
+            echo "Repositório ECR não encontrado na AWS. O Terraform irá criá-lo durante o apply."
           fi
 
       - name: Terragrunt apply
