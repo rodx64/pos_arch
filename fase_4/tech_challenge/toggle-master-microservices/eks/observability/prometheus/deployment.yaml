@@ -17,6 +17,12 @@ spec:
       containers:
         - name: prometheus
           image: prom/prometheus:v2.51.0
+          env:
+            - name: DATADOG_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: datadog-secret
+                  key: api-key
           args:
             - "--config.file=/etc/prometheus/prometheus.yml"
             - "--storage.tsdb.retention.time=2d"
