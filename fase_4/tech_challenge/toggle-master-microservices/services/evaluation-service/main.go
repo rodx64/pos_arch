@@ -95,7 +95,7 @@ func newMetrics() *AppMetrics {
 		}),
 	}
 
-	prometheus.MustRegister(
+	collectors := []prometheus.Collector{
 		m.httpRequestsTotal,
 		m.httpRequestDuration,
 		m.evaluationsTotal,
@@ -106,7 +106,11 @@ func newMetrics() *AppMetrics {
 		m.flagServiceErrorsTotal,
 		m.redisUp,
 		m.sqsUp,
-	)
+	}
+
+	for _, c := range collectors {
+		_ = prometheus.Register(c)
+	}
 
 	return m
 }

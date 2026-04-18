@@ -93,6 +93,7 @@ func TestEvaluationHandler_Success_FlagEnabled(t *testing.T) {
 		FlagServiceURL:      flagServer.URL,
 		TargetingServiceURL: ruleServer.URL,
 		HttpClient:          &http.Client{Timeout: 5 * time.Second},
+		Metrics:             newMetrics(),
 	}
 
 	expectedInfo := CombinedFlagInfo{
@@ -146,6 +147,7 @@ func TestEvaluationHandler_FlagNotFound_ReturnsFalse(t *testing.T) {
 		FlagServiceURL:      flagServer.URL,
 		TargetingServiceURL: ruleServer.URL,
 		HttpClient:          &http.Client{Timeout: 5 * time.Second},
+		Metrics:             newMetrics(),
 	}
 
 	redisMock.ExpectGet("flag_info:nonexistent").RedisNil()
@@ -187,6 +189,7 @@ func TestEvaluationHandler_ServiceError_Returns502(t *testing.T) {
 		FlagServiceURL:      flagServer.URL,
 		TargetingServiceURL: ruleServer.URL,
 		HttpClient:          &http.Client{Timeout: 5 * time.Second},
+		Metrics:             newMetrics(),
 	}
 
 	redisMock.ExpectGet("flag_info:err-flag").RedisNil()
@@ -213,6 +216,7 @@ func TestEvaluationHandler_CacheHit(t *testing.T) {
 	app := &App{
 		RedisClient: db,
 		HttpClient:  &http.Client{Timeout: 5 * time.Second},
+		Metrics:     newMetrics(),
 	}
 
 	redisMock.ExpectGet("flag_info:cached").SetVal(string(jsonData))

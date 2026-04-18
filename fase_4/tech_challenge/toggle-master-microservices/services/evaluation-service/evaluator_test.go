@@ -53,6 +53,7 @@ func newTestApp() *App {
 		FlagServiceURL:      "http://flag-service",
 		TargetingServiceURL: "http://targeting-service",
 		HttpClient:          &http.Client{Timeout: 5 * time.Second},
+		Metrics:             newMetrics(),
 	}
 }
 
