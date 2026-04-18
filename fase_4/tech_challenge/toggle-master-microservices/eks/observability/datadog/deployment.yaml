@@ -16,7 +16,7 @@ spec:
       serviceAccountName: datadog-agent
       containers:
         - name: cluster-agent
-          image: gcr.io/datadoghq/cluster-agent:7
+          image: gcr.io/datadoghq/cluster-agent:latest
           resources:
             requests:
               cpu: "200m"
