@@ -93,7 +93,6 @@ class TestCreateRule(unittest.TestCase):
         _mock_pool_instance.getconn.return_value = self.conn
 
     @patch('app.requests.get')
-    @patch('app.refresh_active_rules_gauge')
     def test_create_rule_success(self, mock_requests_get):
         make_auth_ok(mock_requests_get)
         self.cur.fetchone.return_value = {
@@ -249,6 +248,7 @@ class TestUpdateRule(unittest.TestCase):
 
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.get_json()['rules'], new_rules)
+        self.conn.commit.assert_called_once()
 
     @patch('app.requests.get')
     def test_update_is_enabled_success(self, mock_requests_get):
