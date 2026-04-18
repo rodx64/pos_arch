@@ -22,6 +22,23 @@ spec:
         prometheus.io/port: "8005"
         prometheus.io/path: "/metrics"
         admission.datadoghq.com/enabled: "true"
+        ad.datadoghq.com/analytics-container.checks: |
+          {
+            "openmetrics": {
+              "instances": [
+                {
+                  "openmetrics_endpoint": "http://%%host%%:8005/metrics",
+                  "namespace": "toggle_master",
+                  "metrics": [
+                    "http_requests_total",
+                    "http_request_duration_seconds",
+                    "process_cpu_seconds_total",
+                    "process_resident_memory_bytes"
+                  ]
+                }
+              ]
+            }
+          }
     spec:
       containers:
         - name: analytics-container

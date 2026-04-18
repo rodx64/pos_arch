@@ -40,11 +40,16 @@ spec:
               value: "true"
             - name: DD_APM_NON_LOCAL_TRAFFIC
               value: "true"
-            # Prometheus já faz o scrape — evita coleta dupla
             - name: DD_PROMETHEUS_SCRAPE_ENABLED
               value: "false"
             - name: KUBERNETES
               value: "true"
+            - name: DD_KUBERNETES_KUBELET_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: DD_KUBELET_TLS_VERIFY
+              value: "false"
             - name: DD_KUBERNETES_KUBELET_NODENAME
               valueFrom:
                 fieldRef:
@@ -55,6 +60,13 @@ spec:
                   fieldPath: spec.nodeName
             - name: DD_CRI_SOCKET_PATH
               value: "/var/run/containerd/containerd.sock"
+            - name: DD_CLUSTER_AGENT_ENABLED
+              value: "false"
+            # Autodiscovery: monitora todos os namespaces
+            - name: DD_AC_INCLUDE
+              value: "name:.*"
+            - name: DD_IGNORE_AUTOCONF
+              value: "false"
           resources:
             requests:
               cpu: 100m
@@ -75,6 +87,9 @@ spec:
             - name: logpath
               mountPath: /var/log/pods
               readOnly: true
+            # Necessário para o Autodiscovery ler anotações dos pods
+            - name: pointerdir
+              mountPath: /opt/datadog-agent/run
       volumes:
         - name: containerd-socket
           hostPath:
@@ -89,3 +104,7 @@ spec:
         - name: logpath
           hostPath:
             path: /var/log/pods
+        - name: pointerdir
+          hostPath:
+            path: /opt/datadog-agent/run
+            type: DirectoryOrCreate

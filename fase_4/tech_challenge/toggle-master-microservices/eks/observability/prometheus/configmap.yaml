@@ -12,22 +12,7 @@ data:
         environment: dev
         cluster: toggle-master
 
-    # Datadog aceita Prometheus remote_write no endpoint abaixo.
-    # A autenticação usa DD-API-KEY no header — NÃO bearer token.
-    remote_write:
-      - url: https://api.datadoghq.com/api/v1/series
-        headers:
-          DD-API-KEY: ${DATADOG_API_KEY}
-        queue_config:
-          max_samples_per_send: 1000
-          max_shards: 5
-        write_relabel_configs:
-          - source_labels: [__name__]
-            regex: "http_requests_total|http_request_duration_seconds|process_cpu_seconds_total|process_resident_memory_bytes|up"
-            action: keep
-
     scrape_configs:
-      # Scrape via ServiceMonitors — Prometheus descobre os serviços pelo label
       - job_name: "toggle-master-services"
         kubernetes_sd_configs:
           - role: pod
@@ -56,7 +41,6 @@ data:
             action: replace
             target_label: pod
 
-      # Self-scrape do próprio Prometheus
       - job_name: "prometheus"
         static_configs:
           - targets: ["localhost:9090"]
