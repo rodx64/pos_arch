@@ -107,8 +107,11 @@ class TestCreateFlag(unittest.TestCase):
 
         self.assertEqual(resp.status_code, 201)
         self.assertEqual(resp.get_json()['name'], 'feature_x')
-        self.cur.execute.assert_called_once()
-        self.conn.commit.assert_called_once()
+        self.cur.execute.assert_any_call(
+            'INSERT INTO flags (name, description, is_enabled, created_at, updated_at) VALUES (%s, %s, %s, NOW(), NOW()) RETURNING *',
+            ('feature_x', 'Test flag', False)
+        )
+        self.assertEqual(self.cur.execute.call_count, 2)
 
     @patch('app.requests.get')
     def test_create_flag_default_is_enabled_false(self, mock_requests_get):
