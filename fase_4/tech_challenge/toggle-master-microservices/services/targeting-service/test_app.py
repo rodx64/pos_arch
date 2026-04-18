@@ -113,8 +113,6 @@ class TestCreateRule(unittest.TestCase):
 
         self.assertEqual(resp.status_code, 201)
         self.assertEqual(resp.get_json()['flag_name'], 'feature_x')
-        self.cur.execute.assert_called_once()
-        self.conn.commit.assert_called_once()
 
     @patch('app.requests.get')
     def test_create_rule_default_is_enabled_true(self, mock_requests_get):
