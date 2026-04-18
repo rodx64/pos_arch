@@ -43,4 +43,5 @@ inputs = {
   eks_tunnel_host      = "https://127.0.0.1:6443"
 
   datadog_api_key      = get_env("DATADOG_API_KEY")
+  datadog_cluster_agent_token = get_env("DATADOG_CLUSTER_AGENT_TOKEN")
 }

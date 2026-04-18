@@ -60,20 +60,23 @@ spec:
                   fieldPath: spec.nodeName
             - name: DD_CRI_SOCKET_PATH
               value: "/var/run/containerd/containerd.sock"
-            - name: DD_CLUSTER_AGENT_ENABLED
-              value: "false"
-            # Autodiscovery: monitora todos os namespaces
             - name: DD_AC_INCLUDE
               value: "name:.*"
             - name: DD_IGNORE_AUTOCONF
               value: "false"
+            - name: DD_CLUSTER_AGENT_ENABLED
+              value: "true"
+            - name: DD_CLUSTER_AGENT_AUTH_TOKEN
+              value: "${cluster_agent_token}"
+            - name: DD_CLUSTER_AGENT_KBSERVICE_NAME
+              value: "datadog-cluster-agent"
           resources:
             requests:
-              cpu: 100m
-              memory: 128Mi
+              cpu: "100m"
+              memory: "256Mi"
             limits:
-              cpu: 200m
-              memory: 256Mi
+              cpu: "200m"
+              memory: "512Mi
           volumeMounts:
             - name: containerd-socket
               mountPath: /var/run/containerd/containerd.sock
