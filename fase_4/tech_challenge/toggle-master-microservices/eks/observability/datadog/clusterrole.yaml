@@ -3,26 +3,67 @@ kind: ClusterRole
 metadata:
   name: datadog-agent
 rules:
+  # 1. Recursos Core (Expandido)
   - apiGroups: [""]
-    resources: ["nodes", "pods", "services", "endpoints", "namespaces"]
+    resources: 
+      - nodes
+      - pods
+      - services
+      - endpoints
+      - namespaces
+      - configmaps
+      - serviceaccounts
+      - persistentvolumes
+      - persistentvolumeclaims
+      - limitranges
+      - componentstatuses
     verbs: ["get", "list", "watch"]
+
+  # 2. Eventos e Eleição de Líder (Crítico para Cluster Agent)
   - apiGroups: [""]
     resources: ["events"]
-    verbs: ["get", "list", "watch", "create"]
+    verbs: ["get", "list", "watch", "create", "patch"]
   - apiGroups: [""]
-    resources: ["nodes/metrics"]
-    verbs: ["get"]
+    resources: ["configmaps"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+
+  # 3. Métricas de Nó e Kubelet
   - apiGroups: [""]
-    resources: ["nodes/stats"]
-    verbs: ["get"]
-  - apiGroups: [""]
-    resources: ["nodes/proxy"]
-    verbs: ["get"]
-  - apiGroups: [""]
-    resources: ["nodes/spec"]
+    resources: ["nodes/metrics", "nodes/stats", "nodes/proxy", "nodes/spec"]
     verbs: ["get"]
   - nonResourceURLs: ["/metrics", "/metrics/cadvisor"]
     verbs: ["get"]
-  - apiGroups: [""]
-    resources: ["configmaps"]
-    verbs: ["get", "list", "watch", "create", "update"]
+
+  # 4. Workloads (Onde estão seus microserviços Go/Python)
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets", "daemonsets", "statefulsets"]
+    verbs: ["get", "list", "watch"]
+
+  # 5. Autoscaling e Jobs (HPA e Tarefas)
+  - apiGroups: ["autoscaling"]
+    resources: ["horizontalpodautoscalers"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["batch"]
+    resources: ["jobs", "cronjobs"]
+    verbs: ["get", "list", "watch"]
+
+  # 6. Rede e Descoberta
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses", "networkpolicies"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["discovery.k8s.io"]
+    resources: ["endpointslices"]
+    verbs: ["get", "list", "watch"]
+
+  # 7. Definições de Recursos (Elimina erro de CRD)
+  - apiGroups: ["apiextensions.k8s.io"]
+    resources: ["customresourcedefinitions"]
+    verbs: ["get", "list", "watch"]
+  
+  # 8. RBAC (Permite ao DD entender quem pode fazer o quê)
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources: ["clusterroles", "clusterrolebindings", "roles", "rolebindings"]
+    verbs: ["get", "list", "watch"]
