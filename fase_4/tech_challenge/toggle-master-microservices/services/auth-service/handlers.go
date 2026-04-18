@@ -26,33 +26,32 @@ func (a *App) healthHandler(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) validateKeyHandler(w http.ResponseWriter, r *http.Request) {
 	authHeader := r.Header.Get("Authorization")
-	keyString := strings.TrimPrefix(authHeader, "Bearer ")
 
-	if keyString == "" {
-		a.Metrics.keysValidatedTotal.WithLabelValues("failure").Inc()
-		http.Error(w, "Authorization header não encontrado", http.StatusUnauthorized)
+	if authHeader == "" {
+		http.Error(w, "Chave não fornecida", http.StatusUnauthorized)
 		return
 	}
 
-	keyHash := hashAPIKey(keyString)
+	parts := strings.Split(authHeader, " ")
+	if len(parts) != 2 || parts[0] != "Bearer" || parts[1] == "" {
+		http.Error(w, "Formato de autorização inválido", http.StatusUnauthorized)
+		return
+	}
+
+	apiKey := parts[1]
+	keyHash := hashAPIKey(apiKey)
 
 	var id int
-	err := a.DB.QueryRow(
-		"SELECT id FROM api_keys WHERE key_hash = $1 AND is_active = true", keyHash,
-	).Scan(&id)
+	err := a.DB.QueryRow("SELECT id FROM api_keys WHERE key_hash = $1 AND is_active = true", keyHash).Scan(&id)
 
 	if err != nil {
-		log.Printf("Falha na validação da chave")
-		a.Metrics.keysValidatedTotal.WithLabelValues("failure").Inc()
-		http.Error(w, "Chave de API inválida ou inativa", http.StatusUnauthorized)
+		http.Error(w, "Chave inválida", http.StatusUnauthorized)
 		return
 	}
 
-	a.Metrics.keysValidatedTotal.WithLabelValues("success").Inc()
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(map[string]string{"message": "Chave válida"}); err != nil {
-		log.Printf("Erro ao encodar resposta: %v", err)
-	}
+	json.NewEncoder(w).Encode(map[string]string{"message": "Chave válida"})
 }
 
 func (a *App) createKeyHandler(w http.ResponseWriter, r *http.Request) {
