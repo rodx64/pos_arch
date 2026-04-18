@@ -9,7 +9,73 @@ import (
 	"time"
 
 	"github.com/go-redis/redismock/v8"
+	"github.com/prometheus/client_golang/prometheus"
 )
+
+// --- Helpers ---
+func newTestMetrics() *AppMetrics {
+	reg := prometheus.NewRegistry()
+
+	m := &AppMetrics{
+		httpRequestsTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{Name: "http_requests_total", Help: ""},
+			[]string{"method", "path", "status"},
+		),
+		httpRequestDuration: prometheus.NewHistogramVec(
+			prometheus.HistogramOpts{Name: "http_request_duration_seconds", Help: ""},
+			[]string{"method", "path"},
+		),
+		evaluationsTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{Name: "evaluations_total", Help: ""},
+			[]string{"flag_name", "result"},
+		),
+		cacheHitsTotal: prometheus.NewCounter(prometheus.CounterOpts{
+			Name: "cache_hits_total", Help: "",
+		}),
+		cacheMissesTotal: prometheus.NewCounter(prometheus.CounterOpts{
+			Name: "cache_misses_total", Help: "",
+		}),
+		sqsEventsSentTotal: prometheus.NewCounter(prometheus.CounterOpts{
+			Name: "sqs_events_sent_total", Help: "",
+		}),
+		sqsEventsFailedTotal: prometheus.NewCounter(prometheus.CounterOpts{
+			Name: "sqs_events_failed_total", Help: "",
+		}),
+		flagServiceErrorsTotal: prometheus.NewCounter(prometheus.CounterOpts{
+			Name: "flag_service_errors_total", Help: "",
+		}),
+		redisUp: prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: "redis_up", Help: "",
+		}),
+		sqsUp: prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: "sqs_up", Help: "",
+		}),
+	}
+
+	reg.MustRegister(
+		m.httpRequestsTotal,
+		m.httpRequestDuration,
+		m.evaluationsTotal,
+		m.cacheHitsTotal,
+		m.cacheMissesTotal,
+		m.sqsEventsSentTotal,
+		m.sqsEventsFailedTotal,
+		m.flagServiceErrorsTotal,
+		m.redisUp,
+		m.sqsUp,
+	)
+
+	return m
+}
+
+func newTestApp() *App {
+	return &App{
+		FlagServiceURL:      "http://flag-service",
+		TargetingServiceURL: "http://targeting-service",
+		HttpClient:          &http.Client{Timeout: 5 * time.Second},
+		Metrics:             newTestMetrics(),
+	}
+}
 
 // --- getDeterministicBucket Tests ---
 
@@ -47,14 +113,6 @@ func TestGetDeterministicBucket_EmptyString(t *testing.T) {
 	bucket := getDeterministicBucket("")
 	if bucket < 0 || bucket > 99 {
 		t.Errorf("bucket fora do intervalo para string vazia: %d", bucket)
-	}
-}
-
-func newTestApp() *App {
-	return &App{
-		FlagServiceURL:      "http://flag-service",
-		TargetingServiceURL: "http://targeting-service",
-		HttpClient:          &http.Client{Timeout: 5 * time.Second},
 	}
 }
 
@@ -219,6 +277,7 @@ func TestFetchFlag_Success(t *testing.T) {
 	app := &App{
 		FlagServiceURL: server.URL,
 		HttpClient:     server.Client(),
+		Metrics:        newTestMetrics(),
 	}
 
 	result, err := app.fetchFlag("my-flag")
@@ -242,6 +301,7 @@ func TestFetchFlag_NotFound(t *testing.T) {
 	app := &App{
 		FlagServiceURL: server.URL,
 		HttpClient:     server.Client(),
+		Metrics:        newTestMetrics(),
 	}
 
 	_, err := app.fetchFlag("nonexistent")
@@ -262,6 +322,7 @@ func TestFetchFlag_ServerError(t *testing.T) {
 	app := &App{
 		FlagServiceURL: server.URL,
 		HttpClient:     server.Client(),
+		Metrics:        newTestMetrics(),
 	}
 
 	_, err := app.fetchFlag("my-flag")
@@ -280,6 +341,7 @@ func TestFetchFlag_InvalidJSON(t *testing.T) {
 	app := &App{
 		FlagServiceURL: server.URL,
 		HttpClient:     server.Client(),
+		Metrics:        newTestMetrics(),
 	}
 
 	_, err := app.fetchFlag("my-flag")
@@ -290,8 +352,9 @@ func TestFetchFlag_InvalidJSON(t *testing.T) {
 
 func TestFetchFlag_ConnectionError(t *testing.T) {
 	app := &App{
-		FlagServiceURL: "http://localhost:1", // porta inválida
+		FlagServiceURL: "http://localhost:1",
 		HttpClient:     &http.Client{Timeout: 1 * time.Second},
+		Metrics:        newTestMetrics(),
 	}
 
 	_, err := app.fetchFlag("my-flag")
@@ -316,6 +379,7 @@ func TestFetchFlag_AuthorizationHeader(t *testing.T) {
 	app := &App{
 		FlagServiceURL: server.URL,
 		HttpClient:     server.Client(),
+		Metrics:        newTestMetrics(),
 	}
 
 	_, err := app.fetchFlag("test")
@@ -343,6 +407,7 @@ func TestFetchRule_Success(t *testing.T) {
 	app := &App{
 		TargetingServiceURL: server.URL,
 		HttpClient:          server.Client(),
+		Metrics:             newTestMetrics(),
 	}
 
 	result, err := app.fetchRule("my-flag")
@@ -366,6 +431,7 @@ func TestFetchRule_NotFound(t *testing.T) {
 	app := &App{
 		TargetingServiceURL: server.URL,
 		HttpClient:          server.Client(),
+		Metrics:             newTestMetrics(),
 	}
 
 	_, err := app.fetchRule("nonexistent")
@@ -386,6 +452,7 @@ func TestFetchRule_ServerError(t *testing.T) {
 	app := &App{
 		TargetingServiceURL: server.URL,
 		HttpClient:          server.Client(),
+		Metrics:             newTestMetrics(),
 	}
 
 	_, err := app.fetchRule("my-flag")
@@ -404,6 +471,7 @@ func TestFetchRule_InvalidJSON(t *testing.T) {
 	app := &App{
 		TargetingServiceURL: server.URL,
 		HttpClient:          server.Client(),
+		Metrics:             newTestMetrics(),
 	}
 
 	_, err := app.fetchRule("my-flag")
@@ -416,6 +484,7 @@ func TestFetchRule_ConnectionError(t *testing.T) {
 	app := &App{
 		TargetingServiceURL: "http://localhost:1",
 		HttpClient:          &http.Client{Timeout: 1 * time.Second},
+		Metrics:             newTestMetrics(),
 	}
 
 	_, err := app.fetchRule("my-flag")
@@ -443,6 +512,7 @@ func TestFetchFromServices_BothSuccess(t *testing.T) {
 		FlagServiceURL:      flagServer.URL,
 		TargetingServiceURL: ruleServer.URL,
 		HttpClient:          &http.Client{Timeout: 5 * time.Second},
+		Metrics:             newTestMetrics(),
 	}
 
 	info, err := app.fetchFromServices("my-flag")
@@ -472,6 +542,7 @@ func TestFetchFromServices_FlagError_ReturnsError(t *testing.T) {
 		FlagServiceURL:      flagServer.URL,
 		TargetingServiceURL: ruleServer.URL,
 		HttpClient:          &http.Client{Timeout: 5 * time.Second},
+		Metrics:             newTestMetrics(),
 	}
 
 	_, err := app.fetchFromServices("my-flag")
@@ -495,6 +566,7 @@ func TestFetchFromServices_RuleNotFound_ReturnsNilRule(t *testing.T) {
 		FlagServiceURL:      flagServer.URL,
 		TargetingServiceURL: ruleServer.URL,
 		HttpClient:          &http.Client{Timeout: 5 * time.Second},
+		Metrics:             newTestMetrics(),
 	}
 
 	info, err := app.fetchFromServices("my-flag")
@@ -511,7 +583,10 @@ func TestFetchFromServices_RuleNotFound_ReturnsNilRule(t *testing.T) {
 
 func TestGetCombinedFlagInfo_CacheHit(t *testing.T) {
 	db, mock := redismock.NewClientMock()
-	app := &App{RedisClient: db}
+	app := &App{
+		RedisClient: db,
+		Metrics:     newTestMetrics(), // Fix: Metrics inicializado
+	}
 
 	info := CombinedFlagInfo{
 		Flag: &Flag{Name: "cached-flag", IsEnabled: true},
@@ -552,6 +627,7 @@ func TestGetCombinedFlagInfo_CacheMiss_FetchesFromServices(t *testing.T) {
 		FlagServiceURL:      flagServer.URL,
 		TargetingServiceURL: ruleServer.URL,
 		HttpClient:          &http.Client{Timeout: 5 * time.Second},
+		Metrics:             newTestMetrics(),
 	}
 
 	expectedInfo := CombinedFlagInfo{
@@ -594,6 +670,7 @@ func TestGetCombinedFlagInfo_CacheInvalidJSON_FetchesFromServices(t *testing.T) 
 		FlagServiceURL:      flagServer.URL,
 		TargetingServiceURL: ruleServer.URL,
 		HttpClient:          &http.Client{Timeout: 5 * time.Second},
+		Metrics:             newTestMetrics(),
 	}
 
 	expectedInfo := CombinedFlagInfo{
@@ -632,6 +709,7 @@ func TestGetDecision_FlagEnabled_NoRule_ReturnsTrue(t *testing.T) {
 		FlagServiceURL:      flagServer.URL,
 		TargetingServiceURL: ruleServer.URL,
 		HttpClient:          &http.Client{Timeout: 5 * time.Second},
+		Metrics:             newTestMetrics(),
 	}
 
 	expectedInfo := CombinedFlagInfo{
@@ -670,6 +748,7 @@ func TestGetDecision_FlagNotFound_ReturnsError(t *testing.T) {
 		FlagServiceURL:      flagServer.URL,
 		TargetingServiceURL: ruleServer.URL,
 		HttpClient:          &http.Client{Timeout: 5 * time.Second},
+		Metrics:             newTestMetrics(),
 	}
 
 	redisMock.ExpectGet("flag_info:nonexistent").RedisNil()
