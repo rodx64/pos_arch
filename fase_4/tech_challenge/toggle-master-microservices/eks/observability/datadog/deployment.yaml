@@ -36,3 +36,7 @@ spec:
               value: "datadoghq.com"
             - name: DD_CLUSTER_NAME
               value: "toggle-master"
+            - name: DD_LEADER_ELECTION
+              value: "true"
+            - name: DD_COLLECT_KUBERNETES_EVENTS
+              value: "true"
