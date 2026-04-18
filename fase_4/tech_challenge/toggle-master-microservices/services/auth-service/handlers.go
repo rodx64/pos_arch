@@ -51,7 +51,9 @@ func (a *App) validateKeyHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"message": "Chave válida"})
+	if err := json.NewEncoder(w).Encode(map[string]string{"message": "Chave válida"}); err != nil {
+		log.Printf("Erro ao encodar resposta: %v", err)
+	}
 }
 
 func (a *App) createKeyHandler(w http.ResponseWriter, r *http.Request) {
