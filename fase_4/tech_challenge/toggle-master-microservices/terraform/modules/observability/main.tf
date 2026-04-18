@@ -21,8 +21,8 @@ resource "kubernetes_secret_v1" "datadog" {
 }
 
 resource "kubectl_manifest" "datadog_manifests" {
-  for_each  = fileset("${path.module}/../../../eks/observability/datadog", "*.yaml")
-  
+  for_each = fileset("${path.module}/../../../eks/observability/datadog", "*.yaml")
+
   yaml_body = templatefile("${path.module}/../../../eks/observability/datadog/${each.value}", {
     cluster_agent_token = var.datadog_cluster_agent_token
     api_key             = var.datadog_api_key
