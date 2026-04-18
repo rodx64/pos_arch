@@ -10,6 +10,8 @@ from botocore.exceptions import NoCredentialsError, ClientError
 from flask import Flask, jsonify
 from dotenv import load_dotenv
 import subprocess
+from prometheus_flask_exporter import PrometheusMetrics
+from prometheus_client import Counter, Gauge
 
 
 # [SECURITY-TEST] Simulação de vulnerabilidade para demonstração DevSecOps
@@ -76,6 +78,33 @@ HEALTH_MONITOR_INTERVAL = 10
 HEARTBEAT_INTERVAL = WAIT_TIME_SECONDS + 5
 
 
+# --- Flask + Prometheus ---
+app = Flask(__name__)
+metrics = PrometheusMetrics(app)
+
+# Métricas customizadas
+messages_processed = Counter(
+    'sqs_messages_processed_total',
+    'Total de mensagens SQS processadas com sucesso'
+)
+messages_failed = Counter(
+    'sqs_messages_failed_total',
+    'Total de mensagens SQS que falharam'
+)
+worker_status = Gauge(
+    'worker_status',
+    '1 se o worker está ativo, 0 se não'
+)
+sqs_available = Gauge(
+    'sqs_available',
+    '1 se o SQS está acessível, 0 se não'
+)
+dynamo_available = Gauge(
+    'dynamo_available',
+    '1 se o DynamoDB está acessível, 0 se não'
+)
+
+
 # --- Heartbeat do Worker ---
 def worker_heartbeat():
     global last_heartbeat
@@ -92,7 +121,6 @@ def process_message(message):
         # Gera um ID único para o item no DynamoDB
         event_id = str(uuid.uuid4())
 
-        # Constrói o item no formato do DynamoDB
         item = {
             'event_id': {'S': event_id},
             'user_id': {'S': body['user_id']},
@@ -101,29 +129,29 @@ def process_message(message):
             'timestamp': {'S': body['timestamp']}
         }
 
-        # Insere no DynamoDB
         dynamodb_client.put_item(TableName=DYNAMODB_TABLE_NAME, Item=item)
 
         log.info(f"Evento {event_id} (Flag: {body['flag_name']}) salvo no DynamoDB.")
 
-        # Se tudo deu certo, deleta a mensagem da fila
         sqs_client.delete_message(
             QueueUrl=SQS_QUEUE_URL, ReceiptHandle=message['ReceiptHandle']
         )
 
+        messages_processed.inc()  # métrica: mensagem processada com sucesso
+
     except json.JSONDecodeError:
         log.error(f"Erro ao decodificar JSON da mensagem ID: {message['MessageId']}")
-        # Não deleta a mensagem, pode ser uma "poison pill"
+        messages_failed.inc()  # métrica: falha
 
     except ClientError as e:
         log.error(
             f"Erro do Boto3 (DynamoDB ou SQS) ao processar {message['MessageId']}: {e}"
         )
-        # Não deleta a mensagem, tenta novamente
+        messages_failed.inc()  # métrica: falha
 
     except Exception as e:
         log.error(f"Erro inesperado ao processar {message['MessageId']}: {e}")
-        # Não deleta a mensagem, tenta novamente
+        messages_failed.inc()  # métrica: falha
 
 
 def sqs_worker_loop():
@@ -138,10 +166,9 @@ def sqs_worker_loop():
                 time.sleep(2)
                 continue
 
-            # Long-polling: espera até 20s por mensagens
             response = sqs_client.receive_message(
                 QueueUrl=SQS_QUEUE_URL,
-                MaxNumberOfMessages=10,  # Processa em lotes de até 10
+                MaxNumberOfMessages=10,
                 WaitTimeSeconds=WAIT_TIME_SECONDS
             )
             messages = response.get('Messages', [])
@@ -158,7 +185,7 @@ def sqs_worker_loop():
         except ClientError as e:
             log.error(f"Erro do Boto3 no loop principal do SQS: {e}")
             worker_heartbeat()
-            time.sleep(10)  # Pausa antes de tentar novamente
+            time.sleep(10)
 
         except Exception as e:
             log.error(f"Erro inesperado no loop principal do SQS: {e}")
@@ -175,11 +202,13 @@ def validate_sqs():
         if not sqs_ok:
             log.info("SQS acessível")
         sqs_ok = True
+        sqs_available.set(1)  # métrica: SQS ok
 
     except Exception as e:
         if sqs_ok:
             log.error(f"SQS inacessível: {e}")
         sqs_ok = False
+        sqs_available.set(0)  # métrica: SQS down
 
 
 def validate_dynamo():
@@ -189,11 +218,13 @@ def validate_dynamo():
         if not dynamo_ok:
             log.info("DynamoDB acessível")
         dynamo_ok = True
+        dynamo_available.set(1)  # métrica: Dynamo ok
 
     except Exception as e:
         if dynamo_ok:
             log.error(f"Dynamo inacessível: {e}")
         dynamo_ok = False
+        dynamo_available.set(0)  # métrica: Dynamo down
 
 
 def health_monitor():
@@ -209,14 +240,12 @@ def health_monitor():
                 else:
                     log.warning("Worker marcado como NOT STARTED (dependências NOK).")
             worker_started = new_started
+            worker_status.set(1 if worker_started else 0)  # métrica: status do worker
 
         except Exception as e:
             log.error(f"Erro no health monitor: {e}")
 
         time.sleep(HEALTH_MONITOR_INTERVAL)
-
-
-app = Flask(__name__)
 
 
 # --- Probes ---

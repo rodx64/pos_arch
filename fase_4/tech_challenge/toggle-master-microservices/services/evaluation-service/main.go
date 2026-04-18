@@ -12,12 +12,12 @@ import (
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/go-redis/redis/v8"
 	"github.com/joho/godotenv"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-// Contexto global para o Redis
 var ctx = context.Background()
 
-// App struct para injeção de dependência
 type App struct {
 	RedisClient         *redis.Client
 	SqsSvc              *sqs.SQS
@@ -25,12 +25,95 @@ type App struct {
 	HttpClient          *http.Client
 	FlagServiceURL      string
 	TargetingServiceURL string
+	Metrics             *AppMetrics
+}
+
+type AppMetrics struct {
+	httpRequestsTotal      *prometheus.CounterVec
+	httpRequestDuration    *prometheus.HistogramVec
+	evaluationsTotal       *prometheus.CounterVec
+	cacheHitsTotal         prometheus.Counter
+	cacheMissesTotal       prometheus.Counter
+	sqsEventsSentTotal     prometheus.Counter
+	sqsEventsFailedTotal   prometheus.Counter
+	flagServiceErrorsTotal prometheus.Counter
+	redisUp                prometheus.Gauge
+	sqsUp                  prometheus.Gauge
+}
+
+func newMetrics() *AppMetrics {
+	m := &AppMetrics{
+		httpRequestsTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "http_requests_total",
+				Help: "Total de requisições HTTP por método, rota e status",
+			},
+			[]string{"method", "path", "status"},
+		),
+		httpRequestDuration: prometheus.NewHistogramVec(
+			prometheus.HistogramOpts{
+				Name:    "http_request_duration_seconds",
+				Help:    "Duração das requisições HTTP em segundos",
+				Buckets: prometheus.DefBuckets,
+			},
+			[]string{"method", "path"},
+		),
+		evaluationsTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "evaluations_total",
+				Help: "Total de avaliações de flag por resultado",
+			},
+			[]string{"flag_name", "result"}, // result: "true", "false", "error"
+		),
+		cacheHitsTotal: prometheus.NewCounter(prometheus.CounterOpts{
+			Name: "cache_hits_total",
+			Help: "Total de cache hits no Redis",
+		}),
+		cacheMissesTotal: prometheus.NewCounter(prometheus.CounterOpts{
+			Name: "cache_misses_total",
+			Help: "Total de cache misses no Redis",
+		}),
+		sqsEventsSentTotal: prometheus.NewCounter(prometheus.CounterOpts{
+			Name: "sqs_events_sent_total",
+			Help: "Total de eventos enviados ao SQS com sucesso",
+		}),
+		sqsEventsFailedTotal: prometheus.NewCounter(prometheus.CounterOpts{
+			Name: "sqs_events_failed_total",
+			Help: "Total de eventos que falharam ao enviar para o SQS",
+		}),
+		flagServiceErrorsTotal: prometheus.NewCounter(prometheus.CounterOpts{
+			Name: "flag_service_errors_total",
+			Help: "Total de erros ao chamar flag-service ou targeting-service",
+		}),
+		redisUp: prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: "redis_up",
+			Help: "1 se o Redis está acessível, 0 se não",
+		}),
+		sqsUp: prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: "sqs_up",
+			Help: "1 se o SQS está acessível, 0 se não",
+		}),
+	}
+
+	prometheus.MustRegister(
+		m.httpRequestsTotal,
+		m.httpRequestDuration,
+		m.evaluationsTotal,
+		m.cacheHitsTotal,
+		m.cacheMissesTotal,
+		m.sqsEventsSentTotal,
+		m.sqsEventsFailedTotal,
+		m.flagServiceErrorsTotal,
+		m.redisUp,
+		m.sqsUp,
+	)
+
+	return m
 }
 
 func main() {
-	_ = godotenv.Load() // Carrega .env para dev local
+	_ = godotenv.Load()
 
-	// --- Configuração ---
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8004"
@@ -51,7 +134,6 @@ func main() {
 		log.Fatal("TARGETING_SERVICE_URL deve ser definida")
 	}
 
-	// SQS é opcional no dev local, mas obrigatório em prod
 	sqsQueueURL := os.Getenv("AWS_SQS_URL")
 	awsRegion := os.Getenv("AWS_REGION")
 	if sqsQueueURL == "" {
@@ -61,9 +143,6 @@ func main() {
 		log.Fatal("AWS_REGION deve ser definida para usar SQS")
 	}
 
-	// --- Inicializa Clientes ---
-
-	// Cliente Redis
 	opt, err := redis.ParseURL(redisURL)
 	if err != nil {
 		log.Fatalf("Não foi possível parsear a URL do Redis: %v", err)
@@ -74,7 +153,6 @@ func main() {
 	}
 	log.Println("Conectado ao Redis com sucesso!")
 
-	// Cliente SQS (AWS SDK)
 	var sqsSvc *sqs.SQS
 	if sqsQueueURL != "" {
 		sess, err := session.NewSession(&aws.Config{Region: aws.String(awsRegion)})
@@ -85,12 +163,8 @@ func main() {
 		log.Println("Cliente SQS inicializado com sucesso.")
 	}
 
-	// Cliente HTTP (com timeout)
-	httpClient := &http.Client{
-		Timeout: 5 * time.Second,
-	}
+	httpClient := &http.Client{Timeout: 5 * time.Second}
 
-	// Cria a instância da App
 	app := &App{
 		RedisClient:         rdb,
 		SqsSvc:              sqsSvc,
@@ -98,14 +172,23 @@ func main() {
 		HttpClient:          httpClient,
 		FlagServiceURL:      flagSvcURL,
 		TargetingServiceURL: targetingSvcURL,
+		Metrics:             newMetrics(),
 	}
 
-	// --- Rotas ---
-	mux := http.NewServeMux()
-	mux.HandleFunc("/health", app.healthHandler)
-	mux.HandleFunc("/evaluate", app.evaluationHandler)
+	// Marca dependências como up na inicialização
+	app.Metrics.redisUp.Set(1)
+	if sqsSvc != nil {
+		app.Metrics.sqsUp.Set(1)
+	}
 
-	// Configuração segura do servidor HTTP
+	// Monitora dependências em background
+	go app.watchDependencies()
+
+	mux := http.NewServeMux()
+	mux.Handle("/metrics", promhttp.Handler())
+	mux.Handle("/health", app.instrumentHandler("/health", http.HandlerFunc(app.healthHandler)))
+	mux.Handle("/evaluate", app.instrumentHandler("/evaluate", http.HandlerFunc(app.evaluationHandler)))
+
 	server := &http.Server{
 		Addr:         ":" + port,
 		Handler:      mux,
@@ -118,4 +201,57 @@ func main() {
 	if err := server.ListenAndServe(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+// watchDependencies monitora Redis e SQS periodicamente
+func (a *App) watchDependencies() {
+	ticker := time.NewTicker(15 * time.Second)
+	defer ticker.Stop()
+	for range ticker.C {
+		if err := a.RedisClient.Ping(ctx).Err(); err != nil {
+			log.Printf("Redis ping falhou: %v", err)
+			a.Metrics.redisUp.Set(0)
+		} else {
+			a.Metrics.redisUp.Set(1)
+		}
+
+		if a.SqsSvc != nil {
+			_, err := a.SqsSvc.GetQueueAttributes(&sqs.GetQueueAttributesInput{
+				QueueUrl:       aws.String(a.SqsQueueURL),
+				AttributeNames: []*string{aws.String("ApproximateNumberOfMessages")},
+			})
+			if err != nil {
+				log.Printf("SQS health check falhou: %v", err)
+				a.Metrics.sqsUp.Set(0)
+			} else {
+				a.Metrics.sqsUp.Set(1)
+			}
+		}
+	}
+}
+
+// instrumentHandler middleware que registra duração e contagem de requests
+func (a *App) instrumentHandler(path string, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		rw := &responseWriter{ResponseWriter: w, status: http.StatusOK}
+
+		next.ServeHTTP(rw, r)
+
+		duration := time.Since(start).Seconds()
+		status := http.StatusText(rw.status)
+
+		a.Metrics.httpRequestsTotal.WithLabelValues(r.Method, path, status).Inc()
+		a.Metrics.httpRequestDuration.WithLabelValues(r.Method, path).Observe(duration)
+	})
+}
+
+type responseWriter struct {
+	http.ResponseWriter
+	status int
+}
+
+func (rw *responseWriter) WriteHeader(code int) {
+	rw.status = code
+	rw.ResponseWriter.WriteHeader(code)
 }

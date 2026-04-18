@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 )
@@ -23,7 +24,6 @@ func (a *App) healthHandler(w http.ResponseWriter, r *http.Request) {
 func (a *App) evaluationHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	// 1. Parsear os query parameters
 	userID := r.URL.Query().Get("user_id")
 	flagName := r.URL.Query().Get("flag_name")
 
@@ -32,25 +32,24 @@ func (a *App) evaluationHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 2. Obter a decisão (lógica de cache/serviço está em evaluator.go)
 	result, err := a.getDecision(userID, flagName)
 	if err != nil {
-		// Se o erro for "não encontrado", retornamos 'false' (comportamento seguro)
 		if _, ok := err.(*NotFoundError); ok {
 			result = false
+			// flag não encontrada conta como resultado false, não erro
+			a.Metrics.evaluationsTotal.WithLabelValues(flagName, "false").Inc()
 		} else {
-			// Outros erros (serviços offline, etc)
 			log.Printf("Erro ao avaliar flag '%s': %v", flagName, err) // #nosec G706
+			a.Metrics.evaluationsTotal.WithLabelValues(flagName, "error").Inc()
 			http.Error(w, `{"error": "Erro interno ao avaliar a flag"}`, http.StatusBadGateway)
 			return
 		}
+	} else {
+		a.Metrics.evaluationsTotal.WithLabelValues(flagName, fmt.Sprintf("%t", result)).Inc()
 	}
 
-	// 3. Enviar evento para SQS (assincronamente)
-	// Isso não bloqueia a resposta para o cliente.
 	go a.sendEvaluationEvent(userID, flagName, result)
 
-	// 4. Retornar a resposta
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(EvaluationResponse{
 		FlagName: flagName,
