@@ -6,6 +6,9 @@ metadata:
   labels:
     app: flag
     tier: backend
+    tags.datadoghq.com/env: "dev"
+    tags.datadoghq.com/service: "flag-service"
+    tags.datadoghq.com/version: "1.0.0"
 spec:
   replicas: 1
   selector:
@@ -17,12 +20,15 @@ spec:
       labels:
         app: flag
         tier: backend
+        tags.datadoghq.com/env: "dev"
+        tags.datadoghq.com/service: "flag-service"
+        tags.datadoghq.com/version: "1.0.0"
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "8002"
         prometheus.io/path: "/metrics"
         admission.datadoghq.com/enabled: "true"
-        ad.datadoghq.com/analytics-container.checks: |
+        ad.datadoghq.com/flag-container.checks: |
           {
             "openmetrics": {
               "instances": [
@@ -46,6 +52,25 @@ spec:
           imagePullPolicy: Always
           ports:
             - containerPort: 8002
+          env:
+            - name: DD_AGENT_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: DD_LOGS_INJECTION
+              value: "true"
+            - name: DD_ENV
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['tags.datadoghq.com/env']
+            - name: DD_SERVICE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['tags.datadoghq.com/service']
+            - name: DD_VERSION
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['tags.datadoghq.com/version']
           envFrom:
             - configMapRef:
                 name: flag-config
