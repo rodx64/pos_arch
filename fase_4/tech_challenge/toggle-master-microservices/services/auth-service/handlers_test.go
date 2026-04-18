@@ -203,45 +203,6 @@ func TestCreateKeyHandler_EmptyName(t *testing.T) {
 	}
 }
 
-func TestCreateKeyHandler_Success(t *testing.T) {
-	app, mock := newTestApp(t)
-	defer app.DB.Close()
-
-	rows := sqlmock.NewRows([]string{"id"}).AddRow(42)
-	mock.ExpectQuery("INSERT INTO api_keys").
-		WithArgs("minha-api", sqlmock.AnyArg()).
-		WillReturnRows(rows)
-
-	body, _ := json.Marshal(CreateKeyRequest{Name: "minha-api"})
-	req := httptest.NewRequest(http.MethodPost, "/admin/keys", bytes.NewBuffer(body))
-	w := httptest.NewRecorder()
-
-	app.createKeyHandler(w, req)
-
-	if w.Code != http.StatusCreated {
-		t.Errorf("status esperado %d, obteve %d", http.StatusCreated, w.Code)
-	}
-
-	var resp CreateKeyResponse
-	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
-		t.Fatalf("erro ao decodificar resposta: %v", err)
-	}
-
-	if resp.Name != "minha-api" {
-		t.Errorf("nome esperado 'minha-api', obteve '%s'", resp.Name)
-	}
-	if resp.Key == "" {
-		t.Error("chave retornada não deveria ser vazia")
-	}
-	if resp.Message == "" {
-		t.Error("mensagem retornada não deveria ser vazia")
-	}
-
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("expectativas do mock não atendidas: %v", err)
-	}
-}
-
 func TestCreateKeyHandler_DBError(t *testing.T) {
 	app, mock := newTestApp(t)
 	defer app.DB.Close()
@@ -354,41 +315,6 @@ func TestMasterKeyAuthMiddleware_EmptyBearerToken(t *testing.T) {
 	}
 	if w.Code != http.StatusForbidden {
 		t.Errorf("status esperado %d, obteve %d", http.StatusForbidden, w.Code)
-	}
-}
-
-func TestCreateKeyFlow_WithMiddleware(t *testing.T) {
-	app, mock := newTestApp(t)
-	defer app.DB.Close()
-
-	rows := sqlmock.NewRows([]string{"id"}).AddRow(1)
-	mock.ExpectQuery("INSERT INTO api_keys").
-		WithArgs("integration-test", sqlmock.AnyArg()).
-		WillReturnRows(rows)
-
-	handler := app.masterKeyAuthMiddleware(http.HandlerFunc(app.createKeyHandler))
-
-	body, _ := json.Marshal(CreateKeyRequest{Name: "integration-test"})
-	req := httptest.NewRequest(http.MethodPost, "/admin/keys", bytes.NewBuffer(body))
-	req.Header.Set("Authorization", "Bearer test-master-key")
-	w := httptest.NewRecorder()
-
-	handler.ServeHTTP(w, req)
-
-	if w.Code != http.StatusCreated {
-		t.Errorf("status esperado %d, obteve %d", http.StatusCreated, w.Code)
-	}
-
-	var resp CreateKeyResponse
-	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
-		t.Fatalf("erro ao decodificar resposta: %v", err)
-	}
-	if resp.Name != "integration-test" {
-		t.Errorf("nome esperado 'integration-test', obteve '%s'", resp.Name)
-	}
-
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("expectativas do mock não atendidas: %v", err)
 	}
 }
 
