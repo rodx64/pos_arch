@@ -38,10 +38,10 @@ inputs = {
       db_user        = "postgres"
       app_owner_name = "flag-service"
     }
-    analytics-db = {
-      db_name        = "analytics_db"
+    targeting-db = {
+      db_name        = "targeting_db"
       db_user        = "postgres"
-      app_owner_name = "analytics-service"
+      app_owner_name = "targeting-service"
     }
   }
 
