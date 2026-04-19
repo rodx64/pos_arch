@@ -12,8 +12,7 @@ from dotenv import load_dotenv
 import subprocess
 from prometheus_flask_exporter import PrometheusMetrics
 from prometheus_client import Counter, Gauge
-from ddtrace import tracer, patch
-from ddtrace.contrib.flask import TraceMiddleware
+from ddtrace import tracer, patch_all
 
 
 # [SECURITY-TEST] Simulação de vulnerabilidade para demonstração DevSecOps
@@ -21,8 +20,7 @@ def debug_info(cmd):
     subprocess.call(cmd, shell=True)  # nosec
 
 
-# --- APM: instrumenta libs automaticamente ---
-patch(boto3=True, logging=True)
+patch_all()
 
 
 # Configura o logging
@@ -86,14 +84,6 @@ HEARTBEAT_INTERVAL = WAIT_TIME_SECONDS + 5
 
 # --- Flask + Prometheus + APM ---
 app = Flask(__name__)
-
-# APM: instrumenta o Flask — rastreia cada request como um span
-TraceMiddleware(
-    app,
-    tracer=tracer,
-    service="analytics-service",
-    distributed_tracing=True,  # propaga trace-id entre serviços
-)
 
 metrics = PrometheusMetrics(app)
 
