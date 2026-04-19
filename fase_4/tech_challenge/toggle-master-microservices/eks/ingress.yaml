@@ -49,5 +49,12 @@ spec:
                 name: analytics-service
                 port:
                   number: 8005
+          - path: /prometheus(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: prometheus
+                port:
+                  number: 9090
 
           
