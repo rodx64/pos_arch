@@ -63,7 +63,7 @@ spec:
             - name: DD_AC_INCLUDE
               value: "name:.*"
             - name: DD_IGNORE_AUTOCONF
-              value: "false"
+              value: "redisdb"
             - name: DD_CLUSTER_AGENT_ENABLED
               value: "true"
             - name: DD_CLUSTER_AGENT_AUTH_TOKEN
