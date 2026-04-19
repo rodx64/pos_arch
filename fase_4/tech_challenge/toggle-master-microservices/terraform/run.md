@@ -30,3 +30,5 @@ kubectl get secret datadog-secret -n monitoring -o jsonpath='{.data.api-key}' | 
 kubectl create secret generic datadog-secret \
   -n monitoring \
   --from-literal=api-key='xxxx'
+
+kubectl get ingress -n toggle-master 
