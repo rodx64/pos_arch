@@ -12,11 +12,17 @@ from dotenv import load_dotenv
 import subprocess
 from prometheus_flask_exporter import PrometheusMetrics
 from prometheus_client import Counter, Gauge
+from ddtrace import tracer, patch
+from ddtrace.contrib.flask import TraceMiddleware
 
 
 # [SECURITY-TEST] Simulação de vulnerabilidade para demonstração DevSecOps
 def debug_info(cmd):
     subprocess.call(cmd, shell=True)  # nosec
+
+
+# --- APM: instrumenta libs automaticamente ---
+patch(boto3=True, logging=True)
 
 
 # Configura o logging
@@ -46,16 +52,16 @@ if not all([AWS_REGION, SQS_QUEUE_URL, DYNAMODB_TABLE_NAME]):
 
 # --- Clientes Boto3 ---
 try:
-    session = boto3.Session(region_name=AWS_REGION)
+    boto3_session = boto3.Session(region_name=AWS_REGION)
 
     if ENVIRONMENT == "local" and AWS_ENDPOINT_URL:
         log.info("🧱 Ambiente local detectado — conectando ao LocalStack.")
-        sqs_client = session.client("sqs", endpoint_url=AWS_ENDPOINT_URL)
-        dynamodb_client = session.client("dynamodb", endpoint_url=AWS_ENDPOINT_URL)
+        sqs_client = boto3_session.client("sqs", endpoint_url=AWS_ENDPOINT_URL)
+        dynamodb_client = boto3_session.client("dynamodb", endpoint_url=AWS_ENDPOINT_URL)
     else:
         log.info("☁️ Ambiente remoto detectado — conectando à AWS real.")
-        sqs_client = session.client("sqs")
-        dynamodb_client = session.client("dynamodb")
+        sqs_client = boto3_session.client("sqs")
+        dynamodb_client = boto3_session.client("dynamodb")
 
     log.info(f"Clientes Boto3 inicializados na região {AWS_REGION}")
 
@@ -78,8 +84,17 @@ HEALTH_MONITOR_INTERVAL = 10
 HEARTBEAT_INTERVAL = WAIT_TIME_SECONDS + 5
 
 
-# --- Flask + Prometheus ---
+# --- Flask + Prometheus + APM ---
 app = Flask(__name__)
+
+# APM: instrumenta o Flask — rastreia cada request como um span
+TraceMiddleware(
+    app,
+    tracer=tracer,
+    service="analytics-service",
+    distributed_tracing=True,  # propaga trace-id entre serviços
+)
+
 metrics = PrometheusMetrics(app)
 
 # Métricas customizadas
@@ -114,44 +129,47 @@ def worker_heartbeat():
 # --- SQS Worker ---
 def process_message(message):
     """Processa uma única mensagem SQS e a insere no DynamoDB"""
-    try:
-        log.info(f"Processando mensagem ID: {message['MessageId']}")
-        body = json.loads(message['Body'])
+    # APM: span manual para rastrear o processamento de cada mensagem
+    with tracer.trace("sqs.process_message", service="analytics-service", resource=message.get('MessageId', 'unknown')):
+        try:
+            log.info(f"Processando mensagem ID: {message['MessageId']}")
+            body = json.loads(message['Body'])
 
-        # Gera um ID único para o item no DynamoDB
-        event_id = str(uuid.uuid4())
+            event_id = str(uuid.uuid4())
 
-        item = {
-            'event_id': {'S': event_id},
-            'user_id': {'S': body['user_id']},
-            'flag_name': {'S': body['flag_name']},
-            'result': {'BOOL': body['result']},
-            'timestamp': {'S': body['timestamp']}
-        }
+            item = {
+                'event_id': {'S': event_id},
+                'user_id': {'S': body['user_id']},
+                'flag_name': {'S': body['flag_name']},
+                'result': {'BOOL': body['result']},
+                'timestamp': {'S': body['timestamp']}
+            }
 
-        dynamodb_client.put_item(TableName=DYNAMODB_TABLE_NAME, Item=item)
+            # APM: span filho para a operação no DynamoDB
+            with tracer.trace("dynamodb.put_item", service="analytics-service-dynamo", resource=DYNAMODB_TABLE_NAME):
+                dynamodb_client.put_item(TableName=DYNAMODB_TABLE_NAME, Item=item)
 
-        log.info(f"Evento {event_id} (Flag: {body['flag_name']}) salvo no DynamoDB.")
+            log.info(f"Evento {event_id} (Flag: {body['flag_name']}) salvo no DynamoDB.")
 
-        sqs_client.delete_message(
-            QueueUrl=SQS_QUEUE_URL, ReceiptHandle=message['ReceiptHandle']
-        )
+            sqs_client.delete_message(
+                QueueUrl=SQS_QUEUE_URL, ReceiptHandle=message['ReceiptHandle']
+            )
 
-        messages_processed.inc()  # métrica: mensagem processada com sucesso
+            messages_processed.inc()
 
-    except json.JSONDecodeError:
-        log.error(f"Erro ao decodificar JSON da mensagem ID: {message['MessageId']}")
-        messages_failed.inc()  # métrica: falha
+        except json.JSONDecodeError:
+            log.error(f"Erro ao decodificar JSON da mensagem ID: {message['MessageId']}")
+            messages_failed.inc()  # métrica: falha
 
-    except ClientError as e:
-        log.error(
-            f"Erro do Boto3 (DynamoDB ou SQS) ao processar {message['MessageId']}: {e}"
-        )
-        messages_failed.inc()  # métrica: falha
+        except ClientError as e:
+            log.error(
+                f"Erro do Boto3 (DynamoDB ou SQS) ao processar {message['MessageId']}: {e}"
+            )
+            messages_failed.inc()  # métrica: falha
 
-    except Exception as e:
-        log.error(f"Erro inesperado ao processar {message['MessageId']}: {e}")
-        messages_failed.inc()  # métrica: falha
+        except Exception as e:
+            log.error(f"Erro inesperado ao processar {message['MessageId']}: {e}")
+            messages_failed.inc()  # métrica: falha
 
 
 def sqs_worker_loop():
