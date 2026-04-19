@@ -113,30 +113,30 @@ Este repositório centraliza todas as entregas práticas (Tech Challenges) desen
 
 📌 **Conteúdo:**
 
-- [ ] CI / CD
+- [x] CI / CD
     - [x] Criação de pipelines Eficientes com Github Actions.
     - [x] Multistage, Paralelismo e Condições Avançadas.
-    - [ ] Ambientes, Secrets e Multi-Tenant.
-    - [ ] Notificações, Alertas e Observabilidade no CI/CD.
-    - [ ] Deploy Automatizado em Kubernetes na Nuvem
-- [ ] IAAC
-    - [ ] Terraform, Cloud, OpenTofu e Terragrunt.
-    - [ ] Automação com IaC e CI/CD.
-    - [ ] Módulos, Loops e conditions.
-    - [ ] Kubernetes via Terraform: Usando o Provider Kubectl.
-    - [ ] Auditoria, Versionamento e Segurança em IaC.
-- [ ] DevSecOps
-    - [ ] DevSecOps e principais ameaças.
-    - [ ] OWASP, MITRE e Defesa contra DDoS.
-    - [ ] Segurança em Pipelines: SAST e DAST.
-    - [ ] Detecção de Ameaças e Gestão com SIEM.
-    - [ ] LGPD, Auditoria e Conformidade na Cloud.
-- [ ] Segurança na Cloud
-    - [ ] Principais Ameaças em Ambientes Cloud.
-    - [ ] Modelo de Responsabilidade Compartilhada na Nuvem.
-    - [ ] Segurança de Identidade e Acesso (IAM, MFA e Zero Trust).
-    - [ ] Proteção de Dados: Criptografia e Privacidade.
-    - [ ] Ferramentas de CSPM, CWPP e CASB
+    - [x] Ambientes, Secrets e Multi-Tenant.
+    - [x] Notificações, Alertas e Observabilidade no CI/CD.
+    - [x] Deploy Automatizado em Kubernetes na Nuvem
+- [x] IAAC
+    - [x] Terraform, Cloud, OpenTofu e Terragrunt.
+    - [x] Automação com IaC e CI/CD.
+    - [x] Módulos, Loops e conditions.
+    - [x] Kubernetes via Terraform: Usando o Provider Kubectl.
+    - [x] Auditoria, Versionamento e Segurança em IaC.
+- [x] DevSecOps
+    - [x] DevSecOps e principais ameaças.
+    - [x] OWASP, MITRE e Defesa contra DDoS.
+    - [x] Segurança em Pipelines: SAST e DAST.
+    - [x] Detecção de Ameaças e Gestão com SIEM.
+    - [x] LGPD, Auditoria e Conformidade na Cloud.
+- [x] Segurança na Cloud
+    - [x] Principais Ameaças em Ambientes Cloud.
+    - [x] Modelo de Responsabilidade Compartilhada na Nuvem.
+    - [x] Segurança de Identidade e Acesso (IAM, MFA e Zero Trust).
+    - [x] Proteção de Dados: Criptografia e Privacidade.
+    - [x] Ferramentas de CSPM, CWPP e CASB
 
 📁 Pasta: `fase-03`
 
@@ -148,15 +148,15 @@ Este repositório centraliza todas as entregas práticas (Tech Challenges) desen
 
 📌 **Conteúdo:**
 
-- [ ] Observabilidade e Monitoramento
-    - [ ] Fundamentos de Monitoramento e Observabilidade.
-    - [ ] Os 3 pilares (Logs, Métricas e Traces).
-    - [ ] Métricas de Infraestrutura, Aplicação e Containers.
-    - [ ] Alertas e Notificações (Slack, Teams e Email).
-- [ ] Monitoramento Open Source
-    - [ ] Zabbix, Prometheus, Grafana, OpenTelemetry, Jaeger, StatsD e Loki.
-    - [ ] Instalação, configuração e integração.
-    - [ ] Monitoramento OpenSource no Kubernetes.
+- [x] Observabilidade e Monitoramento
+    - [x] Fundamentos de Monitoramento e Observabilidade.
+    - [x] Os 3 pilares (Logs, Métricas e Traces).
+    - [x] Métricas de Infraestrutura, Aplicação e Containers.
+    - [x] Alertas e Notificações (Slack, Teams e Email).
+- [x] Monitoramento Open Source
+    - [x] Zabbix, Prometheus, Grafana, OpenTelemetry, Jaeger, StatsD e Loki.
+    - [x] Instalação, configuração e integração.
+    - [x] Monitoramento OpenSource no Kubernetes.
 - [ ] APM
     - [ ] Métricas e Performance com Datadog, New Relic e ELK.
     - [ ] Logs, Métricas e Traces na prática.

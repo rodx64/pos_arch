@@ -20,7 +20,7 @@ inputs = {
   private_subnets = ["10.0.1.0/24", "10.0.2.0/24"]
   azs             = ["us-east-1a", "us-east-1b", "us-east-1c"]
 
-  # EC2
+  # EC2 BASTION
   ami_id        = "ami-0b6c6ebed2801a5cb" # Ubuntu Server 24.04 (x64)
   instance_type = "t3.small"
   key_name      = "iac-key"
