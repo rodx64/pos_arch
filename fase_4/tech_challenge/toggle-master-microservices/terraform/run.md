@@ -32,3 +32,20 @@ kubectl create secret generic datadog-secret \
   --from-literal=api-key='xxxx'
 
 kubectl get ingress -n toggle-master 
+
+kubectl get svc -n monitoring
+
+
+# Prometheus (localhost:9090)
+localhost:9090
+
+## Metrics 
+localhost:9090/metrics
+
+## queries
+
+### Validando a Disponibilidade dos Pods (O básico)
+up{namespace="toggle-master"}
+
+### Taxa de Erros por Serviço (Correlacionando com o 404)
+sum by (service, status) (rate(http_requests_total{namespace="toggle-master"}[5m]))

@@ -93,6 +93,11 @@ spec:
             # Necessário para o Autodiscovery ler anotações dos pods
             - name: pointerdir
               mountPath: /opt/datadog-agent/run
+      ports:
+      - containerPort: 8126
+        hostPort: 8126
+        name: apm-port
+        protocol: TCP
       volumes:
         - name: containerd-socket
           hostPath:

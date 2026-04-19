@@ -17,6 +17,9 @@ COPY go.mod go.sum ./
 # Baixa as dependências sem alterar go.mod e go.sum
 RUN go mod download
 
+# Trace Datadog
+RUN go get gopkg.in/DataDog/dd-trace-go.v1/ddtrace
+
 # Copia todo o código da aplicação
 COPY . .
 

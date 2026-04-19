@@ -4,19 +4,24 @@ set -e
 
 # ==============================================================
 # connect-eks.sh
-# Abre tunnel SSH pelo bastion e configura kubectl/k9s local
+# Abre tunnel SSH (Bastion/DBs) e Port-Forwards (Prometheus/Argo)
 # Uso: ./connect-eks.sh [start|stop|status]
 # ==============================================================
 
 BASTION_USER="ubuntu"
 KEY_PATH="./iac-key.pem"
 LOCAL_PORT="6443"
+PROM_PORT="9090"
+ARGO_PORT="8080"
 TUNNEL_PID_FILE="/tmp/eks-tunnel.pid"
+PROM_PID_FILE="/tmp/eks-prometheus.pid"
+ARGO_PID_FILE="/tmp/eks-argocd.pid"
+PID_FILE_DB="/tmp/eks-db-tunnels.pid"
+
 PROJECT_NAME="toggle-master"
 BASTION_TAG="${PROJECT_NAME}-dev-bastion"
 EKS_CLUSTER="${PROJECT_NAME}-eks"
 AWS_REGION="${AWS_REGION:-us-east-1}"
-PID_FILE_DB="/tmp/eks-db-tunnels.pid"
 
 # --------------------------------------------------------------
 RED='\033[0;31m'
@@ -55,7 +60,6 @@ get_bastion_ip() {
   if [ -z "$BASTION_IP" ] || [ "$BASTION_IP" = "None" ]; then
     error "Bastion não encontrado. Verifique se a infra está provisionada."
   fi
-
   log "Bastion IP: ${BASTION_IP}"
 }
 
@@ -70,16 +74,16 @@ get_eks_endpoint() {
   if [ -z "$EKS_ENDPOINT" ] || [ "$EKS_ENDPOINT" = "None" ]; then
     error "Cluster EKS '${EKS_CLUSTER}' não encontrado."
   fi
-
   log "EKS endpoint: ${EKS_ENDPOINT}"
 }
 
 start_tunnel() {
-  # 1. Limpeza de PIDs antigos (EKS e DB)
-  for f in "$TUNNEL_PID_FILE" "$PID_FILE_DB"; do
+  for f in "$TUNNEL_PID_FILE" "$PID_FILE_DB" "$PROM_PID_FILE" "$ARGO_PID_FILE"; do
     if [ -f "$f" ]; then
       OLD_PID=$(cat "$f")
-      kill -0 "$OLD_PID" 2>/dev/null && error "Tunnel já está ativo (PID: $OLD_PID). Rode stop primeiro."
+      if kill -0 "$OLD_PID" 2>/dev/null; then
+        error "Um dos túneis já está ativo (PID: $OLD_PID). Rode './connect-eks.sh stop' primeiro."
+      fi
       rm -f "$f"
     fi
   done
@@ -87,23 +91,13 @@ start_tunnel() {
   if [ ! -f "$KEY_PATH" ]; then
     error "Chave SSH não encontrada em: ${KEY_PATH}"
   fi
-
   chmod 400 "$KEY_PATH"
 
-  log "Abrindo Túneis SSH..."
+  log "Abrindo Túneis SSH via Bastion..."
   
-  # Tunnel para o EKS (Kubectl)
-  log "  -> EKS: localhost:${LOCAL_PORT} → ${EKS_ENDPOINT}:443"
-  
-  # Tunnel para as Databases (Postgres)
-  log "  -> DB Auth: localhost:${POSTGRES_LOCAL_AUTH_PORT} → ${POSTGRES_AUTH_HOST}"
-  log "  -> DB Flag: localhost:${POSTGRES_LOCAL_FLAG_PORT} → ${POSTGRES_FLAG_HOST}"
-  log "  -> DB Targ: localhost:${POSTGRES_LOCAL_TARG_PORT} → ${POSTGRES_TARG_HOST}"
-
   ssh -i "$KEY_PATH" \
     -o StrictHostKeyChecking=no \
     -o ServerAliveInterval=60 \
-    -o ServerAliveCountMax=3 \
     -o ExitOnForwardFailure=yes \
     -L "${LOCAL_PORT}:${EKS_ENDPOINT}:443" \
     -L "${POSTGRES_LOCAL_AUTH_PORT}:${POSTGRES_AUTH_HOST}:${POSTGRES_PORT}" \
@@ -112,43 +106,36 @@ start_tunnel() {
     "${BASTION_USER}@${BASTION_IP}" \
     -N -f
 
-  # Salva o PID único que gerencia todos os port-forwards
-  # Como usamos -f (background), pegamos o último processo SSH lançado
-  TUNNEL_PID=$!
-  # Caso o $! não capture por causa do -f em algumas versões de shell:
-  [ -z "$TUNNEL_PID" ] && TUNNEL_PID=$(pgrep -f "L ${LOCAL_PORT}:${EKS_ENDPOINT}:443")
-  
+  TUNNEL_PID=$(pgrep -f "L ${LOCAL_PORT}:${EKS_ENDPOINT}:443" | head -1)
   echo "$TUNNEL_PID" > "$TUNNEL_PID_FILE"
-  log "Túneis ativos com sucesso (PID: ${TUNNEL_PID})"
+  log "Túneis SSH/DB ativos (PID: ${TUNNEL_PID})"
+
+  log "Abrindo port-forward para Prometheus (monitoring)..."
+  kubectl port-forward svc/prometheus ${PROM_PORT}:9090 -n monitoring > /dev/null 2>&1 &
+  echo $! > "$PROM_PID_FILE"
+
+  log "Abrindo port-forward para Argo CD (argocd)..."
+  kubectl port-forward svc/argocd-server ${ARGO_PORT}:80 -n argocd > /dev/null 2>&1 &
+  echo $! > "$ARGO_PID_FILE"
 }
 
 configure_kubectl() {
   log "Configurando kubectl..."
-  aws eks update-kubeconfig \
-    --region "$AWS_REGION" \
-    --name "$EKS_CLUSTER"
-
+  aws eks update-kubeconfig --region "$AWS_REGION" --name "$EKS_CLUSTER"
   CLUSTER_ARN="arn:aws:eks:${AWS_REGION}:$(aws sts get-caller-identity --query Account --output text):cluster/${EKS_CLUSTER}"
-
-  kubectl config set-cluster "$CLUSTER_ARN" \
-    --server="https://127.0.0.1:${LOCAL_PORT}" \
-    --insecure-skip-tls-verify=true
-
+  kubectl config set-cluster "$CLUSTER_ARN" --server="https://127.0.0.1:${LOCAL_PORT}" --insecure-skip-tls-verify=true
   kubectl config use-context "$CLUSTER_ARN"
-
-  log "kubectl configurado para cluster: ${CLUSTER_ARN}"
 }
 
 verify_connection() {
-  log "Verificando conexão com o cluster..."
-  sleep 3
-
+  log "Verificando conexões..."
+  sleep 5 
   if kubectl get nodes &>/dev/null; then
-    log "Conexão estabelecida com sucesso!"
-    echo ""
-    kubectl get nodes
+    log "Conexão EKS: OK"
+    log "Prometheus: http://localhost:${PROM_PORT}"
+    log "Argo CD: http://localhost:${ARGO_PORT}"
   else
-    error "Falha ao conectar no cluster. Verifique o tunnel e as credenciais AWS."
+    error "Falha ao conectar no cluster."
   fi
 }
 
@@ -159,55 +146,30 @@ cmd_start() {
   start_tunnel
   configure_kubectl
   verify_connection
-  echo ""
-  log "Pronto! Execute 'k9s' para abrir o painel."
-  log "Para encerrar o tunnel: ./connect-eks.sh stop"
 }
 
 cmd_stop() {
-  if [ -f "$TUNNEL_PID_FILE" ]; then
-    PID=$(cat "$TUNNEL_PID_FILE")
-    if kill -0 "$PID" 2>/dev/null; then
-      kill "$PID"
-      rm -f "$TUNNEL_PID_FILE"
-      log "Túneis encerrados (PID: ${PID})"
-    else
-      warn "Processo não encontrado. Limpando arquivo de PID."
-      rm -f "$TUNNEL_PID_FILE"
+  for f in "$TUNNEL_PID_FILE" "$PROM_PID_FILE" "$ARGO_PID_FILE"; do
+    if [ -f "$f" ]; then
+      PID=$(cat "$f")
+      kill "$PID" 2>/dev/null && log "Encerrado processo PID: $PID"
+      rm -f "$f"
     fi
-  else
-    warn "Nenhum tunnel registrado. Limpando processos SSH residuais..."
-    pkill -f "L ${LOCAL_PORT}:" && log "Processos encerrados."
-  fi
+  done
+  pkill -f "L ${LOCAL_PORT}:" 2>/dev/null || true
+  pkill -f "port-forward" 2>/dev/null || true
+  log "Todos os túneis encerrados."
 }
 
 cmd_status() {
-  if [ -f "$TUNNEL_PID_FILE" ]; then
-    PID=$(cat "$TUNNEL_PID_FILE")
-    if kill -0 "$PID" 2>/dev/null; then
-      log "Tunnel ativo (PID: ${PID}) em localhost:${LOCAL_PORT}"
-      echo ""
-      kubectl get nodes 2>/dev/null || warn "kubectl não conseguiu conectar — tunnel pode estar instável."
-    else
-      warn "PID file existe mas processo não está rodando."
-      rm -f "$TUNNEL_PID_FILE"
-    fi
-  else
-    warn "Nenhum tunnel ativo."
-  fi
+  [ -f "$TUNNEL_PID_FILE" ] && log "SSH/EKS: Ativo" || warn "SSH/EKS: Inativo"
+  [ -f "$PROM_PID_FILE" ] && log "Prometheus: Ativo" || warn "Prometheus: Inativo"
+  [ -f "$ARGO_PID_FILE" ] && log "Argo CD: Ativo" || warn "Argo CD: Inativo"
 }
 
-# --------------------------------------------------------------
 case "${1:-start}" in
   start)  cmd_start  ;;
   stop)   cmd_stop   ;;
   status) cmd_status ;;
-  *)
-    echo "Uso: $0 [start|stop|status]"
-    echo ""
-    echo "  start   Abre tunnel SSH e configura kubectl (padrão)"
-    echo "  stop    Encerra o tunnel"
-    echo "  status  Verifica se o tunnel está ativo"
-    exit 1
-    ;;
+  *) echo "Uso: $0 [start|stop|status]"; exit 1 ;;
 esac

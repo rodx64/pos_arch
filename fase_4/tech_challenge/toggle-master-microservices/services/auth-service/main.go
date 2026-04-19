@@ -7,10 +7,14 @@ import (
 	"os"
 	"time"
 
+	"github.com/jackc/pgx/v4/stdlib"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/joho/godotenv"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	sqltrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/database/sql"
+	httptrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/net/http"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 )
 
 // App struct (para injeção de dependência)
@@ -59,7 +63,7 @@ func newMetrics() *AppMetrics {
 				Name: "auth_keys_validated_total",
 				Help: "Total de validações de chave por resultado",
 			},
-			[]string{"result"}, // "success" ou "failure"
+			[]string{"result"},
 		),
 	}
 
@@ -76,6 +80,14 @@ func newMetrics() *AppMetrics {
 
 func main() {
 	_ = godotenv.Load()
+
+	// --- Inicializa o Datadog APM Tracer ---
+	tracer.Start(
+		tracer.WithServiceName("auth-service"),
+		tracer.WithEnv(os.Getenv("DD_ENV")),
+		tracer.WithServiceVersion(os.Getenv("DD_VERSION")),
+	)
+	defer tracer.Stop()
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -104,18 +116,14 @@ func main() {
 		Metrics:   newMetrics(),
 	}
 
-	// Marca o DB como up na inicialização
 	app.Metrics.dbUp.Set(1)
 
-	// Monitora o DB em background
 	go app.watchDB()
 
-	mux := http.NewServeMux()
+	// Mux instrumentado com APM — rastreia todas as rotas HTTP
+	mux := httptrace.NewServeMux(httptrace.WithServiceName("auth-service"))
 
-	// Endpoint do Prometheus — expõe /metrics
 	mux.Handle("/metrics", promhttp.Handler())
-
-	// Rotas da aplicação — todas passam pelo middleware de instrumentação
 	mux.Handle("/health", app.instrumentHandler("/health", http.HandlerFunc(app.healthHandler)))
 	mux.Handle("/validate", app.instrumentHandler("/validate", http.HandlerFunc(app.validateKeyHandler)))
 	mux.Handle("/admin/keys", app.instrumentHandler("/admin/keys",
@@ -137,8 +145,11 @@ func main() {
 	}
 }
 
+// connectDB inicializa e testa a conexão com o PostgreSQL instrumentada com APM
 func connectDB(databaseURL string) (*sql.DB, error) {
-	db, err := sql.Open("pgx", databaseURL)
+	// Registra o driver pgx instrumentado — cada query vira um span no APM
+	sqltrace.Register("pgx", &stdlib.Driver{}, sqltrace.WithServiceName("auth-service-db"))
+	db, err := sqltrace.Open("pgx", databaseURL)
 	if err != nil {
 		return nil, err
 	}
@@ -149,7 +160,6 @@ func connectDB(databaseURL string) (*sql.DB, error) {
 	return db, nil
 }
 
-// watchDB faz ping no banco periodicamente e atualiza a métrica db_up
 func (a *App) watchDB() {
 	ticker := time.NewTicker(15 * time.Second)
 	defer ticker.Stop()
@@ -163,7 +173,6 @@ func (a *App) watchDB() {
 	}
 }
 
-// instrumentHandler é um middleware que registra duração e contagem de requests
 func (a *App) instrumentHandler(path string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
@@ -179,7 +188,6 @@ func (a *App) instrumentHandler(path string, next http.Handler) http.Handler {
 	})
 }
 
-// responseWriter é um wrapper para capturar o status code
 type responseWriter struct {
 	http.ResponseWriter
 	status int

@@ -14,6 +14,8 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	httptrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/net/http"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 )
 
 var ctx = context.Background()
@@ -63,7 +65,7 @@ func newMetrics() *AppMetrics {
 				Name: "evaluations_total",
 				Help: "Total de avaliações de flag por resultado",
 			},
-			[]string{"flag_name", "result"}, // result: "true", "false", "error"
+			[]string{"flag_name", "result"},
 		),
 		cacheHitsTotal: prometheus.NewCounter(prometheus.CounterOpts{
 			Name: "cache_hits_total",
@@ -95,7 +97,7 @@ func newMetrics() *AppMetrics {
 		}),
 	}
 
-	collectors := []prometheus.Collector{
+	for _, c := range []prometheus.Collector{
 		m.httpRequestsTotal,
 		m.httpRequestDuration,
 		m.evaluationsTotal,
@@ -106,9 +108,7 @@ func newMetrics() *AppMetrics {
 		m.flagServiceErrorsTotal,
 		m.redisUp,
 		m.sqsUp,
-	}
-
-	for _, c := range collectors {
+	} {
 		_ = prometheus.Register(c)
 	}
 
@@ -117,6 +117,13 @@ func newMetrics() *AppMetrics {
 
 func main() {
 	_ = godotenv.Load()
+
+	tracer.Start(
+		tracer.WithServiceName("evaluation-service"),
+		tracer.WithEnv(os.Getenv("DD_ENV")),
+		tracer.WithServiceVersion(os.Getenv("DD_VERSION")),
+	)
+	defer tracer.Stop()
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -167,7 +174,11 @@ func main() {
 		log.Println("Cliente SQS inicializado com sucesso.")
 	}
 
-	httpClient := &http.Client{Timeout: 5 * time.Second}
+	// HttpClient instrumentado com APM — rastreia chamadas para flag/targeting service
+	httpClient := &http.Client{
+		Timeout:   5 * time.Second,
+		Transport: httptrace.WrapRoundTripper(http.DefaultTransport),
+	}
 
 	app := &App{
 		RedisClient:         rdb,
@@ -179,16 +190,15 @@ func main() {
 		Metrics:             newMetrics(),
 	}
 
-	// Marca dependências como up na inicialização
 	app.Metrics.redisUp.Set(1)
 	if sqsSvc != nil {
 		app.Metrics.sqsUp.Set(1)
 	}
 
-	// Monitora dependências em background
 	go app.watchDependencies()
 
-	mux := http.NewServeMux()
+	// Mux instrumentado com APM — rastreia todas as rotas HTTP
+	mux := httptrace.NewServeMux(httptrace.WithServiceName("evaluation-service"))
 	mux.Handle("/metrics", promhttp.Handler())
 	mux.Handle("/health", app.instrumentHandler("/health", http.HandlerFunc(app.healthHandler)))
 	mux.Handle("/evaluate", app.instrumentHandler("/evaluate", http.HandlerFunc(app.evaluationHandler)))
@@ -207,7 +217,6 @@ func main() {
 	}
 }
 
-// watchDependencies monitora Redis e SQS periodicamente
 func (a *App) watchDependencies() {
 	ticker := time.NewTicker(15 * time.Second)
 	defer ticker.Stop()
@@ -234,7 +243,6 @@ func (a *App) watchDependencies() {
 	}
 }
 
-// instrumentHandler middleware que registra duração e contagem de requests
 func (a *App) instrumentHandler(path string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
