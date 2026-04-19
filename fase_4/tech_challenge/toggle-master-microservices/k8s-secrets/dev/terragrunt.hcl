@@ -43,10 +43,10 @@ inputs = {
 
   auth_db_endpoint        = dependency.infra.outputs.rds_endpoints["auth-db"]
   flag_db_endpoint        = dependency.infra.outputs.rds_endpoints["flag-db"]
-  analytics_db_endpoint   = dependency.infra.outputs.rds_endpoints["analytics-db"]
+  targeting_db_endpoint   = dependency.infra.outputs.rds_endpoints["targeting-db"]
   auth_db_secret_arn      = dependency.infra.outputs.rds_secret_arns["auth-db"]
   flag_db_secret_arn      = dependency.infra.outputs.rds_secret_arns["flag-db"]
-  analytics_db_secret_arn = dependency.infra.outputs.rds_secret_arns["analytics-db"]
+  targeting_db_secret_arn = dependency.infra.outputs.rds_secret_arns["targeting-db"]
   dynamodb_table_name     = dependency.infra.outputs.dynamodb_table_names["analytics-events"]
   sqs_queue_url           = dependency.infra.outputs.sqs_queue_urls["analytics"]
   redis_url               = dependency.infra.outputs.redis_urls["evaluation"]
