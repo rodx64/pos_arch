@@ -62,4 +62,4 @@ USER appuser
 EXPOSE 8002
 
 # Gunicorn para produção
-CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:8002", "app:app"]
+CMD ["ddtrace-run", "gunicorn", "-w", "4", "-b", "0.0.0.0:8002", "app:app"]
