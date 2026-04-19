@@ -39,7 +39,7 @@ resource "kubernetes_secret_v1" "targeting" {
     namespace = var.namespace
   }
   data = {
-    DATABASE_URL = "postgresql://postgres:${local.analytics_db_password_encoded}@${var.analytics_db_endpoint}/analytics_db"
+    DATABASE_URL = "postgresql://postgres:${local.targeting_db_password_encoded}@${var.targeting_db_endpoint}/targeting_db"
   }
   depends_on = [kubernetes_namespace_v1.this]
 }

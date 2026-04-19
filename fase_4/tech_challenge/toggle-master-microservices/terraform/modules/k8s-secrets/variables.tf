@@ -6,7 +6,7 @@ variable "flag_db_endpoint" {
   type = string
 }
 
-variable "analytics_db_endpoint" {
+variable "targeting_db_endpoint" {
   type = string
 }
 
@@ -18,7 +18,7 @@ variable "flag_db_secret_arn" {
   type = string
 }
 
-variable "analytics_db_secret_arn" {
+variable "targeting_db_secret_arn" {
   type = string
 }
 

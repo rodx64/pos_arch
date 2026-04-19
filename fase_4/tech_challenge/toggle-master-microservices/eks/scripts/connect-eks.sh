@@ -16,12 +16,15 @@ PROJECT_NAME="toggle-master"
 BASTION_TAG="${PROJECT_NAME}-dev-bastion"
 EKS_CLUSTER="${PROJECT_NAME}-eks"
 AWS_REGION="${AWS_REGION:-us-east-1}"
+PID_FILE_DB="/tmp/eks-db-tunnels.pid"
 
 # --------------------------------------------------------------
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
+
+source ./env.sh
 
 log()    { echo -e "${GREEN}[+]${NC} $1"; }
 warn()   { echo -e "${YELLOW}[!]${NC} $1"; }
@@ -72,15 +75,14 @@ get_eks_endpoint() {
 }
 
 start_tunnel() {
-  if [ -f "$TUNNEL_PID_FILE" ]; then
-    OLD_PID=$(cat "$TUNNEL_PID_FILE")
-    if kill -0 "$OLD_PID" 2>/dev/null; then
-      warn "Tunnel já está ativo (PID: ${OLD_PID}). Use './connect-eks.sh stop' para encerrar."
-      return
-    else
-      rm -f "$TUNNEL_PID_FILE"
+  # 1. Limpeza de PIDs antigos (EKS e DB)
+  for f in "$TUNNEL_PID_FILE" "$PID_FILE_DB"; do
+    if [ -f "$f" ]; then
+      OLD_PID=$(cat "$f")
+      kill -0 "$OLD_PID" 2>/dev/null && error "Tunnel já está ativo (PID: $OLD_PID). Rode stop primeiro."
+      rm -f "$f"
     fi
-  fi
+  done
 
   if [ ! -f "$KEY_PATH" ]; then
     error "Chave SSH não encontrada em: ${KEY_PATH}"
@@ -88,20 +90,36 @@ start_tunnel() {
 
   chmod 400 "$KEY_PATH"
 
-  log "Abrindo tunnel SSH: localhost:${LOCAL_PORT} → ${EKS_ENDPOINT}:443"
+  log "Abrindo Túneis SSH..."
+  
+  # Tunnel para o EKS (Kubectl)
+  log "  -> EKS: localhost:${LOCAL_PORT} → ${EKS_ENDPOINT}:443"
+  
+  # Tunnel para as Databases (Postgres)
+  log "  -> DB Auth: localhost:${POSTGRES_LOCAL_AUTH_PORT} → ${POSTGRES_AUTH_HOST}"
+  log "  -> DB Flag: localhost:${POSTGRES_LOCAL_FLAG_PORT} → ${POSTGRES_FLAG_HOST}"
+  log "  -> DB Targ: localhost:${POSTGRES_LOCAL_TARG_PORT} → ${POSTGRES_TARG_HOST}"
+
   ssh -i "$KEY_PATH" \
     -o StrictHostKeyChecking=no \
     -o ServerAliveInterval=60 \
     -o ServerAliveCountMax=3 \
     -o ExitOnForwardFailure=yes \
     -L "${LOCAL_PORT}:${EKS_ENDPOINT}:443" \
+    -L "${POSTGRES_LOCAL_AUTH_PORT}:${POSTGRES_AUTH_HOST}:${POSTGRES_PORT}" \
+    -L "${POSTGRES_LOCAL_FLAG_PORT}:${POSTGRES_FLAG_HOST}:${POSTGRES_PORT}" \
+    -L "${POSTGRES_LOCAL_TARG_PORT}:${POSTGRES_TARG_HOST}:${POSTGRES_PORT}" \
     "${BASTION_USER}@${BASTION_IP}" \
     -N -f
 
-  # Captura o PID do tunnel
-  TUNNEL_PID=$(pgrep -f "L ${LOCAL_PORT}:${EKS_ENDPOINT}:443" | head -1)
+  # Salva o PID único que gerencia todos os port-forwards
+  # Como usamos -f (background), pegamos o último processo SSH lançado
+  TUNNEL_PID=$!
+  # Caso o $! não capture por causa do -f em algumas versões de shell:
+  [ -z "$TUNNEL_PID" ] && TUNNEL_PID=$(pgrep -f "L ${LOCAL_PORT}:${EKS_ENDPOINT}:443")
+  
   echo "$TUNNEL_PID" > "$TUNNEL_PID_FILE"
-  log "Tunnel ativo (PID: ${TUNNEL_PID})"
+  log "Túneis ativos com sucesso (PID: ${TUNNEL_PID})"
 }
 
 configure_kubectl() {
@@ -152,14 +170,14 @@ cmd_stop() {
     if kill -0 "$PID" 2>/dev/null; then
       kill "$PID"
       rm -f "$TUNNEL_PID_FILE"
-      log "Tunnel encerrado (PID: ${PID})"
+      log "Túneis encerrados (PID: ${PID})"
     else
-      warn "Tunnel não estava ativo."
+      warn "Processo não encontrado. Limpando arquivo de PID."
       rm -f "$TUNNEL_PID_FILE"
     fi
   else
-    warn "Nenhum tunnel registrado. Verificando por processos SSH ativos..."
-    pkill -f "L ${LOCAL_PORT}:" 2>/dev/null && log "Processos SSH encerrados." || warn "Nenhum processo encontrado."
+    warn "Nenhum tunnel registrado. Limpando processos SSH residuais..."
+    pkill -f "L ${LOCAL_PORT}:" && log "Processos encerrados."
   fi
 }
 
