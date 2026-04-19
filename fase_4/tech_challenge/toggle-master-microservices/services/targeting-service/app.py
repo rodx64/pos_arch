@@ -11,11 +11,9 @@ import logging
 from prometheus_flask_exporter import PrometheusMetrics
 from prometheus_client import Counter, Gauge, Histogram
 from ddtrace import patch_all
-from ddtrace.contrib.psycopg2 import patch as patch_psycopg2
 
 # --- APM: instrumenta libs automaticamente ---
 patch_all()       # Flask, requests, logging
-patch_psycopg2()  # PostgreSQL — cada query vira um span
 
 # Configura o logging
 logging.basicConfig(level=logging.INFO)
