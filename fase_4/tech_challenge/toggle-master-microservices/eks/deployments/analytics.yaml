@@ -54,9 +54,7 @@ spec:
             - containerPort: 8005
           env:
             - name: DD_AGENT_HOST
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.hostIP
+              value: "datadog-agent.monitoring.svc.cluster.local"
             - name: DD_LOGS_INJECTION
               value: "true"
             - name: DD_ENV
