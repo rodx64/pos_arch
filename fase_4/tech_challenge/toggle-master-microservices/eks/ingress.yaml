@@ -53,7 +53,7 @@ spec:
             pathType: ImplementationSpecific
             backend:
               service:
-                name: prometheus
+                name: prometheus-internal-link
                 port:
                   number: 9090
 
