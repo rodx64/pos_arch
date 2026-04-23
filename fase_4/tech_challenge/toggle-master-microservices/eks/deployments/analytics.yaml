@@ -48,7 +48,7 @@ spec:
     spec:
       containers:
         - name: analytics-container
-          image: 951619424825.dkr.ecr.us-east-1.amazonaws.com/toggle-master:analytics-service-44e4ae4dab16ce25b01ce53cbd01e9181d7f334b
+          image: 951619424825.dkr.ecr.us-east-1.amazonaws.com/toggle-master:analytics-service-5a2bed1d297dea1ab49b072f8a7bc91fc80d5e99
           imagePullPolicy: Always
           ports:
             - containerPort: 8005
