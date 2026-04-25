@@ -75,11 +75,11 @@ spec:
                 name: analytics-secret
           resources:
             limits:
+              memory: "512Mi"
+              cpu: "1000m"
+            requests:
               memory: "256Mi"
               cpu: "500m"
-            requests:
-              memory: "128Mi"
-              cpu: "250m"
           
           # PROBES
           startupProbe:
