@@ -1,0 +1,195 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-toggle-master
+  namespace: monitoring
+data:
+  toggle-master.json: |
+    {
+      "title": "Toggle Master — Saúde do Ecossistema",
+      "uid": "toggle-master-health",
+      "timezone": "browser",
+      "refresh": "30s",
+      "time": { "from": "now-1h", "to": "now" },
+      "panels": [
+        {
+          "id": 1,
+          "title": "CPU Usage por Pod (toggle-master)",
+          "type": "timeseries",
+          "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+          "datasource": "Prometheus",
+          "targets": [{
+            "expr": "sum(rate(container_cpu_usage_seconds_total{namespace='toggle-master', container!=''}[5m])) by (pod)",
+            "legendFormat": "{{pod}}"
+          }]
+        },
+        {
+          "id": 2,
+          "title": "Memória Usage por Pod (toggle-master)",
+          "type": "timeseries",
+          "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+          "datasource": "Prometheus",
+          "targets": [{
+            "expr": "sum(container_memory_working_set_bytes{namespace='toggle-master', container!=''}) by (pod)",
+            "legendFormat": "{{pod}}"
+          }]
+        },
+        {
+          "id": 3,
+          "title": "Taxa de Requisições HTTP por Serviço",
+          "type": "timeseries",
+          "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+          "datasource": "Prometheus",
+          "targets": [{
+            "expr": "sum(rate(http_requests_total{namespace='toggle-master'}[5m])) by (service)",
+            "legendFormat": "{{service}}"
+          }]
+        },
+        {
+          "id": 4,
+          "title": "Latência P99 por Serviço (ms)",
+          "type": "timeseries",
+          "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+          "datasource": "Prometheus",
+          "targets": [{
+            "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{namespace='toggle-master'}[5m])) by (le, service)) * 1000",
+            "legendFormat": "p99 {{service}}"
+          }]
+        },
+        {
+          "id": 5,
+          "title": "Taxa de Erros HTTP (5xx) por Serviço",
+          "type": "timeseries",
+          "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+          "datasource": "Prometheus",
+          "targets": [{
+            "expr": "sum(rate(http_requests_total{namespace='toggle-master', status=~'Internal Server Error|Bad Gateway|Service Unavailable'}[5m])) by (service)",
+            "legendFormat": "erros — {{service}}"
+          }]
+        },
+        {
+          "id": 6,
+          "title": "Status das Dependências",
+          "type": "stat",
+          "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
+          "datasource": "Prometheus",
+          "options": {
+            "colorMode": "background",
+            "graphMode": "none",
+            "textMode": "auto",
+            "reduceOptions": {
+              "calcs": ["lastNotNull"]
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [
+                { "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } }
+              ]
+            }
+          },
+          "targets": [
+            { "expr": "db_up{namespace='toggle-master'}", "legendFormat": "DB — {{service}}" },
+            { "expr": "redis_up", "legendFormat": "Redis" },
+            { "expr": "sqs_up", "legendFormat": "SQS" },
+            { "expr": "sqs_available", "legendFormat": "SQS Worker" },
+            { "expr": "dynamo_available", "legendFormat": "DynamoDB" }
+          ]
+        },
+        {
+          "id": 7,
+          "title": "Avaliações de Feature Flags por Resultado",
+          "type": "timeseries",
+          "gridPos": { "x": 0, "y": 24, "w": 12, "h": 8 },
+          "datasource": "Prometheus",
+          "targets": [{
+            "expr": "sum(rate(evaluations_total[5m])) by (flag_name, result)",
+            "legendFormat": "{{flag_name}} — {{result}}"
+          }]
+        },
+        {
+          "id": 8,
+          "title": "Mensagens SQS — Processadas vs Falhas",
+          "type": "timeseries",
+          "gridPos": { "x": 12, "y": 24, "w": 12, "h": 8 },
+          "datasource": "Prometheus",
+          "targets": [
+            { "expr": "rate(sqs_messages_processed_total[5m])", "legendFormat": "Processadas/s" },
+            { "expr": "rate(sqs_messages_failed_total[5m])", "legendFormat": "Falhas/s" }
+          ]
+        },
+        {
+          "id": 9,
+          "title": "Cache Redis — Hit Rate",
+          "type": "timeseries",
+          "gridPos": { "x": 0, "y": 32, "w": 12, "h": 8 },
+          "datasource": "Prometheus",
+          "targets": [{
+            "expr": "rate(cache_hits_total[5m]) / (rate(cache_hits_total[5m]) + rate(cache_misses_total[5m]))",
+            "legendFormat": "hit rate"
+          }]
+        },
+        {
+          "id": 10,
+          "title": "Validações de API Key por Resultado",
+          "type": "timeseries",
+          "gridPos": { "x": 12, "y": 32, "w": 12, "h": 8 },
+          "datasource": "Prometheus",
+          "targets": [{
+            "expr": "sum(rate(auth_keys_validated_total[5m])) by (result)",
+            "legendFormat": "{{result}}"
+          }]
+        },
+        {
+          "id": 11,
+          "title": "Logs em Tempo Real — toggle-master",
+          "type": "logs",
+          "gridPos": { "x": 0, "y": 40, "w": 24, "h": 10 },
+          "datasource": "Loki",
+          "options": {
+            "showTime": true,
+            "showLabels": true,
+            "wrapLogMessage": true,
+            "sortOrder": "Descending"
+          },
+          "targets": [{
+            "expr": "{namespace=\"toggle-master\"}",
+            "legendFormat": ""
+          }]
+        },
+        {
+          "id": 12,
+          "title": "Logs de Erro — toggle-master",
+          "type": "logs",
+          "gridPos": { "x": 0, "y": 50, "w": 24, "h": 10 },
+          "datasource": "Loki",
+          "options": {
+            "showTime": true,
+            "showLabels": true,
+            "wrapLogMessage": true,
+            "sortOrder": "Descending"
+          },
+          "targets": [{
+            "expr": "{namespace=\"toggle-master\"} |~ \"(?i)(error|erro|exception|fatal|critical)\"",
+            "legendFormat": ""
+          }]
+        },
+        {
+          "id": 13,
+          "title": "Logs por Serviço",
+          "type": "logs",
+          "gridPos": { "x": 0, "y": 60, "w": 24, "h": 10 },
+          "datasource": "Loki",
+          "options": {
+            "showTime": true,
+            "showLabels": true,
+            "wrapLogMessage": false,
+            "sortOrder": "Descending"
+          },
+          "targets": [{
+            "expr": "{namespace=\"toggle-master\", service=~\"analytics|auth|evaluation|flag|targeting\"}",
+            "legendFormat": ""
+          }]
+        }
+      ]
+    }
