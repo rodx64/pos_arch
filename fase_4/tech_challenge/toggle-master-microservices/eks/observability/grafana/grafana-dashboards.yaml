@@ -41,7 +41,7 @@ data:
           "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
           "datasource": "Prometheus",
           "targets": [{
-            "expr": "sum(rate(http_requests_total{namespace='toggle-master'}[30m])) by (service)",
+            "expr": "sum(rate(http_requests_total[30m])) by (service)",
             "legendFormat": "{{service}}"
           }]
         },
@@ -52,7 +52,7 @@ data:
           "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
           "datasource": "Prometheus",
           "targets": [{
-            "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{namespace='toggle-master'}[15m])) by (le, service)) * 1000",
+            "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[15m])) by (le, service)) * 1000",
             "legendFormat": "p99 {{service}}"
           }]
         },
@@ -63,7 +63,7 @@ data:
           "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
           "datasource": "Prometheus",
           "targets": [{
-            "expr": "sum(rate(http_requests_total{namespace='toggle-master', code=~'5..'}[5m])) by (service)",
+            "expr": "sum(rate(http_requests_total{code=~"5.."}[5m])) by (service)",
             "legendFormat": "erros — {{service}}"
           }]
         },
