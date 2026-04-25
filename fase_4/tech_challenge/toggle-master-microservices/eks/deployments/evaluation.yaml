@@ -10,7 +10,6 @@ metadata:
     tags.datadoghq.com/service: "evaluation-service"
     tags.datadoghq.com/version: "1.0.0"
 spec:
-  replicas: 1
   selector:
     matchLabels:
       app: evaluation
