@@ -4,7 +4,7 @@ set -e
 
 # ==============================================================
 # connect-eks.sh
-# Abre tunnel SSH (Bastion/DBs) e Port-Forwards (Prometheus/Argo)
+# Abre tunnel SSH (Bastion/DBs) e Port-Forwards (Prometheus/Argo/Grafana)
 # Uso: ./connect-eks.sh [start|stop|status]
 # ==============================================================
 
@@ -13,9 +13,11 @@ KEY_PATH="./iac-key.pem"
 LOCAL_PORT="6443"
 PROM_PORT="9090"
 ARGO_PORT="8080"
+GRAFANA_PORT="3000"
 TUNNEL_PID_FILE="/tmp/eks-tunnel.pid"
 PROM_PID_FILE="/tmp/eks-prometheus.pid"
 ARGO_PID_FILE="/tmp/eks-argocd.pid"
+GRAFANA_PID_FILE="/tmp/eks-grafana.pid"
 PID_FILE_DB="/tmp/eks-db-tunnels.pid"
 
 PROJECT_NAME="toggle-master"
@@ -78,7 +80,7 @@ get_eks_endpoint() {
 }
 
 start_tunnel() {
-  for f in "$TUNNEL_PID_FILE" "$PID_FILE_DB" "$PROM_PID_FILE" "$ARGO_PID_FILE"; do
+  for f in "$TUNNEL_PID_FILE" "$PID_FILE_DB" "$PROM_PID_FILE" "$ARGO_PID_FILE" "$GRAFANA_PID_FILE"; do
     if [ -f "$f" ]; then
       OLD_PID=$(cat "$f")
       if kill -0 "$OLD_PID" 2>/dev/null; then
@@ -94,7 +96,7 @@ start_tunnel() {
   chmod 400 "$KEY_PATH"
 
   log "Abrindo Túneis SSH via Bastion..."
-  
+
   ssh -i "$KEY_PATH" \
     -o StrictHostKeyChecking=no \
     -o ServerAliveInterval=60 \
@@ -117,6 +119,10 @@ start_tunnel() {
   log "Abrindo port-forward para Argo CD (argocd)..."
   kubectl port-forward svc/argocd-server ${ARGO_PORT}:80 -n argocd > /dev/null 2>&1 &
   echo $! > "$ARGO_PID_FILE"
+
+  log "Abrindo port-forward para Grafana (monitoring)..."
+  kubectl port-forward svc/grafana ${GRAFANA_PORT}:3000 -n monitoring > /dev/null 2>&1 &
+  echo $! > "$GRAFANA_PID_FILE"
 }
 
 configure_kubectl() {
@@ -129,11 +135,12 @@ configure_kubectl() {
 
 verify_connection() {
   log "Verificando conexões..."
-  sleep 5 
+  sleep 5
   if kubectl get nodes &>/dev/null; then
-    log "Conexão EKS: OK"
-    log "Prometheus: http://localhost:${PROM_PORT}"
-    log "Argo CD: http://localhost:${ARGO_PORT}"
+    log "Conexão EKS:  OK"
+    log "Prometheus:   http://localhost:${PROM_PORT}"
+    log "Argo CD:      http://localhost:${ARGO_PORT}"
+    log "Grafana:      http://localhost:${GRAFANA_PORT}/grafana" 
   else
     error "Falha ao conectar no cluster."
   fi
@@ -149,7 +156,7 @@ cmd_start() {
 }
 
 cmd_stop() {
-  for f in "$TUNNEL_PID_FILE" "$PROM_PID_FILE" "$ARGO_PID_FILE"; do
+  for f in "$TUNNEL_PID_FILE" "$PROM_PID_FILE" "$ARGO_PID_FILE" "$GRAFANA_PID_FILE"; do
     if [ -f "$f" ]; then
       PID=$(cat "$f")
       kill "$PID" 2>/dev/null && log "Encerrado processo PID: $PID"
@@ -162,9 +169,10 @@ cmd_stop() {
 }
 
 cmd_status() {
-  [ -f "$TUNNEL_PID_FILE" ] && log "SSH/EKS: Ativo" || warn "SSH/EKS: Inativo"
-  [ -f "$PROM_PID_FILE" ] && log "Prometheus: Ativo" || warn "Prometheus: Inativo"
-  [ -f "$ARGO_PID_FILE" ] && log "Argo CD: Ativo" || warn "Argo CD: Inativo"
+  [ -f "$TUNNEL_PID_FILE" ] && log "SSH/EKS:    Ativo" || warn "SSH/EKS:    Inativo"
+  [ -f "$PROM_PID_FILE" ]   && log "Prometheus: Ativo" || warn "Prometheus: Inativo"
+  [ -f "$ARGO_PID_FILE" ]   && log "Argo CD:    Ativo" || warn "Argo CD:    Inativo"
+  [ -f "$GRAFANA_PID_FILE" ] && log "Grafana:    Ativo" || warn "Grafana:    Inativo"
 }
 
 case "${1:-start}" in

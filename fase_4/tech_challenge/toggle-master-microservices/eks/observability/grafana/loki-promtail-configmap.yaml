@@ -20,11 +20,10 @@ data:
         kubernetes_sd_configs:
           - role: pod
         pipeline_stages:
-          - docker: {}
+          - cri: {}
         relabel_configs:
           - source_labels: [__meta_kubernetes_pod_node_name]
             target_label: __host__
-          # Preserva os mesmos labels que o Prometheus usa
           - action: labelmap
             regex: __meta_kubernetes_pod_label_(.+)
           - source_labels: [__meta_kubernetes_namespace]
@@ -33,15 +32,13 @@ data:
             target_label: pod
           - source_labels: [__meta_kubernetes_pod_container_name]
             target_label: container
-          # Label "service" igual ao que o Prometheus gera (pod_label_app)
           - source_labels: [__meta_kubernetes_pod_label_app]
             target_label: service
-          # Label "tier" preservado para filtros no dashboard
           - source_labels: [__meta_kubernetes_pod_label_tier]
             target_label: tier
-          - replacement: /var/log/pods/*$1/*.log
-            separator: /
-            source_labels:
+          - source_labels:
               - __meta_kubernetes_pod_uid
               - __meta_kubernetes_pod_container_name
+            separator: /
             target_label: __path__
+            replacement: /var/log/pods/*$1/*.log
