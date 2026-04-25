@@ -14,7 +14,7 @@ data:
       "panels": [
         {
           "id": 1,
-          "title": "CPU Usage por Pod (toggle-master)",
+          "title": "CPU por Pod (toggle-master)",
           "type": "timeseries",
           "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
           "datasource": "Prometheus",
@@ -25,7 +25,7 @@ data:
         },
         {
           "id": 2,
-          "title": "Memória Usage por Pod (toggle-master)",
+          "title": "Memória por Pod (toggle-master)",
           "type": "timeseries",
           "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
           "datasource": "Prometheus",
@@ -36,12 +36,12 @@ data:
         },
         {
           "id": 3,
-          "title": "Taxa de Requisições HTTP por Serviço",
+          "title": "Taxa de Requisições HTTP por Serviço (30m)",
           "type": "timeseries",
           "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
           "datasource": "Prometheus",
           "targets": [{
-            "expr": "sum(rate(http_requests_total{namespace='toggle-master'}[5m])) by (service)",
+            "expr": "sum(rate(http_requests_total{namespace='toggle-master'}[30m])) by (service)",
             "legendFormat": "{{service}}"
           }]
         },
@@ -52,7 +52,7 @@ data:
           "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
           "datasource": "Prometheus",
           "targets": [{
-            "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{namespace='toggle-master'}[5m])) by (le, service)) * 1000",
+            "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{namespace='toggle-master'}[15m])) by (le, service)) * 1000",
             "legendFormat": "p99 {{service}}"
           }]
         },
@@ -63,7 +63,7 @@ data:
           "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
           "datasource": "Prometheus",
           "targets": [{
-            "expr": "sum(rate(http_requests_total{namespace='toggle-master', status=~'Internal Server Error|Bad Gateway|Service Unavailable'}[5m])) by (service)",
+            "expr": "sum(rate(http_requests_total{namespace='toggle-master', code=~'5..'}[5m])) by (service)",
             "legendFormat": "erros — {{service}}"
           }]
         },
@@ -171,23 +171,6 @@ data:
           },
           "targets": [{
             "expr": "{namespace=\"toggle-master\"} |~ \"(?i)(error|erro|exception|fatal|critical)\"",
-            "legendFormat": ""
-          }]
-        },
-        {
-          "id": 13,
-          "title": "Logs por Serviço",
-          "type": "logs",
-          "gridPos": { "x": 0, "y": 60, "w": 24, "h": 10 },
-          "datasource": "Loki",
-          "options": {
-            "showTime": true,
-            "showLabels": true,
-            "wrapLogMessage": false,
-            "sortOrder": "Descending"
-          },
-          "targets": [{
-            "expr": "{namespace=\"toggle-master\", service=~\"analytics|auth|evaluation|flag|targeting\"}",
             "legendFormat": ""
           }]
         }
