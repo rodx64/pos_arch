@@ -13,7 +13,7 @@ data:
           http:
             endpoint: 0.0.0.0:4318
       filelog:
-        include: [ /var/log/pods/*/*/*.log ]
+        include: [ /var/log/pods/toggle-master*/*/**.log ]
         start_at: beginning
         include_file_path: true
         include_file_name: false
