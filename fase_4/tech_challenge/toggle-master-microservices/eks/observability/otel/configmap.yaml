@@ -35,6 +35,14 @@ data:
         api:
           key: "${DD_API_KEY}"
           site: "datadoghq.com"
+        traces:
+          compute_stats_by_span_kind: true
+        sending_queue:
+          queue_size: 1000
+        retry_on_failure:
+          enabled: true
+          initial_interval: 5s
+          max_interval: 30s
 
     service:
       pipelines:
