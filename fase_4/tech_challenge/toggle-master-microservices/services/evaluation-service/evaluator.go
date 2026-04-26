@@ -97,11 +97,7 @@ func (a *App) fetchFlag(ctx context.Context, flagName string) (*Flag, error) {
 	}
 
 	apiKey := os.Getenv("SERVICE_API_KEY")
-	req, err := http.NewRequestWithContext(ctx, "GET", parsedURL.String(), nil)
-
-	if err != nil {
-		return nil, err
-	}
+	req, _ := http.NewRequest("GET", parsedURL.String(), nil) // #nosec G704
 
 	req.Header.Set("Authorization", "Bearer "+apiKey)
 	resp, err := a.HttpClient.Do(req) // #nosec G704
