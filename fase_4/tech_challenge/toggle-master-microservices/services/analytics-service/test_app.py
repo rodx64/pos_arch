@@ -9,6 +9,7 @@ os.environ["AWS_SQS_URL"] = "http://fake-sqs"
 os.environ["AWS_DYNAMODB_TABLE"] = "fake-table"
 os.environ["ENVIRONMENT"] = "local"
 
+
 import app # noqa: E402
 
 
