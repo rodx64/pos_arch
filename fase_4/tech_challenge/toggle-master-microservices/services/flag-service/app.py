@@ -32,7 +32,7 @@ provider = TracerProvider(resource=resource)
 processor = BatchSpanProcessor(OTLPSpanExporter(
     endpoint=os.getenv(
         "OTEL_EXPORTER_OTLP_ENDPOINT",
-        "http://otel-collector.monitoring.svc.cluster.local:4318"
+        "http://otel-collector.monitoring.svc.cluster.local:4318/v1/traces"
     ),
 ))
 provider.add_span_processor(processor)
