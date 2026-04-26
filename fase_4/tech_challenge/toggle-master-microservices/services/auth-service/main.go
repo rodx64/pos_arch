@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
@@ -200,7 +201,9 @@ func main() {
 		IdleTimeout:  15 * time.Second,
 	}
 
-	log.Printf("Serviço Auth (OTel) rodando na porta %s", port)
+	cleanPort := strings.ReplaceAll(strings.ReplaceAll(port, "\n", ""), "\r", "")
+
+	log.Printf("Serviço Auth (OTel) rodando na porta %s", cleanPort)
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatal(err)
 	}
