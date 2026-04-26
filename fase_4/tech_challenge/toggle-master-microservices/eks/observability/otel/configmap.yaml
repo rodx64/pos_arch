@@ -19,6 +19,7 @@ data:
         include_file_name: false
 
     processors:
+      batch:
       k8sattributes:
         auth_type: "serviceAccount"
         passthrough: false

@@ -3,6 +3,8 @@ kind: ConfigMap
 metadata:
   name: grafana-dashboard-toggle-master
   namespace: monitoring
+  labels:
+    app.kubernetes.io/instance: toggle-master
 data:
   toggle-master.json: |
     {
@@ -63,7 +65,7 @@ data:
           "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
           "datasource": "Prometheus",
           "targets": [{
-            "expr": "sum(rate(http_requests_total{code=~"5.."}[5m])) by (service)",
+            "expr": "sum(rate(http_requests_total{code=~\"5..\"}[5m])) by (service)",
             "legendFormat": "erros — {{service}}"
           }]
         },
