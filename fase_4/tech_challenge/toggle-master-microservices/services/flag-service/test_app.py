@@ -1,7 +1,6 @@
 import unittest
 from unittest.mock import patch, MagicMock
 import os
-import sys
 import json
 
 os.environ["DATABASE_URL"] = "postgresql://user:pass@localhost:5432/db"
@@ -15,8 +14,9 @@ with patch('psycopg2.pool.SimpleConnectionPool', return_value=_mock_pool_instanc
      patch('opentelemetry.instrumentation.flask.FlaskInstrumentor.instrument_app', MagicMock()), \
      patch('opentelemetry.instrumentation.requests.RequestsInstrumentor.instrument', MagicMock()), \
      patch('opentelemetry.instrumentation.psycopg2.Psycopg2Instrumentor.instrument', MagicMock()):
-    
+
     import app
+
 
 def make_fresh_conn():
     """Cria mocks de conexão e cursor garantindo que não retornem MagicMocks na serialização."""
@@ -27,15 +27,18 @@ def make_fresh_conn():
     cur.fetchone.return_value = None
     return conn, cur
 
+
 def make_auth_ok(mock_requests_get):
     resp = MagicMock()
     resp.status_code = 200
     mock_requests_get.return_value = resp
 
+
 def make_auth_fail(mock_requests_get, status=403):
     resp = MagicMock()
     resp.status_code = status
     mock_requests_get.return_value = resp
+
 
 AUTH_HEADER = {'Authorization': 'Bearer valid-key'}
 JSON_CT = 'application/json'
@@ -67,7 +70,10 @@ class TestAuthMiddleware(unittest.TestCase):
 
     @patch('app.requests.get')
     def test_invalid_api_key_returns_401(self, mock_requests_get):
-        make_auth_fail(mock_requests_get)
+        resp = MagicMock()
+        resp.status_code = 401
+        mock_requests_get.return_value = resp
+
         resp = self.client.get('/flags', headers=AUTH_HEADER)
         self.assertEqual(resp.status_code, 401)
         self.assertIn('inválida', resp.get_json()['error'])
@@ -79,6 +85,7 @@ class TestAuthMiddleware(unittest.TestCase):
         resp = self.client.get('/flags', headers=AUTH_HEADER)
         self.assertEqual(resp.status_code, 504)
 
+
 class TestCreateFlag(unittest.TestCase):
 
     def setUp(self):
@@ -88,7 +95,10 @@ class TestCreateFlag(unittest.TestCase):
 
     @patch('app.requests.get')
     def test_create_flag_success(self, mock_requests_get):
-        make_auth_ok(mock_requests_get)
+        resp_auth = MagicMock()
+        resp_auth.status_code = 200
+        mock_requests_get.return_value = resp_auth
+
         self.cur.fetchone.return_value = {
             'id': 1, 'name': 'feature_x', 'description': 'Test flag',
             'is_enabled': False, 'created_at': '2026-01-01T00:00:00',
@@ -107,7 +117,10 @@ class TestCreateFlag(unittest.TestCase):
 
     @patch('app.requests.get')
     def test_create_flag_duplicate_returns_409(self, mock_requests_get):
-        make_auth_ok(mock_requests_get)
+        resp_auth = MagicMock()
+        resp_auth.status_code = 200
+        mock_requests_get.return_value = resp_auth
+
         self.cur.execute.side_effect = app.psycopg2.IntegrityError()
 
         resp = self.client.post(
@@ -130,7 +143,10 @@ class TestGetFlags(unittest.TestCase):
 
     @patch('app.requests.get')
     def test_get_flags_returns_list(self, mock_requests_get):
-        make_auth_ok(mock_requests_get)
+        resp_auth = MagicMock()
+        resp_auth.status_code = 200
+        mock_requests_get.return_value = resp_auth
+
         self.cur.fetchall.return_value = [
             {'id': 1, 'name': 'flag_a', 'is_enabled': True},
             {'id': 2, 'name': 'flag_b', 'is_enabled': False},
@@ -141,6 +157,7 @@ class TestGetFlags(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertIsInstance(resp.get_json(), list)
 
+
 class TestUpdateFlag(unittest.TestCase):
 
     def setUp(self):
@@ -150,7 +167,10 @@ class TestUpdateFlag(unittest.TestCase):
 
     @patch('app.requests.get')
     def test_update_is_enabled_success(self, mock_requests_get):
-        make_auth_ok(mock_requests_get)
+        resp_auth = MagicMock()
+        resp_auth.status_code = 200
+        mock_requests_get.return_value = resp_auth
+
         self.cur.rowcount = 1
         self.cur.fetchone.return_value = {'id': 1, 'name': 'feature_x', 'is_enabled': True}
 
@@ -174,11 +194,15 @@ class TestDeleteFlag(unittest.TestCase):
 
     @patch('app.requests.get')
     def test_delete_flag_success_returns_204(self, mock_requests_get):
-        make_auth_ok(mock_requests_get)
+        resp_auth = MagicMock()
+        resp_auth.status_code = 200
+        mock_requests_get.return_value = resp_auth
+
         self.cur.rowcount = 1
         resp = self.client.delete('/flags/feature_x', headers=AUTH_HEADER)
         self.assertEqual(resp.status_code, 204)
         self.conn.commit.assert_called_once()
+
 
 if __name__ == '__main__':
     unittest.main()

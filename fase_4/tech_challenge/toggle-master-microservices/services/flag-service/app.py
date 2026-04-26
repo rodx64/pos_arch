@@ -74,6 +74,7 @@ except psycopg2.OperationalError as e:
     db_up.set(0)
     sys.exit(1)
 
+
 def refresh_active_flags_gauge():
     """Sincroniza o gauge de métricas com o estado atual do banco."""
     conn = None
@@ -87,8 +88,11 @@ def refresh_active_flags_gauge():
     except Exception as e:
         log.error("Erro ao atualizar gauge de flags ativas: %s", e)
     finally:
-        if cur: cur.close()
-        if conn: pool.putconn(conn)
+        if cur:
+            cur.close()
+        if conn:
+            pool.putconn(conn)
+
 
 # --- Middleware de Autenticação ---
 def require_auth(f):
@@ -125,9 +129,11 @@ def require_auth(f):
         return f(*args, **kwargs)
     return decorated
 
+
 @app.route("/health")
 def health():
     return jsonify({"status": "ok"})
+
 
 @app.route("/flags", methods=["POST"])
 @require_auth
@@ -158,15 +164,20 @@ def create_flag():
         log.info("Flag '%s' criada com sucesso.", name)
         return jsonify(new_flag), 201
     except psycopg2.IntegrityError:
-        if conn: conn.rollback()
+        if conn:
+            conn.rollback()
         return jsonify({"error": f"Flag '{name}' já existe"}), 409
     except Exception as e:
-        if conn: conn.rollback()
+        if conn:
+            conn.rollback()
         log.error("Erro ao criar flag: %s", e)
         return jsonify({"error": "Erro interno do servidor"}), 500
     finally:
-        if cur: cur.close()
-        if conn: pool.putconn(conn)
+        if cur:
+            cur.close()
+        if conn:
+            pool.putconn(conn)
+
 
 @app.route("/flags", methods=["GET"])
 @require_auth
@@ -184,8 +195,35 @@ def get_flags():
         log.error("Erro ao buscar flags: %s", e)
         return jsonify({"error": "Erro interno do servidor"}), 500
     finally:
-        if cur: cur.close()
-        if conn: pool.putconn(conn)
+        if cur:
+            cur.close()
+        if conn:
+            pool.putconn(conn)
+
+
+@app.route("/flags/<string:name>", methods=["GET"])
+@require_auth
+def get_flag(name):
+    conn = None
+    cur = None
+    try:
+        conn = pool.getconn()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        with db_query_duration_seconds.labels(operation="read").time():
+            cur.execute("SELECT * FROM flags WHERE name = %s", (name,))
+            flag = cur.fetchone()
+        if not flag:
+            return jsonify({"error": "Flag não encontrada"}), 404
+        return jsonify(flag)
+    except Exception as e:
+        log.error("Erro ao buscar flag '%s': %s", name, e)
+        return jsonify({"error": "Erro interno do servidor"}), 500
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            pool.putconn(conn)
+
 
 @app.route("/flags/<string:name>", methods=["PUT"])
 @require_auth
@@ -225,12 +263,16 @@ def update_flag(name):
         log.info("Flag '%s' atualizada.", name)
         return jsonify(updated_flag), 200
     except Exception as e:
-        if conn: conn.rollback()
+        if conn:
+            conn.rollback()
         log.error("Erro ao atualizar flag: %s", e)
         return jsonify({"error": "Erro interno do servidor"}), 500
     finally:
-        if cur: cur.close()
-        if conn: pool.putconn(conn)
+        if cur:
+            cur.close()
+        if conn:
+            pool.putconn(conn)
+
 
 @app.route("/flags/<string:name>", methods=["DELETE"])
 @require_auth
@@ -249,12 +291,16 @@ def delete_flag(name):
         refresh_active_flags_gauge()
         log.info("Flag '%s' deletada.", name)
         return "", 204
-    except Exception as e:
-        if conn: conn.rollback()
+    except Exception:
+        if conn:
+            conn.rollback()
         return jsonify({"error": "Erro interno do servidor"}), 500
     finally:
-        if cur: cur.close()
-        if conn: pool.putconn(conn)
+        if cur:
+            cur.close()
+        if conn:
+            pool.putconn(conn)
+
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8002))
