@@ -69,4 +69,4 @@ USER appuser
 EXPOSE 8005
 
 # Gunicorn para produção
-CMD ["opentelemetry-instrument", "gunicorn", "-w", "4", "-b", "0.0.0.0:8005", "app:app"]
+CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:8005", "app:app"]
