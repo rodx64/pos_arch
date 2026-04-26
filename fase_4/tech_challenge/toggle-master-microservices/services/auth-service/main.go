@@ -154,7 +154,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer shutdown(context.Background())
+	defer func() {
+		if err := shutdown(context.Background()); err != nil {
+			log.Printf("Erro ao fechar o tracer: %v", err)
+		}
+	}()
 
 	port := os.Getenv("PORT")
 	if port == "" {
