@@ -180,7 +180,7 @@ func initTracer() (func(context.Context) error, error) {
 
 	endpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
 	if endpoint == "" {
-		endpoint = "otel-collector.monitoring.svc.cluster.local:4317"
+		endpoint = "http://otel-collector.monitoring.svc.cluster.local:4317"
 	}
 
 	traceExporter, err := otlptracegrpc.New(ctx,
