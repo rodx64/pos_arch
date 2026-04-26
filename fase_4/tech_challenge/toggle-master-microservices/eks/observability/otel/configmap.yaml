@@ -34,7 +34,7 @@ data:
       datadog:
         api:
           key: "${DD_API_KEY}"
-        site: "datadoghq.com"
+          site: "datadoghq.com"
 
     service:
       pipelines:
