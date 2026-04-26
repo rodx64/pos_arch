@@ -1,30 +1,34 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"log"
 	"net/http"
 	"os"
 	"time"
 
-	"github.com/jackc/pgx/v4/stdlib"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/joho/godotenv"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	sqltrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/database/sql"
-	httptrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/net/http"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
+
+	// OTel Imports
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
 )
 
-// App struct (para injeção de dependência)
 type App struct {
 	DB        *sql.DB
 	MasterKey string
 	Metrics   *AppMetrics
 }
 
-// AppMetrics agrupa todas as métricas Prometheus da aplicação
 type AppMetrics struct {
 	httpRequestsTotal   *prometheus.CounterVec
 	httpRequestDuration *prometheus.HistogramVec
@@ -38,30 +42,27 @@ func newMetrics() *AppMetrics {
 		httpRequestsTotal: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
 				Name: "http_requests_total",
-				Help: "Total de requisições HTTP por método, rota e status",
+				Help: "Total de requisições HTTP",
 			},
 			[]string{"method", "path", "status"},
 		),
 		httpRequestDuration: prometheus.NewHistogramVec(
 			prometheus.HistogramOpts{
 				Name:    "http_request_duration_seconds",
-				Help:    "Duração das requisições HTTP em segundos",
+				Help:    "Duração das requisições",
 				Buckets: prometheus.DefBuckets,
 			},
 			[]string{"method", "path"},
 		),
 		dbUp: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "db_up",
-			Help: "1 se o banco de dados está acessível, 0 se não",
 		}),
 		keysCreatedTotal: prometheus.NewCounter(prometheus.CounterOpts{
 			Name: "auth_keys_created_total",
-			Help: "Total de chaves de API criadas",
 		}),
 		keysValidatedTotal: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
 				Name: "auth_keys_validated_total",
-				Help: "Total de validações de chave por resultado",
 			},
 			[]string{"result"},
 		),
@@ -78,86 +79,39 @@ func newMetrics() *AppMetrics {
 	return m
 }
 
-func main() {
-	_ = godotenv.Load()
-
-	// --- Inicializa o Datadog APM Tracer ---
-	tracer.Start(
-		tracer.WithServiceName("auth-service"),
-		tracer.WithEnv(os.Getenv("DD_ENV")),
-		tracer.WithServiceVersion(os.Getenv("DD_VERSION")),
+func initTracer() (func(context.Context) error, error) {
+	ctx := context.Background()
+	res, err := resource.New(ctx,
+		resource.WithAttributes(
+			semconv.ServiceNameKey.String("auth-service"),
+			semconv.DeploymentEnvironmentKey.String(os.Getenv("DD_ENV")),
+		),
 	)
-	defer tracer.Stop()
-
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8001"
-	}
-
-	databaseURL := os.Getenv("DATABASE_URL")
-	if databaseURL == "" {
-		log.Fatal("DATABASE_URL deve ser definida")
-	}
-
-	masterKey := os.Getenv("MASTER_KEY")
-	if masterKey == "" {
-		log.Fatal("MASTER_KEY deve ser definida")
-	}
-
-	db, err := connectDB(databaseURL)
-	if err != nil {
-		log.Fatalf("Não foi possível conectar ao banco de dados: %v", err)
-	}
-	defer db.Close()
-
-	app := &App{
-		DB:        db,
-		MasterKey: masterKey,
-		Metrics:   newMetrics(),
-	}
-
-	app.Metrics.dbUp.Set(1)
-
-	go app.watchDB()
-
-	// Mux instrumentado com APM — rastreia todas as rotas HTTP
-	mux := httptrace.NewServeMux(httptrace.WithServiceName("auth-service"))
-
-	mux.Handle("/metrics", promhttp.Handler())
-	mux.Handle("/health", app.instrumentHandler("/health", http.HandlerFunc(app.healthHandler)))
-	mux.Handle("/validate", app.instrumentHandler("/validate", http.HandlerFunc(app.validateKeyHandler)))
-	mux.Handle("/admin/keys", app.instrumentHandler("/admin/keys",
-		app.masterKeyAuthMiddleware(http.HandlerFunc(app.createKeyHandler)),
-	))
-
-	server := &http.Server{
-		Addr:         ":" + port,
-		Handler:      mux,
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 10 * time.Second,
-		IdleTimeout:  15 * time.Second,
-	}
-
-	// #nosec G706
-	log.Printf("Serviço de Autenticação (Go) rodando na porta %q", port)
-	if err := server.ListenAndServe(); err != nil {
-		log.Fatal(err)
-	}
-}
-
-// connectDB inicializa e testa a conexão com o PostgreSQL instrumentada com APM
-func connectDB(databaseURL string) (*sql.DB, error) {
-	// Registra o driver pgx instrumentado — cada query vira um span no APM
-	sqltrace.Register("pgx", &stdlib.Driver{}, sqltrace.WithServiceName("auth-service-db"))
-	db, err := sqltrace.Open("pgx", databaseURL)
 	if err != nil {
 		return nil, err
 	}
-	if err = db.Ping(); err != nil {
+
+	endpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+	if endpoint == "" {
+		endpoint = "otel-collector.monitoring.svc.cluster.local:4317"
+	}
+
+	traceExporter, err := otlptracegrpc.New(ctx,
+		otlptracegrpc.WithInsecure(),
+		otlptracegrpc.WithEndpoint(endpoint),
+	)
+	if err != nil {
 		return nil, err
 	}
-	log.Println("Conectado ao PostgreSQL com sucesso!")
-	return db, nil
+
+	tp := sdktrace.NewTracerProvider(
+		sdktrace.WithBatcher(traceExporter),
+		sdktrace.WithResource(res),
+	)
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
+
+	return tp.Shutdown, nil
 }
 
 func (a *App) watchDB() {
@@ -177,13 +131,9 @@ func (a *App) instrumentHandler(path string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		rw := &responseWriter{ResponseWriter: w, status: http.StatusOK}
-
 		next.ServeHTTP(rw, r)
-
 		duration := time.Since(start).Seconds()
-		status := http.StatusText(rw.status)
-
-		a.Metrics.httpRequestsTotal.WithLabelValues(r.Method, path, status).Inc()
+		a.Metrics.httpRequestsTotal.WithLabelValues(r.Method, path, http.StatusText(rw.status)).Inc()
 		a.Metrics.httpRequestDuration.WithLabelValues(r.Method, path).Observe(duration)
 	})
 }
@@ -196,4 +146,45 @@ type responseWriter struct {
 func (rw *responseWriter) WriteHeader(code int) {
 	rw.status = code
 	rw.ResponseWriter.WriteHeader(code)
+}
+
+func main() {
+	_ = godotenv.Load()
+	shutdown, err := initTracer()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer shutdown(context.Background())
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8001"
+	}
+
+	db, err := sql.Open("pgx", os.Getenv("DATABASE_URL"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	app := &App{
+		DB:        db,
+		MasterKey: os.Getenv("MASTER_KEY"),
+		Metrics:   newMetrics(),
+	}
+
+	app.Metrics.dbUp.Set(1)
+	go app.watchDB()
+
+	mux := http.NewServeMux()
+	mux.Handle("/metrics", promhttp.Handler())
+
+	mux.Handle("/health", otelhttp.NewHandler(app.instrumentHandler("/health", http.HandlerFunc(app.healthHandler)), "HealthCheck"))
+	mux.Handle("/validate", otelhttp.NewHandler(app.instrumentHandler("/validate", http.HandlerFunc(app.validateKeyHandler)), "ValidateKey"))
+	mux.Handle("/admin/keys", otelhttp.NewHandler(app.masterKeyAuthMiddleware(app.instrumentHandler("/admin/keys", http.HandlerFunc(app.createKeyHandler))), "CreateKey"))
+
+	log.Printf("Serviço Auth (OTel) na porta %s", port)
+	if err := http.ListenAndServe(":"+port, mux); err != nil {
+		log.Fatal(err)
+	}
 }
