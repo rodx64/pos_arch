@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/sha1" // #nosec G505 -- SHA1 usado para bucketing determinístico, não para segurança
 	"encoding/binary"
 	"encoding/json"
@@ -15,15 +16,15 @@ import (
 
 const CACHE_TTL = 30 * time.Second
 
-func (a *App) getDecision(userID, flagName string) (bool, error) {
-	info, err := a.getCombinedFlagInfo(flagName)
+func (a *App) getDecision(ctx context.Context, userID, flagName string) (bool, error) {
+	info, err := a.getCombinedFlagInfo(ctx, flagName)
 	if err != nil {
 		return false, err
 	}
 	return a.runEvaluationLogic(info, userID), nil
 }
 
-func (a *App) getCombinedFlagInfo(flagName string) (*CombinedFlagInfo, error) {
+func (a *App) getCombinedFlagInfo(ctx context.Context, flagName string) (*CombinedFlagInfo, error) {
 	cacheKey := fmt.Sprintf("flag_info:%s", flagName)
 
 	val, err := a.RedisClient.Get(ctx, cacheKey).Result()
@@ -40,7 +41,7 @@ func (a *App) getCombinedFlagInfo(flagName string) (*CombinedFlagInfo, error) {
 	log.Printf("Cache MISS para flag '%s'", flagName) // #nosec G706
 	a.Metrics.cacheMissesTotal.Inc()                  // métrica: cache miss
 
-	info, err := a.fetchFromServices(flagName)
+	info, err := a.fetchFromServices(ctx, flagName)
 	if err != nil {
 		a.Metrics.flagServiceErrorsTotal.Inc() // métrica: erro nos serviços upstream
 		return nil, err
@@ -56,7 +57,7 @@ func (a *App) getCombinedFlagInfo(flagName string) (*CombinedFlagInfo, error) {
 	return info, nil
 }
 
-func (a *App) fetchFromServices(flagName string) (*CombinedFlagInfo, error) {
+func (a *App) fetchFromServices(ctx context.Context, flagName string) (*CombinedFlagInfo, error) {
 	var wg sync.WaitGroup
 	wg.Add(2)
 
@@ -66,7 +67,7 @@ func (a *App) fetchFromServices(flagName string) (*CombinedFlagInfo, error) {
 
 	go func() {
 		defer wg.Done()
-		flagInfo, flagErr = a.fetchFlag(flagName)
+		flagInfo, flagErr = a.fetchFlag(ctx, flagName)
 	}()
 
 	go func() {
@@ -86,10 +87,13 @@ func (a *App) fetchFromServices(flagName string) (*CombinedFlagInfo, error) {
 	return &CombinedFlagInfo{Flag: flagInfo, Rule: ruleInfo}, nil
 }
 
-func (a *App) fetchFlag(flagName string) (*Flag, error) {
+func (a *App) fetchFlag(ctx context.Context, flagName string) (*Flag, error) {
 	url := fmt.Sprintf("%s/flags/%s", a.FlagServiceURL, flagName)
 	apiKey := os.Getenv("SERVICE_API_KEY")
-	req, _ := http.NewRequest("GET", url, nil) // #nosec G704
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
 	req.Header.Set("Authorization", "Bearer "+apiKey)
 
 	resp, err := a.HttpClient.Do(req) // #nosec G704

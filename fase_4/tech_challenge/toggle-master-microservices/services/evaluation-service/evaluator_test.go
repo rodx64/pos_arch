@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -220,7 +221,7 @@ func TestFetchFlag_Success(t *testing.T) {
 		HttpClient:     server.Client(),
 	}
 
-	result, err := app.fetchFlag("my-flag")
+	result, err := app.fetchFlag(context.TODO(), "my-flag")
 	if err != nil {
 		t.Fatalf("erro inesperado: %v", err)
 	}
@@ -243,7 +244,7 @@ func TestFetchFlag_NotFound(t *testing.T) {
 		HttpClient:     server.Client(),
 	}
 
-	_, err := app.fetchFlag("nonexistent")
+	_, err := app.fetchFlag(context.TODO(), "nonexistent")
 	if err == nil {
 		t.Fatal("esperado erro para flag não encontrada")
 	}
@@ -263,7 +264,7 @@ func TestFetchFlag_ServerError(t *testing.T) {
 		HttpClient:     server.Client(),
 	}
 
-	_, err := app.fetchFlag("my-flag")
+	_, err := app.fetchFlag(context.TODO(), "my-flag")
 	if err == nil {
 		t.Fatal("esperado erro para status 500")
 	}
@@ -281,7 +282,7 @@ func TestFetchFlag_InvalidJSON(t *testing.T) {
 		HttpClient:     server.Client(),
 	}
 
-	_, err := app.fetchFlag("my-flag")
+	_, err := app.fetchFlag(context.TODO(), "my-flag")
 	if err == nil {
 		t.Fatal("esperado erro para JSON inválido")
 	}
@@ -293,7 +294,7 @@ func TestFetchFlag_ConnectionError(t *testing.T) {
 		HttpClient:     &http.Client{Timeout: 1 * time.Second},
 	}
 
-	_, err := app.fetchFlag("my-flag")
+	_, err := app.fetchFlag(context.TODO(), "my-flag")
 	if err == nil {
 		t.Fatal("esperado erro de conexão")
 	}
@@ -317,7 +318,7 @@ func TestFetchFlag_AuthorizationHeader(t *testing.T) {
 		HttpClient:     server.Client(),
 	}
 
-	_, err := app.fetchFlag("test")
+	_, err := app.fetchFlag(context.TODO(), "test")
 	if err != nil {
 		t.Fatalf("erro inesperado: %v", err)
 	}
@@ -444,7 +445,7 @@ func TestFetchFromServices_BothSuccess(t *testing.T) {
 		HttpClient:          &http.Client{Timeout: 5 * time.Second},
 	}
 
-	info, err := app.fetchFromServices("my-flag")
+	info, err := app.fetchFromServices(context.TODO(), "my-flag")
 	if err != nil {
 		t.Fatalf("erro inesperado: %v", err)
 	}
@@ -473,7 +474,7 @@ func TestFetchFromServices_FlagError_ReturnsError(t *testing.T) {
 		HttpClient:          &http.Client{Timeout: 5 * time.Second},
 	}
 
-	_, err := app.fetchFromServices("my-flag")
+	_, err := app.fetchFromServices(context.TODO(), "my-flag")
 	if err == nil {
 		t.Fatal("esperado erro quando flag-service falha")
 	}
@@ -496,7 +497,7 @@ func TestFetchFromServices_RuleNotFound_ReturnsNilRule(t *testing.T) {
 		HttpClient:          &http.Client{Timeout: 5 * time.Second},
 	}
 
-	info, err := app.fetchFromServices("my-flag")
+	info, err := app.fetchFromServices(context.TODO(), "my-flag")
 	if err != nil {
 		t.Fatalf("erro inesperado: %v", err)
 	}

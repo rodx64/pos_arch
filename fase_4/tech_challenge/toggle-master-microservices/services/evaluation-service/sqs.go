@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/sqs"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type EvaluationEvent struct {
@@ -14,19 +16,24 @@ type EvaluationEvent struct {
 	FlagName  string    `json:"flag_name"`
 	Result    bool      `json:"result"`
 	Timestamp time.Time `json:"timestamp"`
+	TraceID   string    `json:"trace_id"`
 }
 
-func (a *App) sendEvaluationEvent(userID, flagName string, result bool) {
+func (a *App) sendEvaluationEvent(ctx context.Context, userID, flagName string, result bool) {
 	if a.SqsSvc == nil || a.SqsQueueURL == "" {
 		log.Printf("[SQS_DISABLED] Evento: User '%s', Flag '%s', Result '%t'", userID, flagName, result) // #nosec G706
 		return
 	}
+
+	span := trace.SpanFromContext(ctx)
+	traceID := span.SpanContext().TraceID().String()
 
 	event := EvaluationEvent{
 		UserID:    userID,
 		FlagName:  flagName,
 		Result:    result,
 		Timestamp: time.Now().UTC(),
+		TraceID:   traceID,
 	}
 
 	body, err := json.Marshal(event)

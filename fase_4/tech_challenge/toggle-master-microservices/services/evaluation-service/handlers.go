@@ -23,6 +23,7 @@ func (a *App) healthHandler(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) evaluationHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	ctx := r.Context()
 
 	userID := r.URL.Query().Get("user_id")
 	flagName := r.URL.Query().Get("flag_name")
@@ -32,7 +33,7 @@ func (a *App) evaluationHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := a.getDecision(userID, flagName)
+	result, err := a.getDecision(ctx, userID, flagName)
 	if err != nil {
 		if _, ok := err.(*NotFoundError); ok {
 			result = false
@@ -48,7 +49,7 @@ func (a *App) evaluationHandler(w http.ResponseWriter, r *http.Request) {
 		a.Metrics.evaluationsTotal.WithLabelValues(flagName, fmt.Sprintf("%t", result)).Inc()
 	}
 
-	go a.sendEvaluationEvent(userID, flagName, result)
+	go a.sendEvaluationEvent(ctx, userID, flagName, result)
 
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(EvaluationResponse{

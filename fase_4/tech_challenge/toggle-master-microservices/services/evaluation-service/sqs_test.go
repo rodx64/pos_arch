@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"log"
 	"os"
 	"strings"
@@ -18,7 +19,7 @@ func TestSendEvaluationEvent_SQSDisabled_NilSvc(t *testing.T) {
 	log.SetOutput(&buf)
 	defer log.SetOutput(os.Stderr)
 
-	app.sendEvaluationEvent("user1", "test-flag", true)
+	app.sendEvaluationEvent(context.TODO(), "user1", "test-flag", true)
 
 	output := buf.String()
 	if !strings.Contains(output, "[SQS_DISABLED]") {
@@ -42,7 +43,7 @@ func TestSendEvaluationEvent_SQSDisabled_EmptyURL(t *testing.T) {
 	log.SetOutput(&buf)
 	defer log.SetOutput(os.Stderr)
 
-	app.sendEvaluationEvent("user2", "flag-2", false)
+	app.sendEvaluationEvent(context.TODO(), "user2", "flag-2", false)
 
 	output := buf.String()
 	if !strings.Contains(output, "[SQS_DISABLED]") {
@@ -63,7 +64,7 @@ func TestSendEvaluationEvent_SQSDisabled_ResultTrue(t *testing.T) {
 	log.SetOutput(&buf)
 	defer log.SetOutput(os.Stderr)
 
-	app.sendEvaluationEvent("user3", "flag-3", true)
+	app.sendEvaluationEvent(context.TODO(), "user3", "flag-3", true)
 
 	output := buf.String()
 	if !strings.Contains(output, "true") {
