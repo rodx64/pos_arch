@@ -1,5 +1,6 @@
 import os
 import sys
+import logging
 import psycopg2
 import requests
 from psycopg2.extras import RealDictCursor
@@ -7,61 +8,56 @@ from psycopg2.pool import SimpleConnectionPool
 from flask import Flask, request, jsonify
 from dotenv import load_dotenv
 from functools import wraps
-import logging
+
+from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.instrumentation.flask import FlaskInstrumentor
+from opentelemetry.instrumentation.requests import RequestsInstrumentor
+from opentelemetry.instrumentation.psycopg2 import Psycopg2Instrumentor
+
+# --- Prometheus Metrics ---
 from prometheus_flask_exporter import PrometheusMetrics
 from prometheus_client import Counter, Gauge, Histogram
-from ddtrace import patch_all
 
-# --- APM: instrumenta libs automaticamente ---
-patch_all()       # Flask, requests, logging
+# Configuração de Identidade do Serviço para o OTel
+resource = Resource(attributes={
+    "service.name": "flag-service",
+    "deployment.environment": os.getenv("DD_ENV", "production")
+})
 
-# Configura o logging
-logging.basicConfig(level=logging.INFO)
-log = logging.getLogger(__name__)
+provider = TracerProvider(resource=resource)
+processor = BatchSpanProcessor(OTLPSpanExporter(
+    endpoint=os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://otel-collector.monitoring.svc.cluster.local:4317"),
+    insecure=True
+))
+provider.add_span_processor(processor)
+trace.set_tracer_provider(provider)
 
-# Carrega .env para desenvolvimento local
-load_dotenv()
+RequestsInstrumentor().instrument()
+Psycopg2Instrumentor().instrument()
 
 app = Flask(__name__)
-metrics = PrometheusMetrics(app)  # expõe /metrics automaticamente
+FlaskInstrumentor().instrument_app(app)
 
-# --- Métricas customizadas ---
-flags_created_total = Counter(
-    'flags_created_total',
-    'Total de feature flags criadas'
-)
-flags_updated_total = Counter(
-    'flags_updated_total',
-    'Total de feature flags atualizadas'
-)
-flags_deleted_total = Counter(
-    'flags_deleted_total',
-    'Total de feature flags deletadas'
-)
-flags_active_total = Gauge(
-    'flags_active_total',
-    'Total de feature flags com is_enabled=true'
-)
-auth_validation_total = Counter(
-    'auth_validation_total',
-    'Total de validações de autenticação por resultado',
-    ['result']  # "success", "failure", "timeout", "error"
-)
-db_up = Gauge(
-    'db_up',
-    '1 se o PostgreSQL está acessível via pool, 0 se não'
-)
-auth_service_up = Gauge(
-    'auth_service_up',
-    '1 se o auth-service está acessível, 0 se não'
-)
-db_query_duration_seconds = Histogram(
-    'db_query_duration_seconds',
-    'Duração das queries ao PostgreSQL em segundos',
-    ['operation']  # "create", "read", "update", "delete"
-)
+logging.basicConfig(level=logging.INFO)
+log = logging.getLogger(__name__)
+load_dotenv()
 
-# --- Configuração ---
+metrics = PrometheusMetrics(app)
+
+flags_created_total = Counter('flags_created_total', 'Total de feature flags criadas')
+flags_updated_total = Counter('flags_updated_total', 'Total de feature flags atualizadas')
+flags_deleted_total = Counter('flags_deleted_total', 'Total de feature flags deletadas')
+flags_active_total = Gauge('flags_active_total', 'Total de feature flags com is_enabled=true')
+auth_validation_total = Counter('auth_validation_total', 'Validações de auth por resultado', ['result'])
+db_up = Gauge('db_up', 'Status da conexão com PostgreSQL')
+auth_service_up = Gauge('auth_service_up', 'Status do serviço de Autenticação')
+db_query_duration_seconds = Histogram('db_query_duration_seconds', 'Duração das queries SQL', ['operation'])
+
+# --- Configurações de Ambiente ---
 DATABASE_URL = os.getenv("DATABASE_URL")
 AUTH_SERVICE_URL = os.getenv("AUTH_SERVICE_URL")
 
@@ -69,19 +65,17 @@ if not DATABASE_URL or not AUTH_SERVICE_URL:
     log.critical("Erro: DATABASE_URL e AUTH_SERVICE_URL devem ser definidos.")
     sys.exit(1)
 
-# --- Pool de Conexão com o Banco ---
 try:
     pool = SimpleConnectionPool(1, 5, dsn=DATABASE_URL)
     log.info("Pool de conexões com o PostgreSQL inicializado.")
     db_up.set(1)
 except psycopg2.OperationalError as e:
-    log.critical(f"Erro fatal ao conectar ao PostgreSQL: {e}")
+    log.critical("Erro fatal ao conectar ao PostgreSQL: %s", e)
     db_up.set(0)
     sys.exit(1)
 
-
 def refresh_active_flags_gauge():
-    """Atualiza o gauge de flags ativas consultando o banco."""
+    """Sincroniza o gauge de métricas com o estado atual do banco."""
     conn = None
     cur = None
     try:
@@ -91,13 +85,10 @@ def refresh_active_flags_gauge():
         count = cur.fetchone()[0]
         flags_active_total.set(count)
     except Exception as e:
-        log.error(f"Erro ao atualizar gauge de flags ativas: {e}")
+        log.error("Erro ao atualizar gauge de flags ativas: %s", e)
     finally:
-        if cur:
-            cur.close()
-        if conn:
-            pool.putconn(conn)
-
+        if cur: cur.close()
+        if conn: pool.putconn(conn)
 
 # --- Middleware de Autenticação ---
 def require_auth(f):
@@ -110,40 +101,33 @@ def require_auth(f):
 
         try:
             validate_url = f"{AUTH_SERVICE_URL}/validate"
-            response = requests.get(
-                validate_url, headers={"Authorization": auth_header}, timeout=3
-            )
+            response = requests.get(validate_url, headers={"Authorization": auth_header}, timeout=3)
 
             if response.status_code != 200:
-                log.warning(f"Falha na validação da chave (status: {response.status_code})")
+                log.warning("Falha na validação da chave. Status: %d", response.status_code)
                 auth_validation_total.labels(result="failure").inc()
                 return jsonify({"error": "Chave de API inválida"}), 401
 
             auth_validation_total.labels(result="success").inc()
+            auth_service_up.set(1)
 
         except requests.exceptions.Timeout:
             log.error("Timeout ao conectar com o auth-service")
             auth_validation_total.labels(result="timeout").inc()
             auth_service_up.set(0)
-            return jsonify({"error": "Serviço de autenticação indisponível (timeout)"}), 504
-
-        except requests.exceptions.RequestException as e:
-            log.error(f"Erro ao conectar com o auth-service: {e}")
+            return jsonify({"error": "Serviço de autenticação offline"}), 504
+        except Exception as e:
+            log.error("Erro inesperado na validação de auth: %s", e)
             auth_validation_total.labels(result="error").inc()
             auth_service_up.set(0)
-            return jsonify({"error": "Serviço de autenticação indisponível"}), 503
+            return jsonify({"error": "Erro interno no serviço de auth"}), 503
 
-        auth_service_up.set(1)
         return f(*args, **kwargs)
-
     return decorated
 
-
-# --- Endpoints da API ---
 @app.route("/health")
 def health():
     return jsonify({"status": "ok"})
-
 
 @app.route("/flags", methods=["POST"])
 @require_auth
@@ -171,25 +155,18 @@ def create_flag():
         conn.commit()
         flags_created_total.inc()
         refresh_active_flags_gauge()
-        log.info(f"Flag '{name}' criada com sucesso.")
+        log.info("Flag '%s' criada com sucesso.", name)
         return jsonify(new_flag), 201
     except psycopg2.IntegrityError:
-        if conn:
-            conn.rollback()
-        log.warning(f"Tentativa de criar flag duplicada: '{name}'")
+        if conn: conn.rollback()
         return jsonify({"error": f"Flag '{name}' já existe"}), 409
     except Exception as e:
-        if conn:
-            conn.rollback()
-        db_up.set(0)
-        log.error(f"Erro ao criar flag: {e}")
-        return jsonify({"error": "Erro interno do servidor", "details": str(e)}), 500
+        if conn: conn.rollback()
+        log.error("Erro ao criar flag: %s", e)
+        return jsonify({"error": "Erro interno do servidor"}), 500
     finally:
-        if cur:
-            cur.close()
-        if conn:
-            pool.putconn(conn)
-
+        if cur: cur.close()
+        if conn: pool.putconn(conn)
 
 @app.route("/flags", methods=["GET"])
 @require_auth
@@ -202,55 +179,23 @@ def get_flags():
         with db_query_duration_seconds.labels(operation="read").time():
             cur.execute("SELECT * FROM flags ORDER BY name")
             flags = cur.fetchall()
-        db_up.set(1)
         return jsonify(flags)
     except Exception as e:
-        db_up.set(0)
-        log.error(f"Erro ao buscar flags: {e}")
-        return jsonify({"error": "Erro interno do servidor", "details": str(e)}), 500
+        log.error("Erro ao buscar flags: %s", e)
+        return jsonify({"error": "Erro interno do servidor"}), 500
     finally:
-        if cur:
-            cur.close()
-        if conn:
-            pool.putconn(conn)
-
-
-@app.route("/flags/<string:name>", methods=["GET"])
-@require_auth
-def get_flag(name):
-    conn = None
-    cur = None
-    try:
-        conn = pool.getconn()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        with db_query_duration_seconds.labels(operation="read").time():
-            cur.execute("SELECT * FROM flags WHERE name = %s", (name,))
-            flag = cur.fetchone()
-        db_up.set(1)
-        if not flag:
-            return jsonify({"error": "Flag não encontrada"}), 404
-        return jsonify(flag)
-    except Exception as e:
-        db_up.set(0)
-        log.error(f"Erro ao buscar flag '{name}': {e}")
-        return jsonify({"error": "Erro interno do servidor", "details": str(e)}), 500
-    finally:
-        if cur:
-            cur.close()
-        if conn:
-            pool.putconn(conn)
-
+        if cur: cur.close()
+        if conn: pool.putconn(conn)
 
 @app.route("/flags/<string:name>", methods=["PUT"])
 @require_auth
 def update_flag(name):
     data = request.get_json()
     if not data:
-        return jsonify({"error": "Corpo da requisição obrigatório"}), 400
+        return jsonify({"error": "Dados obrigatórios"}), 400
 
     fields = []
     values = []
-
     if "description" in data:
         fields.append("description = %s")
         values.append(data["description"])
@@ -259,9 +204,7 @@ def update_flag(name):
         values.append(data["is_enabled"])
 
     if not fields:
-        return jsonify(
-            {"error": "Pelo menos um campo ('description', 'is_enabled') é obrigatório"}
-        ), 400
+        return jsonify({"error": "Nenhum campo para atualizar"}), 400
 
     values.append(name)
     query = f"UPDATE flags SET {', '.join(fields)}, updated_at = NOW() WHERE name = %s RETURNING *"
@@ -279,20 +222,15 @@ def update_flag(name):
         conn.commit()
         flags_updated_total.inc()
         refresh_active_flags_gauge()
-        log.info(f"Flag '{name}' atualizada com sucesso.")
+        log.info("Flag '%s' atualizada.", name)
         return jsonify(updated_flag), 200
     except Exception as e:
-        if conn:
-            conn.rollback()
-        db_up.set(0)
-        log.error(f"Erro ao atualizar flag '{name}': {e}")
-        return jsonify({"error": "Erro interno do servidor", "details": str(e)}), 500
+        if conn: conn.rollback()
+        log.error("Erro ao atualizar flag: %s", e)
+        return jsonify({"error": "Erro interno do servidor"}), 500
     finally:
-        if cur:
-            cur.close()
-        if conn:
-            pool.putconn(conn)
-
+        if cur: cur.close()
+        if conn: pool.putconn(conn)
 
 @app.route("/flags/<string:name>", methods=["DELETE"])
 @require_auth
@@ -309,21 +247,16 @@ def delete_flag(name):
         conn.commit()
         flags_deleted_total.inc()
         refresh_active_flags_gauge()
-        log.info(f"Flag '{name}' deletada com sucesso.")
+        log.info("Flag '%s' deletada.", name)
         return "", 204
     except Exception as e:
-        if conn:
-            conn.rollback()
-        db_up.set(0)
-        log.error(f"Erro ao deletar flag '{name}': {e}")
-        return jsonify({"error": "Erro interno do servidor", "details": str(e)}), 500
+        if conn: conn.rollback()
+        return jsonify({"error": "Erro interno do servidor"}), 500
     finally:
-        if cur:
-            cur.close()
-        if conn:
-            pool.putconn(conn)
-
+        if cur: cur.close()
+        if conn: pool.putconn(conn)
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8002))
-    app.run(host="0.0.0.0", port=port, debug=False)  # nosec B104
+    # #nosec B104 - Aceitável para ambiente de container com Gunicorn/K8s
+    app.run(host="0.0.0.0", port=port, debug=False)
