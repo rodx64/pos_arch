@@ -1,5 +1,6 @@
 import os
 import sys
+import logging
 import psycopg2
 import requests
 from psycopg2.extras import RealDictCursor, Json
@@ -7,61 +8,56 @@ from psycopg2.pool import SimpleConnectionPool
 from flask import Flask, request, jsonify
 from dotenv import load_dotenv
 from functools import wraps
-import logging
+
+from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.instrumentation.flask import FlaskInstrumentor
+from opentelemetry.instrumentation.requests import RequestsInstrumentor
+from opentelemetry.instrumentation.psycopg2 import Psycopg2Instrumentor
+
 from prometheus_flask_exporter import PrometheusMetrics
 from prometheus_client import Counter, Gauge, Histogram
-from ddtrace import patch_all
 
-# --- APM: instrumenta libs automaticamente ---
-patch_all()       # Flask, requests, logging
+resource = Resource(attributes={
+    "service.name": "targeting-service",
+    "deployment.environment": os.getenv("DD_ENV", "production")
+})
 
-# Configura o logging
+provider = TracerProvider(resource=resource)
+processor = BatchSpanProcessor(OTLPSpanExporter(
+    endpoint=os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://otel-collector.monitoring.svc.cluster.local:4317"),
+    insecure=True
+))
+provider.add_span_processor(processor)
+trace.set_tracer_provider(provider)
+
+# Instrumentação automática
+RequestsInstrumentor().instrument()
+Psycopg2Instrumentor().instrument()
+
+app = Flask(__name__)
+FlaskInstrumentor().instrument_app(app)
+
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
 # Carrega .env para desenvolvimento local
 load_dotenv()
 
-app = Flask(__name__)
-metrics = PrometheusMetrics(app)  # expõe /metrics automaticamente
+metrics = PrometheusMetrics(app)
 
-# --- Métricas customizadas ---
-rules_created_total = Counter(
-    'rules_created_total',
-    'Total de regras de segmentação criadas'
-)
-rules_updated_total = Counter(
-    'rules_updated_total',
-    'Total de regras de segmentação atualizadas'
-)
-rules_deleted_total = Counter(
-    'rules_deleted_total',
-    'Total de regras de segmentação deletadas'
-)
-rules_active_total = Gauge(
-    'rules_active_total',
-    'Total de regras de segmentação com is_enabled=true'
-)
-auth_validation_total = Counter(
-    'auth_validation_total',
-    'Total de validações de autenticação por resultado',
-    ['result']  # "success", "failure", "timeout", "error"
-)
-db_up = Gauge(
-    'db_up',
-    '1 se o PostgreSQL está acessível via pool, 0 se não'
-)
-auth_service_up = Gauge(
-    'auth_service_up',
-    '1 se o auth-service está acessível, 0 se não'
-)
-db_query_duration_seconds = Histogram(
-    'db_query_duration_seconds',
-    'Duração das queries ao PostgreSQL em segundos',
-    ['operation']  # "create", "read", "update", "delete"
-)
+rules_created_total = Counter('rules_created_total', 'Total de regras criadas')
+rules_updated_total = Counter('rules_updated_total', 'Total de regras atualizadas')
+rules_deleted_total = Counter('rules_deleted_total', 'Total de regras deletadas')
+rules_active_total = Gauge('rules_active_total', 'Total de regras ativas')
+auth_validation_total = Counter('auth_validation_total', 'Validações de auth', ['result'])
+db_up = Gauge('db_up', 'Status DB')
+auth_service_up = Gauge('auth_service_up', 'Status Auth Service')
+db_query_duration_seconds = Histogram('db_query_duration_seconds', 'Duração SQL', ['operation'])
 
-# --- Configuração ---
 DATABASE_URL = os.getenv("DATABASE_URL")
 AUTH_SERVICE_URL = os.getenv("AUTH_SERVICE_URL")
 
@@ -75,7 +71,7 @@ try:
     log.info("Pool de conexões com o PostgreSQL (targeting) inicializado.")
     db_up.set(1)
 except psycopg2.OperationalError as e:
-    log.critical(f"Erro fatal ao conectar ao PostgreSQL: {e}")
+    log.critical("Erro fatal ao conectar ao PostgreSQL: %s", e)
     db_up.set(0)
     sys.exit(1)
 
@@ -91,7 +87,7 @@ def refresh_active_rules_gauge():
         count = cur.fetchone()[0]
         rules_active_total.set(count)
     except Exception as e:
-        log.error(f"Erro ao atualizar gauge de regras ativas: {e}")
+        log.error("Erro ao atualizar gauge de regras ativas: %s", e)
     finally:
         if cur:
             cur.close()
@@ -110,32 +106,28 @@ def require_auth(f):
 
         try:
             validate_url = f"{AUTH_SERVICE_URL}/validate"
-            response = requests.get(
-                validate_url, headers={"Authorization": auth_header}, timeout=3
-            )
+            response = requests.get(validate_url, headers={"Authorization": auth_header}, timeout=3)
 
             if response.status_code != 200:
-                log.warning(f"Falha na validação da chave (status: {response.status_code})")
+                log.warning("Falha na validação da chave (status: %d)", response.status_code)
                 auth_validation_total.labels(result="failure").inc()
                 return jsonify({"error": "Chave de API inválida"}), 401
 
             auth_validation_total.labels(result="success").inc()
+            auth_service_up.set(1)
 
         except requests.exceptions.Timeout:
             log.error("Timeout ao conectar com o auth-service")
             auth_validation_total.labels(result="timeout").inc()
             auth_service_up.set(0)
             return jsonify({"error": "Serviço de autenticação indisponível (timeout)"}), 504
-
-        except requests.exceptions.RequestException as e:
-            log.error(f"Erro ao conectar com o auth-service: {e}")
+        except Exception as e:
+            log.error("Erro ao conectar com o auth-service: %s", e)
             auth_validation_total.labels(result="error").inc()
             auth_service_up.set(0)
             return jsonify({"error": "Serviço de autenticação indisponível"}), 503
 
-        auth_service_up.set(1)
         return f(*args, **kwargs)
-
     return decorated
 
 
@@ -171,19 +163,17 @@ def create_rule():
         conn.commit()
         rules_created_total.inc()
         refresh_active_rules_gauge()
-        log.info(f"Regra para '{flag_name}' criada com sucesso.")
+        log.info("Regra para '%s' criada com sucesso.", flag_name)
         return jsonify(new_rule), 201
     except psycopg2.IntegrityError:
         if conn:
             conn.rollback()
-        log.warning(f"Tentativa de criar regra duplicada: '{flag_name}'")
         return jsonify({"error": f"Regra para a flag '{flag_name}' já existe"}), 409
     except Exception as e:
         if conn:
             conn.rollback()
-        db_up.set(0)
-        log.error(f"Erro ao criar regra: {e}")
-        return jsonify({"error": "Erro interno do servidor", "details": str(e)}), 500
+        log.error("Erro ao criar regra: %s", e)
+        return jsonify({"error": "Erro interno do servidor"}), 500
     finally:
         if cur:
             cur.close()
@@ -202,14 +192,12 @@ def get_rule(flag_name):
         with db_query_duration_seconds.labels(operation="read").time():
             cur.execute("SELECT * FROM targeting_rules WHERE flag_name = %s", (flag_name,))
             rule = cur.fetchone()
-        db_up.set(1)
         if not rule:
             return jsonify({"error": "Regra não encontrada"}), 404
         return jsonify(rule)
     except Exception as e:
-        db_up.set(0)
-        log.error(f"Erro ao buscar regra '{flag_name}': {e}")
-        return jsonify({"error": "Erro interno do servidor", "details": str(e)}), 500
+        log.error("Erro ao buscar regra '%s': %s", flag_name, e)
+        return jsonify({"error": "Erro interno do servidor"}), 500
     finally:
         if cur:
             cur.close()
@@ -226,7 +214,6 @@ def update_rule(flag_name):
 
     fields = []
     values = []
-
     if 'rules' in data:
         fields.append("rules = %s")
         values.append(Json(data['rules']))
@@ -235,7 +222,7 @@ def update_rule(flag_name):
         values.append(data['is_enabled'])
 
     if not fields:
-        return jsonify({"error": "Pelo menos um campo ('rules', 'is_enabled') é obrigatório"}), 400
+        return jsonify({"error": "Campos obrigatórios não informados"}), 400
 
     values.append(flag_name)
     query = f"UPDATE targeting_rules SET {', '.join(fields)}, updated_at = NOW() WHERE flag_name = %s RETURNING *"
@@ -253,14 +240,13 @@ def update_rule(flag_name):
         conn.commit()
         rules_updated_total.inc()
         refresh_active_rules_gauge()
-        log.info(f"Regra para '{flag_name}' atualizada com sucesso.")
+        log.info("Regra para '%s' atualizada.", flag_name)
         return jsonify(updated_rule), 200
     except Exception as e:
         if conn:
             conn.rollback()
-        db_up.set(0)
-        log.error(f"Erro ao atualizar regra '{flag_name}': {e}")
-        return jsonify({"error": "Erro interno do servidor", "details": str(e)}), 500
+        log.error("Erro ao atualizar regra '%s': %s", flag_name, e)
+        return jsonify({"error": "Erro interno do servidor"}), 500
     finally:
         if cur:
             cur.close()
@@ -283,14 +269,13 @@ def delete_rule(flag_name):
         conn.commit()
         rules_deleted_total.inc()
         refresh_active_rules_gauge()
-        log.info(f"Regra para '{flag_name}' deletada com sucesso.")
+        log.info("Regra para '%s' deletada.", flag_name)
         return "", 204
     except Exception as e:
         if conn:
             conn.rollback()
-        db_up.set(0)
-        log.error(f"Erro ao deletar regra '{flag_name}': {e}")
-        return jsonify({"error": "Erro interno do servidor", "details": str(e)}), 500
+        log.error("Erro ao deletar regra: %s", e)
+        return jsonify({"error": "Erro interno do servidor"}), 500
     finally:
         if cur:
             cur.close()
@@ -299,5 +284,5 @@ def delete_rule(flag_name):
 
 
 if __name__ == '__main__':
-    port = int(os.getenv("PORT", 8003))
-    app.run(host='0.0.0.0', port=port, debug=False)  # nosec B104
+    run_port = int(os.getenv("PORT", 8003))
+    app.run(host='0.0.0.0', port=run_port, debug=False)  # nosec B104
