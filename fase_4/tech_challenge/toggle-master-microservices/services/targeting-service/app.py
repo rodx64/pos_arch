@@ -12,7 +12,7 @@ from functools import wraps
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
@@ -28,8 +28,10 @@ resource = Resource(attributes={
 
 provider = TracerProvider(resource=resource)
 processor = BatchSpanProcessor(OTLPSpanExporter(
-    endpoint=os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://otel-collector.monitoring.svc.cluster.local:4317"),
-    insecure=True
+    endpoint=os.getenv(
+        "OTEL_EXPORTER_OTLP_ENDPOINT",
+        "http://otel-collector.monitoring.svc.cluster.local:4318"
+    ),
 ))
 provider.add_span_processor(processor)
 trace.set_tracer_provider(provider)

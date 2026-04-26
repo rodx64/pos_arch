@@ -10,7 +10,14 @@ from botocore.exceptions import NoCredentialsError, ClientError
 from flask import Flask, jsonify
 from dotenv import load_dotenv
 import subprocess
+
 from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.instrumentation.flask import FlaskInstrumentor
+from opentelemetry.instrumentation.requests import RequestsInstrumentor
 from opentelemetry.trace import Status, StatusCode
 
 
@@ -27,6 +34,23 @@ log = logging.getLogger(__name__)
 
 # Carrega .env para desenvolvimento local
 load_dotenv()
+
+resource = Resource(attributes={
+    "service.name": "analytics-service",
+    "deployment.environment": os.getenv("DD_ENV", "production")
+})
+
+provider = TracerProvider(resource=resource)
+processor = BatchSpanProcessor(OTLPSpanExporter(
+    endpoint=os.getenv(
+        "OTEL_EXPORTER_OTLP_ENDPOINT",
+        "http://otel-collector.monitoring.svc.cluster.local:4318"
+    ),
+))
+provider.add_span_processor(processor)
+trace.set_tracer_provider(provider)
+
+RequestsInstrumentor().instrument()
 
 # --- Configuração ---
 AWS_REGION = os.getenv("AWS_REGION")
@@ -70,6 +94,8 @@ HEALTH_MONITOR_INTERVAL = 10
 HEARTBEAT_INTERVAL = WAIT_TIME_SECONDS + 5
 
 app = Flask(__name__)
+FlaskInstrumentor().instrument_app(app)
+
 tracer = trace.get_tracer(__name__)
 
 
