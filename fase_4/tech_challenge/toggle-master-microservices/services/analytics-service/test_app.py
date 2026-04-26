@@ -3,12 +3,13 @@ import unittest
 from unittest.mock import patch, MagicMock
 import time
 import json
-import app
 
 os.environ["AWS_REGION"] = "us-east-1"
 os.environ["AWS_SQS_URL"] = "http://fake-sqs"
 os.environ["AWS_DYNAMODB_TABLE"] = "fake-table"
 os.environ["ENVIRONMENT"] = "local"
+
+import app # noqa: E402
 
 
 class TestProcessMessage(unittest.TestCase):
@@ -46,7 +47,7 @@ class TestProcessMessage(unittest.TestCase):
     def test_process_message_bad_json(self, mock_tracer, mock_sqs, mock_dynamo):
         mock_span = MagicMock()
         mock_tracer.start_as_current_span.return_value.__enter__.return_value = mock_span
-        
+
         message = {
             'MessageId': '124',
             'ReceiptHandle': 'handle-124',
