@@ -62,6 +62,8 @@ spec:
               value: "otlp"
             - name: OTEL_TRACES_EXPORTER
               value: "otlp"
+            - name: OTEL_SERVICE_NAME
+              value: "targeting-service"
             - name: DD_LOGS_INJECTION
               value: "true"
             - name: DD_ENV
