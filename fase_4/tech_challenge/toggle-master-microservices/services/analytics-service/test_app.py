@@ -10,7 +10,7 @@ os.environ["AWS_DYNAMODB_TABLE"] = "fake-table"
 os.environ["ENVIRONMENT"] = "local"
 
 
-import app # noqa: E402
+import app  # noqa: E402
 
 
 class TestProcessMessage(unittest.TestCase):
