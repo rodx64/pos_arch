@@ -25,7 +25,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 
 # Instala dependências Python no diretório isolado /install
-RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir --prefix=/install -r requirements.txt
 
 
 # ==========================
@@ -47,14 +48,6 @@ WORKDIR /app
 RUN apt-get update && apt-get upgrade -y --no-install-recommends \
     && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
-
-
-# Instala bibliotecas OTel
-RUN pip install opentelemetry-distro \
-    opentelemetry-exporter-otlp
-
-# Instrumentação automática
-RUN opentelemetry-bootstrap -a install
 
 # Copia as dependências já instaladas no builder (sem o ambiente pesado)
 COPY --from=builder /install /usr/local
