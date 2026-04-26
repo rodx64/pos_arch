@@ -3,20 +3,19 @@ import unittest
 from unittest.mock import patch, MagicMock
 import time
 import json
+import app
 
 os.environ["AWS_REGION"] = "us-east-1"
 os.environ["AWS_SQS_URL"] = "http://fake-sqs"
 os.environ["AWS_DYNAMODB_TABLE"] = "fake-table"
 os.environ["ENVIRONMENT"] = "local"
 
-import app
-
 
 class TestProcessMessage(unittest.TestCase):
 
     @patch('app.dynamodb_client')
     @patch('app.sqs_client')
-    @patch('app.tracer') 
+    @patch('app.tracer')
     def test_process_message_success(self, mock_tracer, mock_sqs, mock_dynamo):
         mock_span = MagicMock()
         mock_tracer.start_as_current_span.return_value.__enter__.return_value = mock_span
