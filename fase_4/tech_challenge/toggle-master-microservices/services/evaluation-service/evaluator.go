@@ -9,6 +9,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"sync"
 	"time"
@@ -88,32 +89,44 @@ func (a *App) fetchFromServices(ctx context.Context, flagName string) (*Combined
 }
 
 func (a *App) fetchFlag(ctx context.Context, flagName string) (*Flag, error) {
-	url := fmt.Sprintf("%s/flags/%s", a.FlagServiceURL, flagName)
+	rawURL := fmt.Sprintf("%s/flags/%s", a.FlagServiceURL, flagName)
+	parsedURL, err := url.Parse(rawURL)
+
+	if err != nil || parsedURL.Scheme == "" || parsedURL.Host == "" {
+		return nil, fmt.Errorf("URL de serviço inválida")
+	}
+
 	apiKey := os.Getenv("SERVICE_API_KEY")
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", parsedURL.String(), nil)
+
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Authorization", "Bearer "+apiKey)
 
+	req.Header.Set("Authorization", "Bearer "+apiKey)
 	resp, err := a.HttpClient.Do(req) // #nosec G704
+
 	if err != nil {
 		return nil, fmt.Errorf("erro ao chamar flag-service: %w", err)
 	}
+
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, &NotFoundError{flagName}
 	}
+
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("flag-service retornou status %d", resp.StatusCode)
 	}
 
 	body, _ := io.ReadAll(resp.Body)
 	var flag Flag
+
 	if err := json.Unmarshal(body, &flag); err != nil {
 		return nil, fmt.Errorf("erro ao desserializar resposta do flag-service: %w", err)
 	}
+
 	return &flag, nil
 }
 
