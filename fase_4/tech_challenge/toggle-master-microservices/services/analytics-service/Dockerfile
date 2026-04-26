@@ -48,6 +48,13 @@ RUN apt-get update && apt-get upgrade -y --no-install-recommends \
     && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 
+# Instala bibliotecas OTel
+RUN pip install opentelemetry-distro \
+    opentelemetry-exporter-otlp
+
+# Instrumentação automática
+RUN opentelemetry-bootstrap -a install
+
 # Copia as dependências já instaladas no builder (sem o ambiente pesado)
 COPY --from=builder /install /usr/local
 
@@ -62,4 +69,4 @@ USER appuser
 EXPOSE 8005
 
 # Gunicorn para produção
-CMD ["ddtrace-run", "gunicorn", "-w", "4", "-b", "0.0.0.0:8005", "app:app"]
+CMD ["opentelemetry-instrument", "gunicorn", "-w", "4", "-b", "0.0.0.0:8005", "app:app"]

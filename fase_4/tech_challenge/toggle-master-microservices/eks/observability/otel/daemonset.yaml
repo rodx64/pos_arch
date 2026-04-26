@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: otel-collector
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: otel-collector
+  template:
+    metadata:
+      labels:
+        app: otel-collector
+    spec:
+      containers:
+      - name: otel-collector
+        image: otel/opentelemetry-collector-contrib:0.96.0
+        env:
+        - name: DD_API_KEY
+          valueFrom: { secretKeyRef: { name: datadog-secret, key: api-key } }
+        volumeMounts:
+        - name: varlogpods
+          mountPath: /var/log/pods
+          readOnly: true
+        - name: config
+          mountPath: /etc/otel-collector-config.yaml
+          subPath: otel-collector-config
+      volumes:
+      - name: varlogpods
+        hostPath: { path: /var/log/pods }
+      - name: config
+        configMap: { name: otel-collector-conf }

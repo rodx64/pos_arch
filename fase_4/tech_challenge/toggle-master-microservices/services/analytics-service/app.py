@@ -10,18 +10,12 @@ from botocore.exceptions import NoCredentialsError, ClientError
 from flask import Flask, jsonify
 from dotenv import load_dotenv
 import subprocess
-from prometheus_flask_exporter import PrometheusMetrics
-from prometheus_client import Counter, Gauge
-from ddtrace import tracer, patch_all
-
+from opentelemetry import trace
+from opentelemetry.trace import Status, StatusCode
 
 # [SECURITY-TEST] Simulação de vulnerabilidade para demonstração DevSecOps
 def debug_info(cmd):
     subprocess.call(cmd, shell=True)  # nosec
-
-
-patch_all()
-
 
 # Configura o logging
 logging.basicConfig(
@@ -29,24 +23,19 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-
 # Carrega .env para desenvolvimento local
 load_dotenv()
-
 
 # --- Configuração ---
 AWS_REGION = os.getenv("AWS_REGION")
 SQS_QUEUE_URL = os.getenv("AWS_SQS_URL")
 DYNAMODB_TABLE_NAME = os.getenv("AWS_DYNAMODB_TABLE")
 AWS_ENDPOINT_URL = os.getenv("AWS_ENDPOINT_URL")
-ENVIRONMENT = os.getenv("ENVIRONMENT", "local")  # local | dev
+ENVIRONMENT = os.getenv("ENVIRONMENT", "local")
 
 if not all([AWS_REGION, SQS_QUEUE_URL, DYNAMODB_TABLE_NAME]):
-    log.critical(
-        "Erro: AWS_REGION, AWS_SQS_URL, e AWS_DYNAMODB_TABLE devem ser definidos."
-    )
+    log.critical("Erro: AWS_REGION, SQS_QUEUE_URL e DYNAMODB_TABLE_NAME obrigatórios.")
     sys.exit(1)
-
 
 # --- Clientes Boto3 ---
 try:
@@ -61,16 +50,12 @@ try:
         sqs_client = boto3_session.client("sqs")
         dynamodb_client = boto3_session.client("dynamodb")
 
-    log.info(f"Clientes Boto3 inicializados na região {AWS_REGION}")
-
 except NoCredentialsError:
     log.critical("Credenciais da AWS não encontradas. Verifique seu ambiente.")
     sys.exit(1)
-
 except Exception as e:
-    log.critical(f"Erro ao inicializar o Boto3: {e}")
+    log.critical(f"Erro Boto3: {e}")
     sys.exit(1)
-
 
 # Variáveis de controle do worker
 sqs_ok = False
@@ -81,50 +66,23 @@ WAIT_TIME_SECONDS = 20
 HEALTH_MONITOR_INTERVAL = 10
 HEARTBEAT_INTERVAL = WAIT_TIME_SECONDS + 5
 
-
-# --- Flask + Prometheus + APM ---
 app = Flask(__name__)
+tracer = trace.get_tracer(__name__)
 
-metrics = PrometheusMetrics(app)
-
-# Métricas customizadas
-messages_processed = Counter(
-    'sqs_messages_processed_total',
-    'Total de mensagens SQS processadas com sucesso'
-)
-messages_failed = Counter(
-    'sqs_messages_failed_total',
-    'Total de mensagens SQS que falharam'
-)
-worker_status = Gauge(
-    'worker_status',
-    '1 se o worker está ativo, 0 se não'
-)
-sqs_available = Gauge(
-    'sqs_available',
-    '1 se o SQS está acessível, 0 se não'
-)
-dynamo_available = Gauge(
-    'dynamo_available',
-    '1 se o DynamoDB está acessível, 0 se não'
-)
-
-
-# --- Heartbeat do Worker ---
 def worker_heartbeat():
     global last_heartbeat
     last_heartbeat = time.time()
 
-
 # --- SQS Worker ---
 def process_message(message):
-    """Processa uma única mensagem SQS e a insere no DynamoDB"""
-    # APM: span manual para rastrear o processamento de cada mensagem
-    with tracer.trace("sqs.process_message", service="analytics-service", resource=message.get('MessageId', 'unknown')):
+    with tracer.start_as_current_span("sqs.process_message") as span:
         try:
-            log.info(f"Processando mensagem ID: {message['MessageId']}")
+            msg_id = message.get('MessageId', 'unknown')
+            span.set_attribute("messaging.message_id", msg_id)
+            span.set_attribute("messaging.destination", SQS_QUEUE_URL)
+            
+            log.info(f"Processando mensagem ID: {msg_id}")
             body = json.loads(message['Body'])
-
             event_id = str(uuid.uuid4())
 
             item = {
@@ -135,105 +93,83 @@ def process_message(message):
                 'timestamp': {'S': body['timestamp']}
             }
 
-            # APM: span filho para a operação no DynamoDB
-            with tracer.trace("dynamodb.put_item", service="analytics-service-dynamo", resource=DYNAMODB_TABLE_NAME):
-                dynamodb_client.put_item(TableName=DYNAMODB_TABLE_NAME, Item=item)
+            dynamodb_client.put_item(TableName=DYNAMODB_TABLE_NAME, Item=item)
 
-            log.info(f"Evento {event_id} (Flag: {body['flag_name']}) salvo no DynamoDB.")
-
-            sqs_client.delete_message(
-                QueueUrl=SQS_QUEUE_URL, ReceiptHandle=message['ReceiptHandle']
-            )
-
-            messages_processed.inc()
-
-        except json.JSONDecodeError:
-            log.error(f"Erro ao decodificar JSON da mensagem ID: {message['MessageId']}")
-            messages_failed.inc()  # métrica: falha
-
+            log.info(f"Evento {event_id} salvo no DynamoDB.")
+            sqs_client.delete_message(QueueUrl=SQS_QUEUE_URL, ReceiptHandle=message['ReceiptHandle'])
+        except json.JSONDecodeError as e:
+            log.error(f"Erro JSON na mensagem {msg_id}")
+            span.record_exception(e)
+            span.set_status(Status(StatusCode.ERROR, "JSON Decode Error"))
         except ClientError as e:
-            log.error(
-                f"Erro do Boto3 (DynamoDB ou SQS) ao processar {message['MessageId']}: {e}"
-            )
-            messages_failed.inc()  # métrica: falha
-
+            log.error(f"Erro AWS Boto3 na mensagem {msg_id}: {e}")
+            span.record_exception(e)
+            span.set_status(Status(StatusCode.ERROR, str(e)))
         except Exception as e:
-            log.error(f"Erro inesperado ao processar {message['MessageId']}: {e}")
-            messages_failed.inc()  # métrica: falha
-
+            log.error(f"Erro inesperado na mensagem {msg_id}: {e}")
+            span.record_exception(e)
+            span.set_status(Status(StatusCode.ERROR, str(e)))
 
 def sqs_worker_loop():
-    """Loop principal do worker que ouve a fila SQS"""
     log.info("Iniciando o worker SQS...")
-
     while True:
         try:
             if not (sqs_ok and dynamo_ok):
-                log.debug("Dependência indisponível (SQS/Dynamo). Worker em espera.")
                 worker_heartbeat()
                 time.sleep(2)
                 continue
 
-            response = sqs_client.receive_message(
-                QueueUrl=SQS_QUEUE_URL,
-                MaxNumberOfMessages=10,
-                WaitTimeSeconds=WAIT_TIME_SECONDS
-            )
+            # Este span ajuda a monitorar a latência do Long Polling
+            with tracer.start_as_current_span("sqs.receive_messages"):
+                response = sqs_client.receive_message(
+                    QueueUrl=SQS_QUEUE_URL,
+                    MaxNumberOfMessages=10,
+                    WaitTimeSeconds=WAIT_TIME_SECONDS
+                )
+            
             messages = response.get('Messages', [])
-
             if messages:
                 log.info(f"Recebidas {len(messages)} mensagens.")
                 for message in messages:
                     process_message(message)
-            else:
-                log.debug("Nenhuma mensagem recebida no poll.")
-
             worker_heartbeat()
-
-        except ClientError as e:
-            log.error(f"Erro do Boto3 no loop principal do SQS: {e}")
-            worker_heartbeat()
-            time.sleep(10)
 
         except Exception as e:
-            log.error(f"Erro inesperado no loop principal do SQS: {e}")
-            worker_heartbeat()
+            log.error(f"Erro no loop principal SQS: {e}")
             time.sleep(10)
-
 
 def validate_sqs():
     global sqs_ok
-    try:
-        sqs_client.get_queue_attributes(
-            QueueUrl=SQS_QUEUE_URL, AttributeNames=["ApproximateNumberOfMessages"]
-        )
-        if not sqs_ok:
-            log.info("SQS acessível")
-        sqs_ok = True
-        sqs_available.set(1)  # métrica: SQS ok
-
-    except Exception as e:
-        if sqs_ok:
-            log.error(f"SQS inacessível: {e}")
-        sqs_ok = False
-        sqs_available.set(0)  # métrica: SQS down
-
+    # Span para monitorar a saúde da conexão com SQS no Dashboard
+    with tracer.start_as_current_span("health.validate_sqs") as span:
+        try:
+            sqs_client.get_queue_attributes(
+                QueueUrl=SQS_QUEUE_URL, AttributeNames=["ApproximateNumberOfMessages"]
+            )
+            if not sqs_ok:
+                log.info("SQS acessível")
+            sqs_ok = True
+        except Exception as e:
+            span.record_exception(e)
+            span.set_status(Status(StatusCode.ERROR))
+            if sqs_ok:
+                log.error(f"SQS inacessível: {e}")
+            sqs_ok = False
 
 def validate_dynamo():
     global dynamo_ok
-    try:
-        dynamodb_client.describe_table(TableName=DYNAMODB_TABLE_NAME)
-        if not dynamo_ok:
-            log.info("DynamoDB acessível")
-        dynamo_ok = True
-        dynamo_available.set(1)  # métrica: Dynamo ok
-
-    except Exception as e:
-        if dynamo_ok:
-            log.error(f"Dynamo inacessível: {e}")
-        dynamo_ok = False
-        dynamo_available.set(0)  # métrica: Dynamo down
-
+    with tracer.start_as_current_span("health.validate_dynamo") as span:
+        try:
+            dynamodb_client.describe_table(TableName=DYNAMODB_TABLE_NAME)
+            if not dynamo_ok:
+                log.info("DynamoDB acessível")
+            dynamo_ok = True
+        except Exception as e:
+            span.record_exception(e)
+            span.set_status(Status(StatusCode.ERROR))
+            if dynamo_ok:
+                log.error(f"Dynamo inacessível: {e}")
+            dynamo_ok = False
 
 def health_monitor():
     global worker_started
@@ -243,62 +179,39 @@ def health_monitor():
             validate_dynamo()
             new_started = sqs_ok and dynamo_ok
             if new_started != worker_started:
-                if new_started:
-                    log.info("Worker marcado como STARTED (dependências OK).")
-                else:
-                    log.warning("Worker marcado como NOT STARTED (dependências NOK).")
+                log.info(f"Status do Worker: {'STARTED' if new_started else 'NOT STARTED'}")
             worker_started = new_started
-            worker_status.set(1 if worker_started else 0)  # métrica: status do worker
-
         except Exception as e:
             log.error(f"Erro no health monitor: {e}")
-
         time.sleep(HEALTH_MONITOR_INTERVAL)
-
 
 # --- Probes ---
 @app.route('/health/startup')
 def health_startup():
-    if not worker_started:
-        return jsonify({"status": "not-started"}), 500
-    return jsonify({"status": "started"}), 200
-
+    return (jsonify({"status": "started"}), 200) if worker_started else (jsonify({"status": "not-started"}), 500)
 
 @app.route('/health/live')
 def health_live():
-    if time.time() - last_heartbeat > HEARTBEAT_INTERVAL:
-        return jsonify({"status": "dead"}), 500
-    return jsonify({"status": "alive"}), 200
-
+    is_alive = (time.time() - last_heartbeat <= HEARTBEAT_INTERVAL)
+    return (jsonify({"status": "alive"}), 200) if is_alive else (jsonify({"status": "dead"}), 500)
 
 @app.route('/health/ready')
 def health_ready():
-    if not worker_started:
-        return jsonify({"status": "not-ready"}), 500
-    if time.time() - last_heartbeat > HEARTBEAT_INTERVAL:
-        return jsonify({"status": "not-ready"}), 500
-    return jsonify({"status": "ready"}), 200
+    is_ready = worker_started and (time.time() - last_heartbeat <= HEARTBEAT_INTERVAL)
+    return (jsonify({"status": "ready"}), 200) if is_ready else (jsonify({"status": "not-ready"}), 500)
 
-
-# --- Inicialização ---
 def start_worker():
-    """Inicia o worker SQS em uma thread separada"""
-    t = threading.Thread(target=sqs_worker_loop, daemon=True)
-    t.start()
-
+    threading.Thread(target=sqs_worker_loop, daemon=True).start()
 
 def start_health_monitor():
-    t = threading.Thread(target=health_monitor, daemon=True)
-    t.start()
+    threading.Thread(target=health_monitor, daemon=True).start()
 
-
+# Inicialização
 validate_sqs()
 validate_dynamo()
 worker_started = sqs_ok and dynamo_ok
-
 start_health_monitor()
 start_worker()
-
 
 if __name__ == '__main__':
     port = int(os.getenv("PORT", 8005))

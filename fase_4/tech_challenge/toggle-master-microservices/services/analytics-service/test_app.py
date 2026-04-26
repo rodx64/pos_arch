@@ -1,7 +1,13 @@
+import os
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 import time
 import json
+
+os.environ["AWS_REGION"] = "us-east-1"
+os.environ["AWS_SQS_URL"] = "http://fake-sqs"
+os.environ["AWS_DYNAMODB_TABLE"] = "fake-table"
+os.environ["ENVIRONMENT"] = "local"
 
 import app
 
@@ -10,8 +16,11 @@ class TestProcessMessage(unittest.TestCase):
 
     @patch('app.dynamodb_client')
     @patch('app.sqs_client')
-    def test_process_message_success(self, mock_sqs, mock_dynamo):
-        # Simula uma mensagem SQS válida
+    @patch('app.tracer') 
+    def test_process_message_success(self, mock_tracer, mock_sqs, mock_dynamo):
+        mock_span = MagicMock()
+        mock_tracer.start_as_current_span.return_value.__enter__.return_value = mock_span
+
         message = {
             'MessageId': '123',
             'ReceiptHandle': 'handle-123',
@@ -25,18 +34,20 @@ class TestProcessMessage(unittest.TestCase):
 
         app.process_message(message)
 
-        # Verifica se put_item foi chamado no DynamoDB
         mock_dynamo.put_item.assert_called_once()
-        # Verifica se delete_message foi chamado no SQS
         mock_sqs.delete_message.assert_called_once_with(
             QueueUrl=app.SQS_QUEUE_URL,
             ReceiptHandle='handle-123'
         )
+        mock_tracer.start_as_current_span.assert_called_with("sqs.process_message")
 
     @patch('app.dynamodb_client')
     @patch('app.sqs_client')
-    def test_process_message_bad_json(self, mock_sqs, mock_dynamo):
-        # Mensagem com JSON inválido
+    @patch('app.tracer')
+    def test_process_message_bad_json(self, mock_tracer, mock_sqs, mock_dynamo):
+        mock_span = MagicMock()
+        mock_tracer.start_as_current_span.return_value.__enter__.return_value = mock_span
+        
         message = {
             'MessageId': '124',
             'ReceiptHandle': 'handle-124',
@@ -45,10 +56,9 @@ class TestProcessMessage(unittest.TestCase):
 
         app.process_message(message)
 
-        # Não deve tentar inserir no DynamoDB
         mock_dynamo.put_item.assert_not_called()
-        # Não deve deletar mensagem inválida
         mock_sqs.delete_message.assert_not_called()
+        mock_span.set_status.assert_called_once()
 
 
 class TestHealthChecks(unittest.TestCase):

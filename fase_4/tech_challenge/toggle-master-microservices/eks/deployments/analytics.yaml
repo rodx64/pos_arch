@@ -52,8 +52,14 @@ spec:
           ports:
             - containerPort: 8005
           env:
-            - name: DD_AGENT_HOST
-              value: "datadog-agent.monitoring.svc.cluster.local"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://otel-collector.monitoring.svc.cluster.local:4317"
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "service.name=analytics-service,env=dev"
+            - name: OTEL_METRICS_EXPORTER
+              value: "otlp"
+            - name: OTEL_LOGS_EXPORTER
+              value: "otlp"
             - name: DD_LOGS_INJECTION
               value: "true"
             - name: DD_ENV

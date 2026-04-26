@@ -17,8 +17,10 @@ COPY go.mod go.sum ./
 # Baixa as dependências sem alterar go.mod e go.sum
 RUN go mod download
 
-# Trace Datadog
-RUN go get gopkg.in/DataDog/dd-trace-go.v1/ddtrace
+RUN go get go.opentelemetry.io/otel \
+           go.opentelemetry.io/otel/sdk \
+           go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc \
+           go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp
 
 # Copia todo o código da aplicação
 COPY . .
