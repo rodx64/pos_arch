@@ -165,7 +165,12 @@ func main() {
 		port = "8001"
 	}
 
-	db, err := sql.Open("pgx", os.Getenv("DATABASE_URL"))
+	databaseURL := os.Getenv("DATABASE_URL")
+	if databaseURL == "" {
+		log.Fatal("DATABASE_URL não definida")
+	}
+
+	db, err := sql.Open("pgx", databaseURL)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -187,8 +192,16 @@ func main() {
 	mux.Handle("/validate", otelhttp.NewHandler(app.instrumentHandler("/validate", http.HandlerFunc(app.validateKeyHandler)), "ValidateKey"))
 	mux.Handle("/admin/keys", otelhttp.NewHandler(app.masterKeyAuthMiddleware(app.instrumentHandler("/admin/keys", http.HandlerFunc(app.createKeyHandler))), "CreateKey"))
 
-	log.Printf("Serviço Auth (OTel) na porta %s", port)
-	if err := http.ListenAndServe(":"+port, mux); err != nil {
+	server := &http.Server{
+		Addr:         ":" + port,
+		Handler:      mux,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  15 * time.Second,
+	}
+
+	log.Printf("Serviço Auth (OTel) rodando na porta %s", port)
+	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatal(err)
 	}
 }
