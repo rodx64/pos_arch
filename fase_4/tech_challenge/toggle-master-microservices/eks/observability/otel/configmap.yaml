@@ -21,7 +21,7 @@ data:
             regex: '^(?P<time>[^ ]+) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) (?P<log>.*)$'
           - type: json_parser
             parse_from: attributes.log
-            if: 'attributes.log matches "^{.*}$"'
+            if: 'attributes.log != nil && attributes.log matches "^{.*}$"'
 
     processors:
       batch:
