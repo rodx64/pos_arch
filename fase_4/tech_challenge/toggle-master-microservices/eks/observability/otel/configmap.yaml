@@ -19,6 +19,7 @@ data:
         include_file_path: true
         include_file_name: false
         operators:
+          - type: container
           - type: json_parser
             parse_from: body
             timestamp:
@@ -104,6 +105,7 @@ data:
         sampling_thereafter: 200
 
       datadog:
+        resource_attributes_as_tags: true
         host_metadata:
           enabled: true
           tags:
