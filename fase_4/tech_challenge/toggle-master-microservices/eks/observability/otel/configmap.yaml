@@ -79,7 +79,6 @@ data:
         metrics:
           resource_attributes_as_tags: true
         traces:
-          resource_attributes_as_tags: true
           compute_stats_by_span_kind: true
           span_name_as_resource_name: true
 
