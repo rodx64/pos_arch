@@ -62,8 +62,6 @@ data:
         endpoint: "http://prometheus.monitoring.svc.cluster.local:9090/api/v1/write"
       loki:
         endpoint: "http://loki.monitoring.svc.cluster.local:3100/loki/api/v1/push"
-      debug:
-        verbosity: basic
       datadog:
         api:
           key: "${DD_API_KEY}"
@@ -85,12 +83,12 @@ data:
         traces:
           receivers: [otlp]
           processors: [batch, k8sattributes, attributes]
-          exporters: [datadog, debug]
+          exporters: [datadog]
         metrics:
           receivers: [otlp]
           processors: [batch, k8sattributes]
           exporters: [prometheusremotewrite, datadog]
         logs:
-          receivers: [filelog]
+          receivers: [otlp, filelog]
           processors: [batch, k8sattributes]
           exporters: [loki, datadog]
