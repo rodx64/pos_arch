@@ -40,6 +40,10 @@ data:
       loki:
         endpoint: "http://loki.monitoring.svc.cluster.local:3100/loki/api/v1/push"
       datadog:
+        host_metadata:
+          enabled: true
+          tags:
+            - "env:dev"
         hostname: "otel-collector"
         hostname_source: config
         tags:
