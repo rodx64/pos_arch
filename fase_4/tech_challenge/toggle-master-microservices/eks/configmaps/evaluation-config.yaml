@@ -6,7 +6,7 @@ metadata:
 data:
   PORT: "8004"
   AWS_REGION: us-east-1
-  AWS_SQS_URL: https://sqs.us-east-1.amazonaws.com/951619424825/toggle-analytics-queue
+  AWS_SQS_URL: https://sqs.us-east-1.amazonaws.com/829281471119/toggle-analytics-queue
   AUTH_SERVICE_URL: http://auth-service:8001
   FLAG_SERVICE_URL: http://flag-service:8002
   TARGETING_SERVICE_URL: http://targeting-service:8003
