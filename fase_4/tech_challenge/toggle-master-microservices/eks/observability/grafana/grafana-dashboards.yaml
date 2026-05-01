@@ -60,12 +60,12 @@ data:
         },
         {
           "id": 5,
-          "title": "Taxa de Erros HTTP (5xx) por Serviço",
+          "title": "Taxa de Erros HTTP (NOK) por Serviço",
           "type": "timeseries",
           "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
           "datasource": "Prometheus",
           "targets": [{
-            "expr": "sum(rate(http_requests_total{code=~\"5..\"}[5m])) by (service)",
+            "expr": "sum(rate(http_requests_total{namespace='toggle-master', status!~\"OK|ok|Success\"}[5m])) by (service)",
             "legendFormat": "erros — {{service}}"
           }]
         },
