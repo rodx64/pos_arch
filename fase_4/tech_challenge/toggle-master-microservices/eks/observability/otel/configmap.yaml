@@ -44,10 +44,10 @@ data:
       datadog:
         host_metadata:
           enabled: true
+          resource_attributes_as_tags: true 
           tags:
             - "env:dev"
         hostname: "otel-collector"
-        resource_attributes_as_tags: true 
         api:
           key: "${DD_API_KEY}"
           site: "datadoghq.com"
