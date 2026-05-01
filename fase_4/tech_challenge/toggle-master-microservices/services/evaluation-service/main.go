@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
 )
 
 var ctxGlobal = context.Background()
@@ -168,14 +169,24 @@ func (rw *responseWriter) WriteHeader(code int) {
 func initTracer() (func(context.Context) error, error) {
 	ctx := context.Background()
 	res, err := resource.New(ctx,
-		resource.WithFromEnv(),
-		resource.WithTelemetrySDK(),
+		resource.WithAttributes(
+			semconv.ServiceNameKey.String("evaluation-service"),
+			semconv.DeploymentEnvironmentKey.String(os.Getenv("DD_ENV")),
+		),
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	traceExporter, err := otlptracegrpc.New(ctx)
+	endpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+	if endpoint == "" {
+		endpoint = "otel-collector.monitoring.svc.cluster.local:4317"
+	}
+
+	traceExporter, err := otlptracegrpc.New(ctx,
+		otlptracegrpc.WithInsecure(),
+		otlptracegrpc.WithEndpoint(endpoint),
+	)
 	if err != nil {
 		return nil, err
 	}

@@ -35,15 +35,24 @@ log = logging.getLogger(__name__)
 # Carrega .env para desenvolvimento local
 load_dotenv()
 
-resource = Resource.create()
+resource = Resource(attributes={
+    "service.name": "analytics-service",
+    "deployment.environment": os.getenv("DD_ENV", "production")
+})
 
 provider = TracerProvider(resource=resource)
-processor = BatchSpanProcessor(OTLPSpanExporter())
+processor = BatchSpanProcessor(OTLPSpanExporter(
+    endpoint=os.getenv(
+        "OTEL_EXPORTER_OTLP_ENDPOINT",
+        "http://otel-collector.monitoring.svc.cluster.local:4318/v1/traces"
+    ),
+))
 provider.add_span_processor(processor)
 trace.set_tracer_provider(provider)
 
 RequestsInstrumentor().instrument()
 
+# --- Configuração ---
 AWS_REGION = os.getenv("AWS_REGION")
 SQS_QUEUE_URL = os.getenv("AWS_SQS_URL")
 DYNAMODB_TABLE_NAME = os.getenv("AWS_DYNAMODB_TABLE")
