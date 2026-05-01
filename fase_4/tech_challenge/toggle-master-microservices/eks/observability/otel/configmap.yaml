@@ -39,12 +39,15 @@ data:
         endpoint: "http://prometheus.monitoring.svc.cluster.local:9090/api/v1/write"
       loki:
         endpoint: "http://loki.monitoring.svc.cluster.local:3100/loki/api/v1/push"
+      debug:
+        verbosity: basic
       datadog:
         host_metadata:
           enabled: true
           tags:
             - "env:dev"
         hostname: "otel-collector"
+        resource_attributes_as_tags: true 
         api:
           key: "${DD_API_KEY}"
           site: "datadoghq.com"
@@ -63,7 +66,7 @@ data:
         traces:
           receivers: [otlp]
           processors: [batch, k8sattributes, attributes]
-          exporters: [datadog, logging]
+          exporters: [datadog, debug] 
         metrics:
           receivers: [otlp]
           processors: [batch, k8sattributes]
