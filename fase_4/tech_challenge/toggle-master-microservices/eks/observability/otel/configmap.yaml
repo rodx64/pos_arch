@@ -19,9 +19,11 @@ data:
         operators:
           - type: regex_parser
             regex: '^(?P<time>[^ ]+) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) (?P<log>.*)$'
+            on_error: drop
           - type: json_parser
-            parse_from: attributes.log
+            parse_from: log
             if: 'attributes.log != nil && attributes.log matches "^{.*}$"'
+            on_error: drop
 
     processors:
       batch:
