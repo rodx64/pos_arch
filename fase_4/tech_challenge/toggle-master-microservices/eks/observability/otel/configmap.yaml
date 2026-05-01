@@ -34,6 +34,7 @@ data:
             from_attribute: service.version
             action: insert
 
+
     exporters:
       prometheusremotewrite:
         endpoint: "http://prometheus.monitoring.svc.cluster.local:9090/api/v1/write"
@@ -41,12 +42,14 @@ data:
         endpoint: "http://loki.monitoring.svc.cluster.local:3100/loki/api/v1/push"
       debug:
         verbosity: basic
+      # doc - https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/exporter/datadogexporter/examples/collector.yaml
       datadog:
         host_metadata:
           enabled: true
-          resource_attributes_as_tags: true 
           tags:
             - "env:dev"
+        metrics:
+          resource_attributes_as_tags: true 
         hostname: "otel-collector"
         api:
           key: "${DD_API_KEY}"
@@ -55,7 +58,7 @@ data:
           compute_stats_by_span_kind: true
           span_name_as_resource_name: true
         sending_queue:
-          queue_size: 1000
+          batch:
         retry_on_failure:
           enabled: true
           initial_interval: 5s
