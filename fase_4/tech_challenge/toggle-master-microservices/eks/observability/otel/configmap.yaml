@@ -65,6 +65,8 @@ data:
     exporters:
       prometheusremotewrite:
         endpoint: "http://prometheus.monitoring.svc.cluster.local:9090/api/v1/write"
+        resource_to_telemetry_conversion:
+          enabled: true
         timeout: 20s
       loki:
         endpoint: "http://loki.monitoring.svc.cluster.local:3100/loki/api/v1/push"
