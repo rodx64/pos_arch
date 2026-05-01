@@ -21,8 +21,8 @@ data:
           "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
           "datasource": "Prometheus",
           "targets": [{
-            "expr": "sum(rate(container_cpu_usage_seconds_total{namespace='toggle-master', container!=''}[5m])) by (pod)",
-            "legendFormat": "{{pod}}"
+            "expr": "sum(rate(k8s_pod_cpu_time_seconds_total{k8s_namespace_name='toggle-master'}[5m])) by (k8s_pod_name)",
+            "legendFormat": "{{k8s_pod_name}}"
           }]
         },
         {
@@ -32,8 +32,8 @@ data:
           "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
           "datasource": "Prometheus",
           "targets": [{
-            "expr": "sum(container_memory_working_set_bytes{namespace='toggle-master', container!=''}) by (pod)",
-            "legendFormat": "{{pod}}"
+            "expr": "sum(k8s_pod_memory_working_set{k8s_namespace_name='toggle-master'}) by (k8s_pod_name)",
+            "legendFormat": "{{k8s_pod_name}}"
           }]
         },
         {
@@ -91,7 +91,7 @@ data:
             }
           },
           "targets": [
-            { "expr": "db_up{namespace='toggle-master'}", "legendFormat": "DB — {{service}}" },
+            { "expr": "db_up{k8s_namespace_name='toggle-master'}", "legendFormat": "DB — {{service}}" },
             { "expr": "redis_up", "legendFormat": "Redis" },
             { "expr": "sqs_up", "legendFormat": "SQS" },
             { "expr": "sqs_available", "legendFormat": "SQS Worker" },
@@ -110,43 +110,10 @@ data:
           }]
         },
         {
-          "id": 8,
-          "title": "Mensagens SQS — Processadas vs Falhas",
-          "type": "timeseries",
-          "gridPos": { "x": 12, "y": 24, "w": 12, "h": 8 },
-          "datasource": "Prometheus",
-          "targets": [
-            { "expr": "rate(sqs_messages_processed_total[5m])", "legendFormat": "Processadas/s" },
-            { "expr": "rate(sqs_messages_failed_total[5m])", "legendFormat": "Falhas/s" }
-          ]
-        },
-        {
-          "id": 9,
-          "title": "Cache Redis — Hit Rate",
-          "type": "timeseries",
-          "gridPos": { "x": 0, "y": 32, "w": 12, "h": 8 },
-          "datasource": "Prometheus",
-          "targets": [{
-            "expr": "rate(cache_hits_total[5m]) / (rate(cache_hits_total[5m]) + rate(cache_misses_total[5m]))",
-            "legendFormat": "hit rate"
-          }]
-        },
-        {
-          "id": 10,
-          "title": "Validações de API Key por Resultado",
-          "type": "timeseries",
-          "gridPos": { "x": 12, "y": 32, "w": 12, "h": 8 },
-          "datasource": "Prometheus",
-          "targets": [{
-            "expr": "sum(rate(auth_keys_validated_total[5m])) by (result)",
-            "legendFormat": "{{result}}"
-          }]
-        },
-        {
           "id": 11,
           "title": "Logs em Tempo Real — toggle-master",
           "type": "logs",
-          "gridPos": { "x": 0, "y": 40, "w": 24, "h": 10 },
+          "gridPos": { "x": 0, "y": 32, "w": 24, "h": 10 },
           "datasource": "Loki",
           "options": {
             "showTime": true,
@@ -155,24 +122,7 @@ data:
             "sortOrder": "Descending"
           },
           "targets": [{
-            "expr": "{namespace=\"toggle-master\"}",
-            "legendFormat": ""
-          }]
-        },
-        {
-          "id": 12,
-          "title": "Logs de Erro — toggle-master",
-          "type": "logs",
-          "gridPos": { "x": 0, "y": 50, "w": 24, "h": 10 },
-          "datasource": "Loki",
-          "options": {
-            "showTime": true,
-            "showLabels": true,
-            "wrapLogMessage": true,
-            "sortOrder": "Descending"
-          },
-          "targets": [{
-            "expr": "{namespace=\"toggle-master\"} |~ \"(?i)(error|erro|exception|fatal|critical)\"",
+            "expr": "{k8s_namespace_name=\"toggle-master\"}",
             "legendFormat": ""
           }]
         }
