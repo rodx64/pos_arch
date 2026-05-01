@@ -37,7 +37,7 @@ load_dotenv()
 
 resource = Resource(attributes={
     "service.name": "analytics-service",
-    "deployment.environment": os.getenv("DD_ENV", "production")
+    "deployment.environment": os.getenv("DD_ENV", "dev")
 })
 
 provider = TracerProvider(resource=resource)

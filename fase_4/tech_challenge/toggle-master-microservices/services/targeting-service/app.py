@@ -23,7 +23,7 @@ from prometheus_client import Counter, Gauge, Histogram
 
 resource = Resource(attributes={
     "service.name": "targeting-service",
-    "deployment.environment": os.getenv("DD_ENV", "production")
+    "deployment.environment": os.getenv("DD_ENV", "dev")
 })
 
 provider = TracerProvider(resource=resource)

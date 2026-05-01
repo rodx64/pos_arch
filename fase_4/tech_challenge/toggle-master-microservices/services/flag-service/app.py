@@ -25,7 +25,7 @@ from prometheus_client import Counter, Gauge, Histogram
 # Configuração de Identidade do Serviço para o OTel
 resource = Resource(attributes={
     "service.name": "flag-service",
-    "deployment.environment": os.getenv("DD_ENV", "production")
+    "deployment.environment": os.getenv("DD_ENV", "dev")
 })
 
 provider = TracerProvider(resource=resource)
