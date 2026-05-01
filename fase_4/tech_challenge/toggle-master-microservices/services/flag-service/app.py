@@ -22,19 +22,9 @@ from opentelemetry.instrumentation.psycopg2 import Psycopg2Instrumentor
 from prometheus_flask_exporter import PrometheusMetrics
 from prometheus_client import Counter, Gauge, Histogram
 
-# Configuração de Identidade do Serviço para o OTel
-resource = Resource(attributes={
-    "service.name": "flag-service",
-    "deployment.environment": os.getenv("DD_ENV", "production")
-})
-
+resource = Resource.create()
 provider = TracerProvider(resource=resource)
-processor = BatchSpanProcessor(OTLPSpanExporter(
-    endpoint=os.getenv(
-        "OTEL_EXPORTER_OTLP_ENDPOINT",
-        "http://otel-collector.monitoring.svc.cluster.local:4318/v1/traces"
-    ),
-))
+processor = BatchSpanProcessor(OTLPSpanExporter())
 provider.add_span_processor(processor)
 trace.set_tracer_provider(provider)
 

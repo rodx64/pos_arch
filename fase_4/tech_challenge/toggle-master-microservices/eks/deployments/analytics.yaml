@@ -53,7 +53,7 @@ spec:
             - containerPort: 8005
           env:
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
-              value: "http://otel-collector.monitoring.svc.cluster.local:4318/v1/traces"
+              value: "http://otel-collector.monitoring.svc.cluster.local:4318"
             - name: OTEL_EXPORTER_OTLP_INSECURE
               value: "true"
             - name: OTEL_LOGS_EXPORTER
@@ -64,6 +64,8 @@ spec:
               value: "otlp"
             - name: OTEL_SERVICE_NAME
               value: "analytics-service"
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "deployment.environment=$(DD_ENV),service.version=$(DD_VERSION)"
             - name: DD_LOGS_INJECTION
               value: "true"
             - name: DD_ENV
