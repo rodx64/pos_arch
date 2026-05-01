@@ -25,7 +25,7 @@ spec:
     spec:
       serviceAccountName: otel-collector
       hostNetwork: true
-      dnsPolicy: ClusterFirst
+      dnsPolicy: ClusterFirstWithHostNet
       priorityClassName: system-node-critical
       containers:
       - name: otel-collector

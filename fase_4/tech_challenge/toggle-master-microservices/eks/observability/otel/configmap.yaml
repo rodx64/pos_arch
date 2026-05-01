@@ -21,12 +21,8 @@ data:
         include: [ /var/log/pods/toggle-master*/*/**.log ]
         start_at: beginning
         operators:
-          - type: regex_parser
-            regex: '^(?P<time>[^ ]+) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) (?P<log>.*)$'
-            on_error: drop
-          - type: json_parser
-            parse_from: attributes.log
-            if: 'attributes.log != nil && attributes.log matches "^{.*}$"'
+          - type: container
+            id: container-parser
       kubeletstats:
           collection_interval: 10s
           auth_type: "serviceAccount"
@@ -69,6 +65,7 @@ data:
     exporters:
       prometheusremotewrite:
         endpoint: "http://prometheus.monitoring.svc.cluster.local:9090/api/v1/write"
+        timeout: 20s
       loki:
         endpoint: "http://loki.monitoring.svc.cluster.local:3100/loki/api/v1/push"
       datadog:
