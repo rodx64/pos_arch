@@ -21,8 +21,8 @@ data:
         include: [ /var/log/pods/toggle-master*/*/**.log ]
         start_at: beginning
         operators:
-          - type: container
-            id: container-parser
+          - type: regex_parser
+            regex: '^(?P<time>[^ ]+) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) (?P<log>.*)$'
       kubeletstats:
           collection_interval: 10s
           auth_type: "serviceAccount"

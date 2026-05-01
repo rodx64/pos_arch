@@ -5,7 +5,7 @@ metadata:
   namespace: monitoring
   labels:
     app: otel-collector
-    version: v0.96.0
+    version: v0.100.0
 spec:
   selector:
     matchLabels:
@@ -29,7 +29,7 @@ spec:
       priorityClassName: system-node-critical
       containers:
       - name: otel-collector
-        image: otel/opentelemetry-collector-contrib:0.96.0
+        image: otel/opentelemetry-collector-contrib:0.100.0
         imagePullPolicy: IfNotPresent
         args:
           - "--config=/etc/otel-collector-config.yaml"
