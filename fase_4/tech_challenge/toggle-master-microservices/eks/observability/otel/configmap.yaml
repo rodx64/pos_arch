@@ -23,7 +23,6 @@ data:
           - type: json_parser
             parse_from: attributes.log
             if: 'attributes.log != nil && attributes.log matches "^{.*}$"'
-            on_error: drop
 
     processors:
       batch:
