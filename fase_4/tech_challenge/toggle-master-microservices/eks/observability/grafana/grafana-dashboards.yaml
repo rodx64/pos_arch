@@ -86,7 +86,20 @@ data:
           "fieldConfig": {
             "defaults": {
               "mappings": [
-                { "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } }
+                { 
+                  "type": "value", 
+                  "options": { 
+                    "0": { "text": "DOWN", "color": "red" }, 
+                    "1": { "text": "UP", "color": "green" } 
+                  } 
+                },
+                {
+                  "type": "special",
+                  "options": {
+                    "match": "null",
+                    "result": { "text": "DOWN", "color": "red" }
+                  }
+                }
               ]
             }
           },
