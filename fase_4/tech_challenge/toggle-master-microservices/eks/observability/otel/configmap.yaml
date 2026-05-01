@@ -57,8 +57,6 @@ data:
         traces:
           compute_stats_by_span_kind: true
           span_name_as_resource_name: true
-        sending_queue:
-          batch:
         retry_on_failure:
           enabled: true
           initial_interval: 5s
