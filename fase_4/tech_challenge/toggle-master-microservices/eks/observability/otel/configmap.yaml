@@ -19,12 +19,10 @@ data:
         include_file_path: true
         include_file_name: false
         operators:
-          - type: container
+          - type: regex_parser
+            regex: '^(?P<time>[^ ]+) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) (?P<log>.*)$'
           - type: json_parser
-            parse_from: body
-            timestamp:
-              parse_from: attributes.time
-              layout: '%Y-%m-%dT%H:%M:%S.%LZ'
+            parse_from: log
 
     processors:
       batch:
@@ -48,13 +46,6 @@ data:
             - k8s.container.name
             - k8s.deployment.name
             - k8s.replicaset.name
-        pod_association:
-          - sources:
-            - from: resource_attribute
-              name: k8s.pod.name
-          - sources:
-            - from: resource_attribute
-              name: k8s.pod.uid
       attributes:
         actions:
           - key: env
@@ -67,90 +58,43 @@ data:
             value: "toggle-master"
             action: insert
 
-      # LOGS: Filtro para reduzir volume
-      # filter/logs:
-      #   logs:
-      #     exclude:
-      #       match_type: regexp
-      #       record_attributes:
-      #         - key: log.level
-      #           value: "DEBUG|TRACE"
-
     exporters:
       prometheusremotewrite:
         endpoint: "http://prometheus.monitoring.svc.cluster.local:9090/api/v1/write"
-        timeout: 30s
-        retry_on_failure:
-          enabled: true
-          initial_interval: 5s
-          max_interval: 30s
-          max_elapsed_time: 300s
-
       loki:
         endpoint: "http://loki.monitoring.svc.cluster.local:3100/loki/api/v1/push"
-        timeout: 30s
-        retry_on_failure:
-          enabled: true
-          initial_interval: 5s
-          max_interval: 30s
-          max_elapsed_time: 300s
-        sending_queue:
-          enabled: true
-          num_consumers: 10
-          queue_size: 5000
-
       debug:
         verbosity: basic
-        sampling_initial: 5
-        sampling_thereafter: 200
 
       datadog:
-        resource_attributes_as_tags: true
+        api:
+          key: "${DD_API_KEY}"
+          site: "datadoghq.com"
+        hostname: "otel-collector"
         host_metadata:
           enabled: true
           tags:
             - "env:dev"
             - "cluster:toggle-master"
-        metrics:
-          resource_attributes_as_tags: true
-          instrumentation_scope_metadata_as_tags: true
-        hostname: "otel-collector"
-        api:
-          key: "${DD_API_KEY}"
-          site: "datadoghq.com"
+        resource_attributes:
+          enabled: true
         traces:
           compute_stats_by_span_kind: true
           span_name_as_resource_name: true
-          trace_buffer: 1000
-        retry_on_failure:
-          enabled: true
-          initial_interval: 5s
-          max_interval: 30s
-          max_elapsed_time: 300s
-        sending_queue:
-          enabled: true
-          num_consumers: 10
-          queue_size: 5000
 
     service:
       telemetry:
         logs:
           level: info
-        metrics:
-          level: detailed
-          address: 0.0.0.0:8888
-
       pipelines:
         traces:
           receivers: [otlp]
           processors: [memory_limiter, batch, k8sattributes, attributes]
           exporters: [datadog, debug]
-        
         metrics:
           receivers: [otlp]
           processors: [memory_limiter, batch, k8sattributes]
           exporters: [prometheusremotewrite, datadog]
-        
         logs:
           receivers: [filelog]
           processors: [memory_limiter, batch, k8sattributes]
