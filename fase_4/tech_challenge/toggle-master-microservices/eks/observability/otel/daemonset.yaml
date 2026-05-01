@@ -24,7 +24,7 @@ spec:
         prometheus.io/path: "/metrics"
     spec:
       serviceAccountName: otel-collector
-      hostNetwork: false
+      hostNetwork: true
       dnsPolicy: ClusterFirst
       priorityClassName: system-node-critical
       containers:
