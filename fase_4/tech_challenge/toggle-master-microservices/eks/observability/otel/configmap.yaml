@@ -77,8 +77,6 @@ data:
             - "cluster:toggle-master"
         metrics:
           resource_attributes_as_tags: true
-        resource_attributes:
-          enabled: true
         traces:
           compute_stats_by_span_kind: true
           span_name_as_resource_name: true
