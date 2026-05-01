@@ -19,6 +19,7 @@ data:
         operators:
           - type: regex_parser
             regex: '^(?P<time>[^ ]+) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) (?P<log>.*)$'
+            on_error: drop
           - type: json_parser
             parse_from: attributes.log
             if: 'attributes.log != nil && attributes.log matches "^{.*}$"'
@@ -64,7 +65,6 @@ data:
         endpoint: "http://loki.monitoring.svc.cluster.local:3100/loki/api/v1/push"
       debug:
         verbosity: basic
-
       datadog:
         api:
           key: "${DD_API_KEY}"
@@ -77,6 +77,8 @@ data:
             - "cluster:toggle-master"
         metrics:
           resource_attributes_as_tags: true
+        resource_attributes:
+          enabled: true
         traces:
           compute_stats_by_span_kind: true
           span_name_as_resource_name: true
