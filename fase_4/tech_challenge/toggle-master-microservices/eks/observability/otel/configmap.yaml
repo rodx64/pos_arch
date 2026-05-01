@@ -16,13 +16,11 @@ data:
       filelog:
         include: [ /var/log/pods/toggle-master*/*/**.log ]
         start_at: beginning
-        include_file_path: true
-        include_file_name: false
         operators:
           - type: regex_parser
             regex: '^(?P<time>[^ ]+) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) (?P<log>.*)$'
           - type: json_parser
-            parse_from: log
+            parse_from: attributes.log
 
     processors:
       batch:
@@ -33,7 +31,6 @@ data:
         check_interval: 1s
         limit_mib: 512
         spike_limit_mib: 128
-      
       k8sattributes:
         auth_type: "serviceAccount"
         passthrough: false
@@ -75,27 +72,22 @@ data:
           enabled: true
           tags:
             - "env:dev"
-            - "cluster:toggle-master"
-        resource_attributes:
-          enabled: true
+        resource_attributes_as_tags: true
         traces:
           compute_stats_by_span_kind: true
           span_name_as_resource_name: true
 
     service:
-      telemetry:
-        logs:
-          level: info
       pipelines:
         traces:
           receivers: [otlp]
-          processors: [memory_limiter, batch, k8sattributes, attributes]
+          processors: [batch, k8sattributes, attributes]
           exporters: [datadog, debug]
         metrics:
           receivers: [otlp]
-          processors: [memory_limiter, batch, k8sattributes]
+          processors: [batch, k8sattributes]
           exporters: [prometheusremotewrite, datadog]
         logs:
           receivers: [filelog]
-          processors: [memory_limiter, batch, k8sattributes]
+          processors: [batch, k8sattributes]
           exporters: [loki, datadog]
