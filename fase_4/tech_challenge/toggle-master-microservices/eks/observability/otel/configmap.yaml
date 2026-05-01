@@ -90,10 +90,15 @@ data:
           processors: [batch, k8sattributes, attributes]
           exporters: [datadog]
         metrics:
-          receivers: [otlp]
+          receivers: [otlp, kubeletstats]
           processors: [batch, k8sattributes]
           exporters: [prometheusremotewrite, datadog]
         logs:
           receivers: [otlp, filelog]
           processors: [batch, k8sattributes]
           exporters: [loki, datadog]
+        kubeletstats:
+          collection_interval: 15s
+          auth_type: "serviceAccount"
+          endpoint: "https://${env:K8S_NODE_NAME}:10250"
+          insecure_skip_verify: true
