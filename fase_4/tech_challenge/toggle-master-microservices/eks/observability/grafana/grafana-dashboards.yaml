@@ -32,7 +32,7 @@ data:
           "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
           "datasource": "Prometheus",
           "targets": [{
-            "expr": "sum(k8s_pod_memory_working_set{k8s_namespace_name='toggle-master'}) by (k8s_pod_name)",
+            "expr": "sum(k8s_pod_memory_working_set_bytes{k8s_namespace_name='toggle-master'}) by (k8s_pod_name)",
             "legendFormat": "{{k8s_pod_name}}"
           }]
         },
