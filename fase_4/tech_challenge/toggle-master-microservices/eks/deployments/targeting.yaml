@@ -47,7 +47,7 @@ spec:
     spec:
       containers:
         - name: targeting-container
-          image: 829281471119.dkr.ecr.us-east-1.amazonaws.com/toggle-master:targeting-service-4b7aaf51a723bd042e9b0fdf6eb8acd93eed248b
+          image: 829281471119.dkr.ecr.us-east-1.amazonaws.com/toggle-master:targeting-service-a8be80f2935d2be22bfbd6295a067630e252c6d7
           imagePullPolicy: Always
           ports:
             - containerPort: 8003
