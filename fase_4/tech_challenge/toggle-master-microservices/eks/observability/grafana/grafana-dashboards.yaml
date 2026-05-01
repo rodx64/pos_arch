@@ -107,8 +107,6 @@ data:
             { "expr": "db_up{k8s_namespace_name='toggle-master'}", "legendFormat": "DB — {{service}}" },
             { "expr": "redis_up", "legendFormat": "Redis" },
             { "expr": "sqs_up", "legendFormat": "SQS" },
-            { "expr": "sqs_available", "legendFormat": "SQS Worker" },
-            { "expr": "dynamo_available", "legendFormat": "DynamoDB" }
           ]
         },
         {
