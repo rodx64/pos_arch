@@ -23,6 +23,9 @@ data:
         operators:
           - type: regex_parser
             regex: '^(?P<time>[^ ]+) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) (?P<log>.*)$'
+          - type: json_parser
+            parse_from: attributes.log
+            if: 'attributes.log != nil && attributes.log matches "^{.*}$"'
       kubeletstats:
           collection_interval: 10s
           auth_type: "serviceAccount"
