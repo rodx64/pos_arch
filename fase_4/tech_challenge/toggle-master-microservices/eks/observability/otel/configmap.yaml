@@ -45,7 +45,6 @@ data:
           tags:
             - "env:dev"
         hostname: "otel-collector"
-        hostname_source: config
         api:
           key: "${DD_API_KEY}"
           site: "datadoghq.com"
