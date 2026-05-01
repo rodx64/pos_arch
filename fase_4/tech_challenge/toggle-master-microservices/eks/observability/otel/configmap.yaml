@@ -18,18 +18,10 @@ data:
         start_at: beginning
         operators:
           - type: regex_parser
-              regex: '^Time=(?P<timestamp_field>\d{4}-\d{2}-\d{2}), Host=(?P<host>[^,]+), Type=(?P<type>.*)$'
-              timestamp:
-                parse_from: body.timestamp_field
-                layout_type: strptime
-                layout: '%Y-%m-%d'
+            regex: '^(?P<time>[^ ]+) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) (?P<log>.*)$'
           - type: json_parser
-              timestamp:
-                parse_from: attributes.ts
-                layout_type: strptime
-                layout: '%Y-%m-%d'
-              severity:
-                parse_from: attributes.sev
+            parse_from: attributes.log
+            if: 'attributes.log != nil && attributes.log matches "^{.*}$"'
 
     processors:
       batch:
