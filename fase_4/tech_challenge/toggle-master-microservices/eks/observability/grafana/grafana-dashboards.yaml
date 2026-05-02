@@ -66,7 +66,7 @@ data:
           "datasource": "Prometheus",
           "targets": [{
             "expr": "sum(rate(http_requests_total{namespace='toggle-master', status!~'OK|ok|Success'}[5m])) by (service, status)",
-            "legendFormat": "erro — {{service}} - {{status}}"
+            "legendFormat": "erro — {{service}} — {{status}}"
           }]
         },
         {
@@ -93,7 +93,7 @@ data:
             }
           },
           "targets": [
-            { "expr": "sum by (service) (last_over_time(db_up{namespace='toggle-master'}[1m])) or on() vector(0)", "legendFormat": "DB — {{service}}" },
+            { "expr": "sum by (service) (last_over_time(db_up{namespace='toggle-master'}[1m]) or on() vector(0))", "legendFormat": "DB — {{service}}" },
             { "expr": "last_over_time(redis_up[1m]) or on() vector(0)", "legendFormat": "Redis" },
             { "expr": "last_over_time(sqs_up[1m]) or on() vector(0)", "legendFormat": "SQS" }
           ]
@@ -105,7 +105,7 @@ data:
           "gridPos": { "x": 0, "y": 24, "w": 24, "h": 10 },
           "datasource": "Loki",
           "targets": [{
-            "expr": "{exporter=\"OTLP\"} | json,
+            "expr": "{exporter=\"OTLP\"} | json | k8s_namespace_name=\"toggle-master\"",
             "legendFormat": ""
           }]
         }
