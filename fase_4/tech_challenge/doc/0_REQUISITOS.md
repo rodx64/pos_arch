@@ -4,22 +4,22 @@
 Provisione as ferramentas base de observabilidade dentro do seu cluster
 Kubernetes
 
-- [ ] `Prometheus`: para armazenamento e consulta de métricas de infraestrutura.
-- [ ] `Loki`: para centralização e indexação de todos os logs dos contêineres do cluster
-- [ ] `Grafana`: como ferramenta principal de visualização
-    - [ ] 1 Dashboard customizado que centralize a saúde do sistema
+- [x] `Prometheus`: para armazenamento e consulta de métricas de infraestrutura.
+- [x] `Loki`: para centralização e indexação de todos os logs dos contêineres do cluster
+- [x] `Grafana`: como ferramenta principal de visualização
+    - [x] 1 Dashboard customizado que centralize a saúde do sistema
 
 ## 2. OpenTelemetry (OTel) e Padronização
 O monitoramento moderno exige padronização.
 
-- [ ] `OTel Collector` ou `Grafana Alloy` 
+- [x] `OTel Collector` ou `Grafana Alloy` 
 Utilize o OpenTelemetry (via OTel Collector) como a peça central para receber, processar e exportar suas métricas, logs e traces. Os microsserviços devem enviar os dados de telemetria para o OTel, e ele se encarregará de roteá-los para os backends corretos (Prometheus, Loki e APM).
 
 ## 3. Instrumentação e APM (Traces e Visibilidade Profunda)
 
-- [ ] `Ferramenta APM:` Escolher entre Datadog ou New Relic
-- [ ] `Instrumentação do Código`: Altere o código-fonte ou o Dockerfile dos microsserviços para adicionar as bibliotecas de instrumentação
-- [ ] `Distributed Tracing`: Ao fazer uma
+- [x] `Ferramenta APM:` Escolher entre Datadog ou New Relic
+- [x] `Instrumentação do Código`: Altere o código-fonte ou o Dockerfile dos microsserviços para adicionar as bibliotecas de instrumentação
+- [x] `Distributed Tracing`: Ao fazer uma
 requisição no evaluation-service, o APM deve mostrar o "caminho" da requisição
 - [ ] `Service Map`: o painel do APM deve exibir o mapa de dependências
 dos seus 5 microsserviços

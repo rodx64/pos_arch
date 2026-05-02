@@ -78,6 +78,7 @@ data:
           key: "${DD_API_KEY}"
           site: "datadoghq.com"
         hostname: "otel-collector"
+        propagate_context: true
         host_metadata:
           enabled: true
           tags:
