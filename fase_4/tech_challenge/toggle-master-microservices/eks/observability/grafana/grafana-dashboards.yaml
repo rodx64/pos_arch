@@ -94,6 +94,17 @@ data:
             { "expr": "redis_up or on() vector(0)", "legendFormat": "Redis" },
             { "expr": "sqs_up or on() vector(0)", "legendFormat": "SQS" }
           ]
+        },
+        {
+          "id": 7,
+          "title": "Logs em Tempo Real — toggle-master",
+          "type": "logs",
+          "gridPos": { "x": 0, "y": 24, "w": 24, "h": 10 },
+          "datasource": "Loki",
+          "targets": [{
+            "expr": "{exporter=\"OTLP\"} | json | k8s_namespace_name == \"toggle-master\"",
+            "legendFormat": ""
+          }]
         }
       ]
     }
