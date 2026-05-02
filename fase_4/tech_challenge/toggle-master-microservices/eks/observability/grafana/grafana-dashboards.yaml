@@ -105,7 +105,7 @@ data:
           "gridPos": { "x": 0, "y": 24, "w": 24, "h": 10 },
           "datasource": "Loki",
           "targets": [{
-            "expr": "{exporter=\"OTLP\"} | json | k8s_namespace_name=\"toggle-master\"",
+            "expr": "{exporter=\"OTLP\"} |= \"toggle-master\"",
             "legendFormat": ""
           }]
         }
