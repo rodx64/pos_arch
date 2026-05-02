@@ -21,8 +21,8 @@ data:
           "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
           "datasource": "Prometheus",
           "targets": [{
-            "expr": "sum(rate(k8s_pod_cpu_time_seconds_total{k8s_namespace_name='toggle-master'}[5m])) by (k8s_pod_name)",
-            "legendFormat": "{{k8s_pod_name}}"
+            "expr": "sum(rate(k8s_pod_cpu_time_seconds_total{namespace='toggle-master'}[5m])) by (pod)",
+            "legendFormat": "{{pod}}"
           }]
         },
         {
@@ -32,8 +32,8 @@ data:
           "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
           "datasource": "Prometheus",
           "targets": [{
-            "expr": "sum(k8s_pod_memory_working_set_bytes{k8s_namespace_name='toggle-master'}) by (k8s_pod_name)",
-            "legendFormat": "{{k8s_pod_name}}"
+            "expr": "sum(k8s_pod_memory_working_set{namespace='toggle-master'}) by (pod)",
+            "legendFormat": "{{pod}}"
           }]
         },
         {
@@ -66,7 +66,7 @@ data:
           "datasource": "Prometheus",
           "targets": [{
             "expr": "sum(rate(http_requests_total{namespace='toggle-master', status!~'OK|ok|Success'}[5m])) by (service, status)",
-            "legendFormat": "erro — {{service}} — {{status}}"
+            "legendFormat": "erro — {{service}} - {{status}}"
           }]
         },
         {
@@ -93,9 +93,18 @@ data:
             }
           },
           "targets": [
-            { "expr": "sum by (service) (last_over_time(db_up{namespace='toggle-master'}[1m]) or on() vector(0))", "legendFormat": "DB — {{service}}" },
-            { "expr": "last_over_time(redis_up[1m]) or on() vector(0)", "legendFormat": "Redis" },
-            { "expr": "last_over_time(sqs_up[1m]) or on() vector(0)", "legendFormat": "SQS" }
+            { 
+              "expr": "clamp_max(sum by (service) (last_over_time(db_up{namespace='toggle-master'}[2m]) or on(service) (label_replace(vector(0), 'service', 'auth', '', '') or label_replace(vector(0), 'service', 'flag', '', '') or label_replace(vector(0), 'service', 'targeting', '', ''))), 1)",
+              "legendFormat": "DB — {{service}}" 
+            },
+            { 
+              "expr": "max(last_over_time(redis_up{namespace='toggle-master'}[2m]) or vector(0))", 
+              "legendFormat": "Redis" 
+            },
+            { 
+              "expr": "max(last_over_time(sqs_up{namespace='toggle-master'}[2m]) or vector(0))", 
+              "legendFormat": "SQS" 
+            }
           ]
         },
         {
