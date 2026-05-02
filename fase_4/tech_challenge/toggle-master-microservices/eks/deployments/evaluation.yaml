@@ -47,7 +47,7 @@ spec:
     spec:
       containers:
         - name: evaluation-container
-          image: 829281471119.dkr.ecr.us-east-1.amazonaws.com/toggle-master:evaluation-service-43fa147cddb07b3bb26a43c56417db96cecf86b1
+          image: 829281471119.dkr.ecr.us-east-1.amazonaws.com/toggle-master:evaluation-service-ce75ef27772cb668f11733b3f801fc5b839602ad
           imagePullPolicy: Always
           ports:
             - containerPort: 8004
