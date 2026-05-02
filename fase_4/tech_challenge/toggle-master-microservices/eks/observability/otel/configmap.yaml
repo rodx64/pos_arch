@@ -78,7 +78,6 @@ data:
           key: "${DD_API_KEY}"
           site: "datadoghq.com"
         hostname: "otel-collector"
-        propagate_context: true
         host_metadata:
           enabled: true
           tags:
@@ -89,6 +88,7 @@ data:
         traces:
           compute_stats_by_span_kind: true
           span_name_as_resource_name: true
+          propagate_context: true
 
     service:
       extensions: [health_check]
