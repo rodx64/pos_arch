@@ -72,7 +72,7 @@ data:
           enabled: true
         timeout: 20s
       loki:
-        endpoint: "http://loki.monitoring.svc.cluster.local:3100/loki/api/v1/push"
+        endpoint: "http://loki-headless.monitoring.svc.cluster.local:3100/loki/api/v1/push"
       datadog:
         api:
           key: "${DD_API_KEY}"
