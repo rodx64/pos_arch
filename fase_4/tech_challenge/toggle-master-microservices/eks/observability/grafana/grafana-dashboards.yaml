@@ -65,8 +65,8 @@ data:
           "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
           "datasource": "Prometheus",
           "targets": [{
-            "expr": "sum(rate(http_requests_total{namespace='toggle-master', status!~'OK|ok|Success'}[5m])) by (service)",
-            "legendFormat": "erros — {{service}}"
+            "expr": "sum(rate(http_requests_total{namespace='toggle-master', status!~'OK|ok|Success'}[5m])) by (service, status)",
+            "legendFormat": "erro — {{service}} - {{status}}"
           }]
         },
         {
