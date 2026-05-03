@@ -73,7 +73,7 @@ data:
           "id": 6,
           "title": "SQS — Eventos Enviados por serviço",
           "type": "timeseries",
-          "gridPos": { "x": 0, "y": 32, "w": 12, "h": 8 },
+          "gridPos": { "x": 0, "y": 34, "w": 24, "h": 8 },
           "datasource": "Prometheus",
           "targets": [
             {
@@ -130,6 +130,6 @@ data:
             "expr": "{exporter=\"OTLP\"} |= \"toggle-master\"",
             "legendFormat": ""
           }]
-        },
+        }
       ]
     }
