@@ -27,10 +27,15 @@ data:
             parse_from: attributes.log
             if: 'attributes.log != nil && attributes.log matches "^{.*}$"'
       kubeletstats:
-          collection_interval: 10s
-          auth_type: "serviceAccount"
-          endpoint: "https://${env:K8S_NODE_IP}:10250"
-          insecure_skip_verify: true
+        collection_interval: 10s
+        auth_type: "serviceAccount"
+        endpoint: "https://${env:K8S_NODE_IP}:10250"
+        insecure_skip_verify: true
+        metric_groups:
+          - pod
+          - container
+          - node
+          - volume
 
     processors:
       batch:
@@ -53,6 +58,13 @@ data:
             - k8s.container.name
             - k8s.deployment.name
             - k8s.replicaset.name
+          labels:
+            - tag_name: app
+              key: app
+              from: pod
+            - tag_name: version
+              key: version
+              from: pod
         pod_association:
           - sources:
             - from: resource_attribute
@@ -66,22 +78,26 @@ data:
         attributes:
           - key: service.name
             from_attribute: k8s.deployment.name
-            action: insert  # só adiciona se não existir
+            action: insert
           - key: k8s.cluster.name
             value: "toggle-master"
             action: upsert
+          - key: deployment.environment
+            value: "dev"
+            action: insert
       
-      attributes:
+      attributes/traces:
         actions:
           - key: env
             from_attribute: deployment.environment
-            action: insert
-          - key: version
-            from_attribute: service.version
-            action: insert
+            action: upsert
           - key: cluster
             value: "toggle-master"
-            action: insert
+            action: upsert
+          - key: service.name
+            from_attribute: service.name
+            action: upsert
+      
       probabilistic_sampler:
         sampling_percentage: 100
 
@@ -106,6 +122,7 @@ data:
         endpoint: "http://prometheus.monitoring.svc.cluster.local:9090/api/v1/write"
         resource_to_telemetry_conversion:
           enabled: true
+        add_metric_suffixes: false
         timeout: 20s
       loki:
         endpoint: "http://loki-headless.monitoring.svc.cluster.local:3100/loki/api/v1/push"
@@ -113,7 +130,7 @@ data:
         api:
           key: "${DD_API_KEY}"
           site: "datadoghq.com"
-        hostname: "otel-collector"
+        hostname: "${K8S_NODE_NAME}"
         host_metadata:
           enabled: true
           hostname_source: config_or_system
@@ -125,7 +142,9 @@ data:
           span_name_as_resource_name: true
           peer_tags_aggregation: true
           compute_top_level_by_span_kind: true
-          trace_buffer: 500
+          trace_buffer: 1000
+          send_resources_as_tags: true
+        
         metrics:
           resource_attributes_as_tags: true
           instrumentation_scope_metadata_as_tags: true
@@ -148,7 +167,7 @@ data:
       pipelines:
         traces:
           receivers: [otlp]
-          processors: [memory_limiter, k8sattributes, resource, attributes, batch]
+          processors: [memory_limiter, k8sattributes, resource, attributes/traces, batch]
           exporters: [datadog, spanmetrics]
         metrics/spanmetrics:
           receivers: [spanmetrics]
