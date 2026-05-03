@@ -86,17 +86,23 @@ data:
             from_attribute: k8s.deployment.name
             action: insert
       probabilistic_sampler:
-        sampling_percentage: 100  
+        sampling_percentage: 100
 
     connectors:
       spanmetrics:
         dimensions:
           - name: http.method
+            default: GET
           - name: http.status_code
-          - name: service.name
+            default: "200"
+          - name: k8s.cluster.name
+          - name: k8s.namespace.name
+        metrics_flush_interval: 15s
         histogram:
           explicit:
             buckets: [2ms, 8ms, 50ms, 100ms, 200ms, 500ms, 1s, 2s, 5s, 10s]
+        exemplars:
+          enabled: true
 
     exporters:
       prometheusremotewrite:
@@ -117,18 +123,19 @@ data:
           tags:
             - "env:dev"
             - "cluster:toggle-master"
-        metrics:
-          resource_attributes_as_tags: true
-          instrumentation_scope_metadata_as_tags: true
-          histograms:
-            mode: distributions
-            send_aggregation_metrics: true
         traces:
           compute_stats_by_span_kind: true
           span_name_as_resource_name: true
           peer_tags_aggregation: true
           compute_top_level_by_span_kind: true
           trace_buffer: 500
+        metrics:
+          resource_attributes_as_tags: true
+          instrumentation_scope_metadata_as_tags: true
+          histograms:
+            mode: distributions
+            send_aggregation_metrics: true
+        
         logs:
           dump_payloads: false
 
