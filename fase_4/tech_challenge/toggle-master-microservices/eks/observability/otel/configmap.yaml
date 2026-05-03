@@ -36,6 +36,25 @@ data:
           - container
           - node
           - volume
+      prometheus:
+        config:
+          scrape_configs:
+            - job_name: 'kubernetes-pods'
+              kubernetes_sd_configs:
+                - role: pod
+              relabel_configs:
+                - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+                  action: keep
+                  regex: true
+                - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+                  action: replace
+                  target_label: __metrics_path__
+                  regex: (.+)
+                - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+                  action: replace
+                  regex: ([^:]+)(?::\d+)?;(\d+)
+                  replacement: $1:$2
+                  target_label: __address__
 
     processors:
       batch:
@@ -97,6 +116,14 @@ data:
           - key: service.name
             from_attribute: service.name
             action: upsert
+            
+      transform:
+        error_mode: ignore
+        trace_statements:
+          - context: span
+            statements:
+              - set(attributes["operation.name"], "http.server.request") where kind == 2
+              - set(attributes["operation.name"], "sqs.consume") where kind == 5
       
       probabilistic_sampler:
         sampling_percentage: 100
@@ -166,14 +193,14 @@ data:
       pipelines:
         traces:
           receivers: [otlp]
-          processors: [memory_limiter, k8sattributes, resource, attributes/traces, batch]
+          processors: [memory_limiter, k8sattributes, resource, attributes/traces, transform, batch]
           exporters: [datadog, spanmetrics]
         metrics/spanmetrics:
           receivers: [spanmetrics]
           processors: [batch]
           exporters: [datadog, prometheusremotewrite]
         metrics:
-          receivers: [otlp, kubeletstats]
+          receivers: [otlp, kubeletstats, prometheus]
           processors: [memory_limiter, k8sattributes, resource, batch]
           exporters: [prometheusremotewrite, datadog]
         logs:
