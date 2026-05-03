@@ -104,7 +104,7 @@ data:
           "targets": [
             {
               "expr": "sum(sqs_events_sent_total{namespace='toggle-master'}) by (service)",
-              "legendFormat": "{{service}} - fila(toggle-analytics-queue)"
+              "legendFormat": "{{service}} - fila(toggle-analytics-queue)",
               "instant": true
             }
           ]
