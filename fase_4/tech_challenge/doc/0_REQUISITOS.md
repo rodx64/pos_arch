@@ -21,7 +21,7 @@ Utilize o OpenTelemetry (via OTel Collector) como a peça central para receber, 
 - [x] `Instrumentação do Código`: Altere o código-fonte ou o Dockerfile dos microsserviços para adicionar as bibliotecas de instrumentação
 - [x] `Distributed Tracing`: Ao fazer uma
 requisição no evaluation-service, o APM deve mostrar o "caminho" da requisição
-- [ ] `Service Map`: o painel do APM deve exibir o mapa de dependências
+- [x] `Service Map`: o painel do APM deve exibir o mapa de dependências
 dos seus 5 microsserviços
 
 ## 4. Alertas Inteligentes e Self-Healing
