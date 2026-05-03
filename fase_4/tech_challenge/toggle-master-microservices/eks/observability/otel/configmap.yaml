@@ -66,7 +66,7 @@ data:
         attributes:
           - key: service.name
             from_attribute: k8s.deployment.name
-            action: upsert
+            action: insert  # só adiciona se não existir
           - key: k8s.cluster.name
             value: "toggle-master"
             action: upsert
@@ -81,9 +81,6 @@ data:
             action: insert
           - key: cluster
             value: "toggle-master"
-            action: insert
-          - key: service.name
-            from_attribute: k8s.deployment.name
             action: insert
       probabilistic_sampler:
         sampling_percentage: 100
@@ -140,6 +137,13 @@ data:
           dump_payloads: false
 
     service:
+      telemetry:
+        logs:
+          level: info
+        metrics:
+          level: detailed
+          address: 0.0.0.0:8888
+      
       extensions: [health_check]
       pipelines:
         traces:
