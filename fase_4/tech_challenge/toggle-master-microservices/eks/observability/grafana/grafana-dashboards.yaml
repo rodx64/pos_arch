@@ -72,13 +72,40 @@ data:
         {
           "id": 6,
           "title": "SQS — Eventos Enviados por serviço",
-          "type": "timeseries",
+          "type": "stat",
           "gridPos": { "x": 0, "y": 34, "w": 24, "h": 8 },
           "datasource": "Prometheus",
+          "pluginVersion": "10.x",
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "textMode": "auto",
+            "reduceOptions": {
+              "values": false,
+              "calcs": [
+                "lastNotNull"
+              ]
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null }
+                ]
+              },
+              "mappings": []
+            }
+          },
           "targets": [
             {
               "expr": "sum(sqs_events_sent_total{namespace='toggle-master'}) by (service)",
               "legendFormat": "{{service}} - fila(toggle-analytics-queue)"
+              "instant": true
             }
           ]
         },
