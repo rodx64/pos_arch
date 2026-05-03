@@ -71,6 +71,19 @@ data:
         },
         {
           "id": 6,
+          "title": "SQS — Eventos Enviados por serviço",
+          "type": "timeseries",
+          "gridPos": { "x": 0, "y": 32, "w": 12, "h": 8 },
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "sum(sqs_events_sent_total{namespace='toggle-master'}) by (service)",
+              "legendFormat": "{{service}} - fila(toggle-analytics-queue)"
+            }
+          ]
+        },
+        {
+          "id": 7,
           "title": "Status das Dependências",
           "type": "stat",
           "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
@@ -108,7 +121,7 @@ data:
           ]
         },
         {
-          "id": 7,
+          "id": 8,
           "title": "Logs em Tempo Real — toggle-master",
           "type": "logs",
           "gridPos": { "x": 0, "y": 24, "w": 24, "h": 10 },
@@ -117,6 +130,6 @@ data:
             "expr": "{exporter=\"OTLP\"} |= \"toggle-master\"",
             "legendFormat": ""
           }]
-        }
+        },
       ]
     }
