@@ -65,7 +65,7 @@ func newMetrics() *AppMetrics {
 				Help:    "Duração das requisições",
 				Buckets: prometheus.DefBuckets,
 			},
-			[]string{"method", "path"},
+			[]string{"method", "path", "status"},
 		),
 		evaluationsTotal: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
@@ -152,7 +152,7 @@ func (a *App) instrumentHandler(path string, next http.Handler) http.Handler {
 
 		duration := time.Since(start).Seconds()
 		a.Metrics.httpRequestsTotal.WithLabelValues(r.Method, path, http.StatusText(rw.status)).Inc()
-		a.Metrics.httpRequestDuration.WithLabelValues(r.Method, path).Observe(duration)
+		a.Metrics.httpRequestDuration.WithLabelValues(r.Method, path, http.StatusText(rw.status)).Observe(duration)
 	})
 }
 
