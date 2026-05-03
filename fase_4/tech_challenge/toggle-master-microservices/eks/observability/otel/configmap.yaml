@@ -18,14 +18,13 @@ data:
           http:
             endpoint: 0.0.0.0:4318
       filelog:
-        include: [ /var/log/pods/toggle-master*/*/**.log ]
+        include: [ /var/log/pods/toggle-master*/*/*.log ]
         start_at: beginning
         operators:
-          - type: regex_parser
-            regex: '^(?P<time>[^ ]+) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) (?P<log>.*)$'
+          - type: container
           - type: json_parser
-            parse_from: attributes.log
-            if: 'attributes.log != nil && attributes.log matches "^{.*}$"'
+            parse_from: attributes.message
+            if: 'attributes.message != nil && attributes.message matches "^{.*}$"'
       kubeletstats:
         collection_interval: 10s
         auth_type: "serviceAccount"
