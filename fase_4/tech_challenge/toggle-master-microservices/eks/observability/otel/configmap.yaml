@@ -18,17 +18,56 @@ data:
           http:
             endpoint: 0.0.0.0:4318
       filelog:
-        include: [/var/log/containers/*.log]
+        include: [/var/log/pods/toggle-master_*/*/*.log]
+        exclude: [/var/log/pods/toggle-master_*_*/otc-container/*.log]
+        start_at: end
+        include_file_path: true
+        include_file_name: false
         operators:
-          - type: json_parser
-            parse_from: body
-            parse_to: attributes
+          # Parse CRI format logs
           - type: regex_parser
-            regex: '^(?P<time>[^ ]+) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) (?P<log>.*)$'
+            id: parser-cri
+            regex: '^(?P<time>[^ ^Z]+) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) ?(?P<log>.*)$'
             parse_from: body
             timestamp:
               parse_from: attributes.time
               layout: '%Y-%m-%dT%H:%M:%S.%LZ'
+          
+          # Move log to body
+          - type: move
+            from: attributes.log
+            to: body
+          
+          # Try to parse JSON logs
+          - type: json_parser
+            id: parser-json
+            parse_from: body
+            parse_to: attributes
+            if: 'body matches "^\\{"'
+          
+          # Extract k8s metadata from file path
+          - type: regex_parser
+            id: extract-metadata-from-filepath
+            regex: '^.*\/(?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<uid>[a-f0-9\-]+)\/(?P<container_name>[^\._]+)\/(?P<restart_count>\d+)\.log$'
+            parse_from: attributes["log.file.path"]
+            if: 'attributes["log.file.path"] != nil'
+          
+          # Add resource attributes
+          - type: move
+            from: attributes.namespace
+            to: resource["k8s.namespace.name"]
+            if: 'attributes.namespace != nil'
+          
+          - type: move
+            from: attributes.pod_name
+            to: resource["k8s.pod.name"]
+            if: 'attributes.pod_name != nil'
+          
+          - type: move
+            from: attributes.container_name
+            to: resource["k8s.container.name"]
+            if: 'attributes.container_name != nil'
+
       kubeletstats:
         collection_interval: 10s
         auth_type: "serviceAccount"
@@ -39,35 +78,18 @@ data:
           - container
           - node
           - volume
-      prometheus:
-        config:
-          scrape_configs:
-            - job_name: 'kubernetes-pods'
-              kubernetes_sd_configs:
-                - role: pod
-              relabel_configs:
-                - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
-                  action: keep
-                  regex: true
-                - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
-                  action: replace
-                  target_label: __metrics_path__
-                  regex: (.+)
-                - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
-                  action: replace
-                  regex: ([^:]+)(?::\d+)?;(\d+)
-                  replacement: $1:$2
-                  target_label: __address__
 
     processors:
       batch:
         timeout: 10s
         send_batch_size: 1024
         send_batch_max_size: 2048
+      
       memory_limiter:
         check_interval: 1s
         limit_mib: 512
         spike_limit_mib: 128
+      
       k8sattributes:
         auth_type: "serviceAccount"
         passthrough: false
@@ -96,6 +118,7 @@ data:
               name: k8s.pod.uid
           - sources:
             - from: connection
+
       resource:
         attributes:
           - key: service.name
@@ -119,17 +142,39 @@ data:
           - key: service.name
             from_attribute: service.name
             action: upsert
-            
+      
+      # CRITICAL: Este processor adiciona o span.name que se torna operation.name no Datadog
       transform:
         error_mode: ignore
         trace_statements:
           - context: span
             statements:
-              - set(attributes["operation.name"], "http.server.request") where kind == 2
-              - set(attributes["operation.name"], "sqs.consume") where kind == 5
+              # Define operation name baseado no span.name ou http.route
+              - set(attributes["operation.name"], name) where name != nil
+              
+              # Para HTTP requests, usa http.method + http.route ou http.target
+              - set(attributes["operation.name"], Concat([attributes["http.method"], " ", attributes["http.route"]], "")) where attributes["http.method"] != nil and attributes["http.route"] != nil
+              - set(attributes["operation.name"], Concat([attributes["http.method"], " ", attributes["http.target"]], "")) where attributes["http.method"] != nil and attributes["http.route"] == nil and attributes["http.target"] != nil
+              
+              # Para SQS operations
+              - set(attributes["operation.name"], "sqs.consume") where attributes["messaging.system"] == "sqs" and kind == 5
+              - set(attributes["operation.name"], "sqs.publish") where attributes["messaging.system"] == "sqs" and kind == 3
+              
+              # Para database operations
+              - set(attributes["operation.name"], Concat(["db.", attributes["db.operation"]], "")) where attributes["db.system"] != nil and attributes["db.operation"] != nil
       
       probabilistic_sampler:
         sampling_percentage: 100
+
+      # Processor para enriquecer métricas com resource attributes
+      resource/metrics:
+        attributes:
+          - key: namespace
+            from_attribute: k8s.namespace.name
+            action: insert
+          - key: service
+            from_attribute: service.name
+            action: insert
 
     connectors:
       spanmetrics:
@@ -138,6 +183,8 @@ data:
             default: GET
           - name: http.status_code
             default: "200"
+          - name: service.name
+          - name: operation.name
           - name: k8s.cluster.name
           - name: k8s.namespace.name
         metrics_flush_interval: 15s
@@ -154,8 +201,10 @@ data:
           enabled: true
         add_metric_suffixes: false
         timeout: 20s
+      
       loki:
         endpoint: "http://loki-headless.monitoring.svc.cluster.local:3100/loki/api/v1/push"
+      
       datadog:
         api:
           key: "${DD_API_KEY}"
@@ -167,9 +216,12 @@ data:
           tags:
             - "env:dev"
             - "cluster:toggle-master"
+        
         traces:
           compute_stats_by_span_kind: true
           span_name_as_resource_name: true
+          span_name_remappings:
+            http.request: "http.server.request"
           peer_tags_aggregation: true
           compute_top_level_by_span_kind: true
           trace_buffer: 1000
@@ -193,19 +245,23 @@ data:
           address: 0.0.0.0:8888
       
       extensions: [health_check]
+      
       pipelines:
         traces:
           receivers: [otlp]
           processors: [memory_limiter, k8sattributes, resource, attributes/traces, transform, batch]
           exporters: [datadog, spanmetrics]
+        
         metrics/spanmetrics:
           receivers: [spanmetrics]
-          processors: [batch]
+          processors: [resource/metrics, batch]
           exporters: [datadog, prometheusremotewrite]
+        
         metrics:
-          receivers: [otlp, kubeletstats, prometheus]
-          processors: [memory_limiter, k8sattributes, resource, batch]
+          receivers: [otlp, kubeletstats]
+          processors: [memory_limiter, k8sattributes, resource, resource/metrics, batch]
           exporters: [prometheusremotewrite, datadog]
+        
         logs:
           receivers: [otlp, filelog]
           processors: [memory_limiter, k8sattributes, resource, batch]
