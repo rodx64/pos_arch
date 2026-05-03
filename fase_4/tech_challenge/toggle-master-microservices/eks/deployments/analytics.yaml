@@ -23,7 +23,7 @@ spec:
         tags.datadoghq.com/service: "analytics-service"
         tags.datadoghq.com/version: "1.0.0"
       annotations:
-        prometheus.io/scrape: "true"
+        prometheus.io/scrape: "false"
         prometheus.io/port: "8005"
         prometheus.io/path: "/metrics"
         admission.datadoghq.com/enabled: "true"
