@@ -143,7 +143,6 @@ data:
           peer_tags_aggregation: true
           compute_top_level_by_span_kind: true
           trace_buffer: 1000
-          send_resources_as_tags: true
         
         metrics:
           resource_attributes_as_tags: true
