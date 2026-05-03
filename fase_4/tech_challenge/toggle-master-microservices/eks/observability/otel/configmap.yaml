@@ -18,10 +18,14 @@ data:
           http:
             endpoint: 0.0.0.0:4318
       filelog:
-        include: [/var/log/pods/*/*/*.log]
+        include: [/var/log/containers/*.log]
         operators:
+          - type: json_parser
+            parse_from: body
+            parse_to: attributes
           - type: regex_parser
-            regex: '^(?P<time>[^ ^Z]+) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) (?P<log>.*)$'
+            regex: '^(?P<time>[^ ]+) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) (?P<log>.*)$'
+            parse_from: body
             timestamp:
               parse_from: attributes.time
               layout: '%Y-%m-%dT%H:%M:%S.%LZ'
