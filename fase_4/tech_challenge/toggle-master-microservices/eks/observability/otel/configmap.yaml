@@ -53,6 +53,24 @@ data:
             - k8s.container.name
             - k8s.deployment.name
             - k8s.replicaset.name
+        pod_association:
+          - sources:
+            - from: resource_attribute
+              name: k8s.pod.ip
+          - sources:
+            - from: resource_attribute
+              name: k8s.pod.uid
+          - sources:
+            - from: connection
+      resource:
+        attributes:
+          - key: service.name
+            from_attribute: k8s.deployment.name
+            action: upsert
+          - key: k8s.cluster.name
+            value: "toggle-master"
+            action: upsert
+      
       attributes:
         actions:
           - key: env
@@ -64,6 +82,21 @@ data:
           - key: cluster
             value: "toggle-master"
             action: insert
+          - key: service.name
+            from_attribute: k8s.deployment.name
+            action: insert
+      probabilistic_sampler:
+        sampling_percentage: 100  
+
+    connectors:
+      spanmetrics:
+        dimensions:
+          - name: http.method
+          - name: http.status_code
+          - name: service.name
+        histogram:
+          explicit:
+            buckets: [2ms, 8ms, 50ms, 100ms, 200ms, 500ms, 1s, 2s, 5s, 10s]
 
     exporters:
       prometheusremotewrite:
@@ -80,28 +113,41 @@ data:
         hostname: "otel-collector"
         host_metadata:
           enabled: true
+          hostname_source: config_or_system
           tags:
             - "env:dev"
             - "cluster:toggle-master"
         metrics:
           resource_attributes_as_tags: true
+          instrumentation_scope_metadata_as_tags: true
+          histograms:
+            mode: distributions
+            send_aggregation_metrics: true
         traces:
           compute_stats_by_span_kind: true
           span_name_as_resource_name: true
-          propagate_context: true
+          peer_tags_aggregation: true
+          compute_top_level_by_span_kind: true
+          trace_buffer: 500
+        logs:
+          dump_payloads: false
 
     service:
       extensions: [health_check]
       pipelines:
         traces:
           receivers: [otlp]
-          processors: [batch, k8sattributes, attributes]
-          exporters: [datadog]
+          processors: [memory_limiter, k8sattributes, resource, attributes, batch]
+          exporters: [datadog, spanmetrics]
+        metrics/spanmetrics:
+          receivers: [spanmetrics]
+          processors: [batch]
+          exporters: [datadog, prometheusremotewrite]
         metrics:
           receivers: [otlp, kubeletstats]
-          processors: [batch, k8sattributes]
+          processors: [memory_limiter, k8sattributes, resource, batch]
           exporters: [prometheusremotewrite, datadog]
         logs:
           receivers: [otlp, filelog]
-          processors: [batch, k8sattributes]
+          processors: [memory_limiter, k8sattributes, resource, batch]
           exporters: [loki, datadog]
