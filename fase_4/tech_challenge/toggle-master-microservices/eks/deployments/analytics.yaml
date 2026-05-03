@@ -26,24 +26,6 @@ spec:
         prometheus.io/scrape: "true"
         prometheus.io/port: "8005"
         prometheus.io/path: "/metrics"
-        admission.datadoghq.com/enabled: "true"
-        ad.datadoghq.com/analytics-container.checks: |
-          {
-            "openmetrics": {
-              "instances": [
-                {
-                  "openmetrics_endpoint": "http://%%host%%:8005/metrics",
-                  "namespace": "toggle_master",
-                  "metrics": [
-                    "http_requests_total",
-                    "http_request_duration_seconds",
-                    "process_cpu_seconds_total",
-                    "process_resident_memory_bytes"
-                  ]
-                }
-              ]
-            }
-          }
     spec:
       containers:
         - name: analytics-container
@@ -51,38 +33,42 @@ spec:
           imagePullPolicy: Always
           ports:
             - containerPort: 8005
+              name: http
           env:
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
-              value: "http://otel-collector.monitoring.svc.cluster.local:4318/v1/traces"
+              value: "http://otel-collector.monitoring.svc.cluster.local:4317"
+            - name: OTEL_EXPORTER_OTLP_PROTOCOL
+              value: "grpc"
             - name: OTEL_EXPORTER_OTLP_INSECURE
               value: "true"
+            
+            - name: OTEL_TRACES_EXPORTER
+              value: "otlp"
             - name: OTEL_LOGS_EXPORTER
               value: "otlp"
             - name: OTEL_METRICS_EXPORTER
-              value: "otlp"
-            - name: OTEL_TRACES_EXPORTER
-              value: "otlp"
+              value: "none"
+            
             - name: OTEL_SERVICE_NAME
               value: "analytics-service"
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "service.name=analytics-service,deployment.environment=dev,k8s.cluster.name=toggle-master"
+            
+            - name: DD_ENV
+              value: "dev"
+            - name: DD_SERVICE
+              value: "analytics-service"
+            - name: DD_VERSION
+              value: "1.0.0"
             - name: DD_LOGS_INJECTION
               value: "true"
-            - name: DD_ENV
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.labels['tags.datadoghq.com/env']
-            - name: DD_SERVICE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.labels['tags.datadoghq.com/service']
-            - name: DD_VERSION
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.labels['tags.datadoghq.com/version']
+            
           envFrom:
             - configMapRef:
                 name: analytics-config
             - secretRef:
                 name: analytics-secret
+          
           resources:
             limits:
               memory: "512Mi"
@@ -91,26 +77,25 @@ spec:
               memory: "256Mi"
               cpu: "500m"
           
-          # PROBES
           startupProbe:
             httpGet:
               path: /health/startup
               port: 8005
-            periodSeconds: 5 # intervalo entre as checagens
-            failureThreshold: 30 # falhas antes de marcar como falha (5s * 30 = 150s total)
-
+            periodSeconds: 5
+            failureThreshold: 30
+          
           readinessProbe:
             httpGet:
               path: /health/ready
               port: 8005
-            initialDelaySeconds: 5 # aguarda o startup completar
-            periodSeconds: 10 # intervalo entre as checagens
-            failureThreshold: 3 # falhas antes de marcar como não pronto
-
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+          
           livenessProbe:
             httpGet:
               path: /health/live
               port: 8005
-            initialDelaySeconds: 15 # deve ser a soma de startup + readiness
-            periodSeconds: 10 # intervalo entre as checagens
-            failureThreshold: 3 # falhas antes de reiniciar o container
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 3
