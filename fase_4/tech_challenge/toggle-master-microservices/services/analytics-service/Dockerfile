@@ -5,7 +5,7 @@
 # Ele inclui ferramentas pesadas como gcc e build-essential, necessárias apenas para build.
 # O resultado é uma pasta /install contendo todos os pacotes Python já prontos (sem cache e sem lixo de build).
 # Este estágio NÃO vira um container executável — ele serve apenas de base para o estágio final.
-FROM python:3.13-slim AS builder
+FROM python:3.11-slim AS builder
 
 # Define diretório de trabalho
 WORKDIR /app
@@ -38,7 +38,7 @@ RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 # ==========================
 # Este é o container final e leve, usado em execução (ex: docker compose up analytics-service)
 # Ele contém apenas o Python, as dependências prontas e o código-fonte da aplicação.
-FROM python:3.13-slim AS runtime
+FROM python:3.11-slim AS runtime
 
 # Define diretório de trabalho
 WORKDIR /app
