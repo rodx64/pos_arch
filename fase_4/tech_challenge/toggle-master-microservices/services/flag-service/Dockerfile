@@ -15,11 +15,12 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 # Instala dependências de compilação temporárias
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
+RUN apk add --no-cache \
     gcc \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+    musl-dev \
+    postgresql-dev \
+    linux-headers \
+    libffi-dev
 
 # Copia dependências do projeto
 COPY requirements.txt .
@@ -45,15 +46,24 @@ FROM python:3.12-alpine AS runtime
 WORKDIR /app
 
 # Atualiza pacotes e instala curl (necessário para healthcheck)
-RUN apt-get update && apt-get upgrade -y --no-install-recommends \
-    && apt-get install -y --no-install-recommends curl \
-    && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache \
+    libpq \
+    curl \
+    libffi
+
+# Instala bibliotecas OTel
+RUN pip install --no-cache-dir \
+    opentelemetry-distro \
+    opentelemetry-exporter-otlp
+
+# Instrumentação automática
+RUN opentelemetry-bootstrap -a install
 
 COPY --from=builder /install /usr/local
 
 COPY . .
 
-RUN useradd -m appuser
+RUN adduser -D appuser
 USER appuser
 
 EXPOSE 8002
