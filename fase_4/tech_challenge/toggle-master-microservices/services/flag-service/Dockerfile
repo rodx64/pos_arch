@@ -19,7 +19,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     gcc \
     curl \
-    libpq-dev \ 
     && rm -rf /var/lib/apt/lists/*
 
 # Copia dependências do projeto
@@ -46,7 +45,7 @@ FROM python:3.13-slim AS runtime
 WORKDIR /app
 
 # Atualiza pacotes e instala curl (necessário para healthcheck)
-RUN apt-get update && apt-get upgrade -y --no-install-recommends curl libpq5 \
+RUN apt-get update && apt-get upgrade -y --no-install-recommends \
     && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 
