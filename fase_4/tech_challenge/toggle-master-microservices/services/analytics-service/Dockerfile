@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     gcc \
     curl \
+    libpq-dev \ 
     && rm -rf /var/lib/apt/lists/*
 
 # Copia dependências do projeto
@@ -44,7 +45,7 @@ FROM python:3.13-slim AS runtime
 WORKDIR /app
 
 # Atualiza pacotes do sistema para corrigir vulnerabilidades (ex: CVE-2026-22184 no zlib)
-RUN apt-get update && apt-get upgrade -y --no-install-recommends \
+RUN apt-get update && apt-get upgrade -y --no-install-recommends curl libpq5 \
     && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 
