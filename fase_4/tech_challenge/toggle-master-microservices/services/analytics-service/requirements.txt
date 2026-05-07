@@ -8,4 +8,3 @@ opentelemetry-sdk==1.33.0
 opentelemetry-exporter-otlp==1.33.0
 opentelemetry-instrumentation-flask==0.54b0
 opentelemetry-instrumentation-requests==0.54b0
-charset-normalizer==3.3.2
