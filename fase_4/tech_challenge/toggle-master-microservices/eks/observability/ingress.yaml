@@ -9,7 +9,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: a2544f5f248bc4c2caec0871d6fc24a7-cd073cc8487ad1fd.elb.us-east-1.amazonaws.com
+    - host: a4c97a9ebbacf46d3b48873ac5453443-1ba5bc3be244610e.elb.us-east-1.amazonaws.com
       http:
         paths:
           - path: /grafana(/|$)(.*)
