@@ -33,7 +33,7 @@ spec:
             - name: DD_CLUSTER_AGENT_AUTH_TOKEN
               value: "${cluster_agent_token}"
             - name: DD_SITE
-              value: "datadoghq.com"
+              value: "us5.datadoghq.com"
             - name: DD_CLUSTER_NAME
               value: "toggle-master"
             - name: DD_LEADER_ELECTION

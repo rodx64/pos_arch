@@ -188,7 +188,7 @@ data:
       datadog:
         api:
           key: "${DD_API_KEY}"
-          site: "datadoghq.com"
+          site: "us5.datadoghq.com"
         hostname: "${K8S_NODE_NAME}"
         host_metadata:
           enabled: true
