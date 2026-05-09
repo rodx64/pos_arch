@@ -1,7 +1,7 @@
 resource "datadog_monitor" "targeting_auth_dependency_error" {
-  name               = "[P2] Falha de Dependência: Targeting recebendo 503 do Auth Service"
-  type               = "query alert"
-  
+  name = "[P2] Falha de Dependência: Targeting recebendo 503 do Auth Service"
+  type = "query alert"
+
   query = "sum(last_5m):sum:calls{env:dev,service:targeting-service,http.status_code:503}.as_rate() / sum:calls{env:dev,service:targeting-service}.as_rate() > 0.1"
 
   message = <<EOT
