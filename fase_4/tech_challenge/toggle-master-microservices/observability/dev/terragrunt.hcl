@@ -44,4 +44,5 @@ inputs = {
 
   datadog_api_key      = get_env("DATADOG_API_KEY")
   datadog_cluster_agent_token = get_env("DATADOG_CLUSTER_AGENT_TOKEN")
+  datadog_app_key      = get_env("DATADOG_APP_KEY")
 }

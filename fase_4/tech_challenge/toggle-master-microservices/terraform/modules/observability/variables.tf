@@ -31,6 +31,11 @@ variable "datadog_api_key" {
   sensitive = true
 }
 
+variable "datadog_app_key" {
+  type      = string
+  sensitive = true
+}
+
 variable "datadog_cluster_agent_token" {
   type      = string
   sensitive = true

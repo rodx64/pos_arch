@@ -15,6 +15,7 @@ resource "kubernetes_secret_v1" "datadog" {
 
   data = {
     api-key = var.datadog_api_key
+    app-key = var.datadog_app_key
     token   = var.datadog_cluster_agent_token
   }
 
@@ -27,5 +28,6 @@ resource "kubectl_manifest" "datadog_manifests" {
   yaml_body = templatefile("${path.module}/../../../eks/observability/datadog/${each.value}", {
     cluster_agent_token = var.datadog_cluster_agent_token
     api_key             = var.datadog_api_key
+    app_key             = var.datadog_app_key
   })
 }
