@@ -37,7 +37,7 @@ variable "datadog_app_key" {
 }
 
 variable "datadog_url" {
-  type      = string
+  type    = string
   default = "https://api.us5.datadoghq.com/"
 }
 
