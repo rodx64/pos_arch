@@ -31,7 +31,10 @@ spec:
                   name: datadog-secret
                   key: api-key
             - name: DD_CLUSTER_AGENT_AUTH_TOKEN
-              value: "${cluster_agent_token}"
+              valueFrom:
+                secretKeyRef:
+                  name: datadog-secret
+                  key: token
             - name: DD_SITE
               value: "us5.datadoghq.com"
             - name: DD_CLUSTER_NAME

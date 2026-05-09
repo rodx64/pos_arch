@@ -71,7 +71,10 @@ spec:
             - name: DD_CLUSTER_AGENT_ENABLED
               value: "true"
             - name: DD_CLUSTER_AGENT_AUTH_TOKEN
-              value: "${cluster_agent_token}"
+              valueFrom:
+                secretKeyRef:
+                  name: datadog-secret
+                  key: token
             - name: DD_CLUSTER_AGENT_KBSERVICE_NAME
               value: "datadog-cluster-agent"
           resources:
