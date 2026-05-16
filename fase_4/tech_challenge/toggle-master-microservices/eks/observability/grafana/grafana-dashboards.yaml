@@ -83,65 +83,30 @@ data:
         },
         {
           "id": 5,
-          "title": "Taxa de Erros HTTP por Serviço",
+          "title": "Quantidade de Erros HTTP por Serviço (Acumulado 1m)",
           "type": "timeseries",
           "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
           "datasource": "Prometheus",
           "fieldConfig": {
             "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
+              "min": 0,
+              "decimals": 0,
+              "color": { "mode": "fixed", "fixedColor": "red" },
               "custom": {
-                "axisLabel": "erros/sec",
-                "fillOpacity": 15,
-                "lineWidth": 2,
-                "showPoints": "always",
-                "pointSize": 5,
-                "axisPlacement": "auto",
-                "axisSoftMin": 0,
-                "drawStyle": "line",
-                "spanNulls": false,
-                "scaleDistribution": {
-                  "type": "linear"
-                }
+                "drawStyle": "area",
+                "fillOpacity": 45,
+                "lineThickness": 2,
+                "axisPlacement": "left",
+                "axisSoftMax": 10
               },
-              "unit": "reqps",
-              "decimals": 4
-            }
-          },
-          "options": {
-            "legend": {
-              "calcs": ["last", "max", "mean"],
-              "displayMode": "table",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "mode": "multi",
-              "sort": "desc"
+              "unit": "short"
             }
           },
           "targets": [
             {
-              "expr": "sum(rate(http_requests_total{namespace='toggle-master', status='Bad Gateway'}[5m])) by (service)",
-              "legendFormat": "502 Bad Gateway — {{service}}",
+              "expr": "sum(increase(http_requests_total{namespace='toggle-master', status!~'OK|Created'}[1m])) by (service, status)",
+              "legendFormat": "{{service}} - {{status}}",
               "refId": "A"
-            },
-            {
-              "expr": "sum(rate(http_requests_total{namespace='toggle-master', status='Internal Server Error'}[5m])) by (service)",
-              "legendFormat": "500 Internal Error — {{service}}",
-              "refId": "B"
-            },
-            {
-              "expr": "sum(rate(http_requests_total{namespace='toggle-master', status='Unauthorized'}[5m])) by (service)",
-              "legendFormat": "401 Unauthorized — {{service}}",
-              "refId": "C"
-            },
-            {
-              "expr": "sum(rate(http_requests_total{namespace='toggle-master', status!~'OK|Created'}[5m])) by (service, status)",
-              "legendFormat": "{{status}} — {{service}}",
-              "refId": "D"
             }
           ]
         },
