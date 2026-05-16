@@ -62,7 +62,7 @@ data:
           "id": 5,
           "title": "SQS — Eventos Enviados por serviço",
           "type": "stat",
-          "gridPos": { "x": 0, "y": 34, "w": 24, "h": 8 },
+          "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
           "datasource": "Prometheus",
           "pluginVersion": "10.x",
           "options": {
