@@ -21,12 +21,15 @@ resource "datadog_monitor" "targeting_auth_dependency_error" {
   2. Caso o `auth-service` esteja em CrashLoop, verifique os logs dele.
   
   @pagerduty-ToggleMaster
+  @webhook-discord-alerta
+  @webhook-self-healing-action
   {{/is_alert}}
   
   {{#is_recovery}}
   A taxa de erros 503 no targeting-service normalizou para abaixo de 10%. A comunicação com o auth-service parece ter sido reestabelecida.
   
   @pagerduty-ToggleMaster
+  @webhook-discord-alerta
   {{/is_recovery}}
   EOT
 
