@@ -70,9 +70,9 @@ jobs:
 
           if [ "$ALERT_SOURCE" == "targeting-service" ]; then
             echo "🔍 Diagnóstico: O targeting-service acusa falha de dependência (503)."
-            echo "🛠️ Ação: Iniciando rollout restart no auth-service para tentar recuperação..."
+            echo "🛠️ Ação: Iniciando rollout restart no auth-deployment para tentar recuperação..."
             
-            kubectl rollout restart deployment auth-service -n toggle-master
+            kubectl rollout restart deployment auth-deployment -n toggle-master
             
             echo "Mitigação concluída: Comando de restart enviado ao auth-service."
           else
