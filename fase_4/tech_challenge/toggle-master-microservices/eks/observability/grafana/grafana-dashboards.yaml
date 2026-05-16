@@ -64,9 +64,24 @@ data:
           "type": "timeseries",
           "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
           "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "min": 0,
+              "color": { "mode": "fixed", "fixedColor": "red" },
+              "custom": {
+                "drawStyle": "area",
+                "fillOpacity": 50,
+                "lineThickness": 3,
+                "axisPlacement": "left",
+                "axisSoftMin": 0,
+                "axisSoftMax": 10
+              },
+              "unit": "short"
+            }
+          },
           "targets": [{
-            "expr": "sum(rate(http_requests_total{namespace='toggle-master', status!~'OK|ok|Success'}[5m])) by (service, status)",
-            "legendFormat": "erro — {{service}} - {{status}}"
+            "expr": "sum(increase(http_requests_total{namespace='toggle-master', status!~'200|OK|Success|ok|success'}[2m])) by (service)",
+            "legendFormat": "Quantidade de Erros — {{service}}"
           }]
         },
         {
