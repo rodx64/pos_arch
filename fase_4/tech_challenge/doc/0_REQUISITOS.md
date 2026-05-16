@@ -26,9 +26,9 @@ dos seus 5 microsserviços
 
 ## 4. Alertas Inteligentes e Self-Healing
 
-- [ ] `Criação do Alerta`: configure um alerta inteligente (no Grafana ou
+- [x] `Criação do Alerta`: configure um alerta inteligente (no Grafana ou
 APM)
-- [ ] `Gerenciamento de Incidentes`: crie uma conta no PagerDuty OU
+- [x] `Gerenciamento de Incidentes`: crie uma conta no PagerDuty OU
 OpsGenie e integre o alerta para abrir um incidente automaticamente.
 - [ ] `Notificação (ChatOps)`: configure o envio de uma notificação
 detalhada para um canal do Slack, Discord ou Teams.
