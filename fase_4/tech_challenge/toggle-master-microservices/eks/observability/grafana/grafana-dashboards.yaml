@@ -42,8 +42,18 @@ data:
           "type": "timeseries",
           "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
           "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "axisLabel": "req/s",
+                "fillOpacity": 10,
+                "lineWidth": 2
+              },
+              "unit": "reqps"
+            }
+          },
           "targets": [{
-            "expr": "sum(rate(http_requests_total{namespace='toggle-master'}[30m])) by (service, status)",
+            "expr": "sum(rate(http_requests_total{namespace='toggle-master'}[30m])) by (service)",
             "legendFormat": "{{service}}"
           }]
         },
@@ -53,6 +63,16 @@ data:
           "type": "timeseries",
           "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
           "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "axisLabel": "latência (ms)",
+                "fillOpacity": 10,
+                "lineWidth": 2
+              },
+              "unit": "ms"
+            }
+          },
           "targets": [{
             "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{namespace='toggle-master'}[15m])) by (le, service)) * 1000",
             "legendFormat": "p99 {{service}}"
@@ -60,46 +80,74 @@ data:
         },
         {
           "id": 5,
-          "title": "Taxa de Erros HTTP (NOK) por Serviço",
+          "title": "Taxa de Erros HTTP por Serviço",
           "type": "timeseries",
           "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
           "datasource": "Prometheus",
           "fieldConfig": {
             "defaults": {
-              "min": 0,
-              "color": { "mode": "fixed", "fixedColor": "red" },
-              "custom": {
-                "drawStyle": "area",
-                "fillOpacity": 50,
-                "lineThickness": 3,
-                "axisPlacement": "left",
-                "axisSoftMin": 0,
-                "axisSoftMax": 10
+              "color": {
+                "mode": "palette-classic"
               },
-              "unit": "short"
+              "custom": {
+                "axisLabel": "erros/sec",
+                "fillOpacity": 15,
+                "lineWidth": 2,
+                "showPoints": "auto"
+              },
+              "unit": "reqps",
+              "min": 0
             }
           },
-          "targets": [{
-            "expr": "sum(increase(http_requests_total{namespace='toggle-master', status!~'200|OK|Success|ok|success'}[2m])) by (service)",
-            "legendFormat": "Quantidade de Erros — {{service}}"
-          }]
+          "options": {
+            "legend": {
+              "calcs": ["last", "max", "mean"],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum(rate(http_requests_total{namespace='toggle-master', status='Bad Gateway'}[5m])) by (service)",
+              "legendFormat": "502 Bad Gateway — {{service}}",
+              "refId": "A"
+            },
+            {
+              "expr": "sum(rate(http_requests_total{namespace='toggle-master', status='Internal Server Error'}[5m])) by (service)",
+              "legendFormat": "500 Internal Error — {{service}}",
+              "refId": "B"
+            },
+            {
+              "expr": "sum(rate(http_requests_total{namespace='toggle-master', status='Unauthorized'}[5m])) by (service)",
+              "legendFormat": "401 Unauthorized — {{service}}",
+              "refId": "C"
+            },
+            {
+              "expr": "sum(rate(http_requests_total{namespace='toggle-master', status!~'OK|Created'}[5m])) by (service, status)",
+              "legendFormat": "{{status}} — {{service}}",
+              "refId": "D"
+            }
+          ]
         },
         {
           "id": 6,
-          "title": "SQS — Eventos Enviados por serviço",
+          "title": "SQS — Eventos Enviados por serviço (última hora)",
           "type": "stat",
-          "gridPos": { "x": 0, "y": 34, "w": 24, "h": 8 },
+          "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
           "datasource": "Prometheus",
           "pluginVersion": "10.x",
           "options": {
             "colorMode": "value",
-            "graphMode": "none",
+            "graphMode": "area",
             "textMode": "auto",
             "reduceOptions": {
               "values": false,
-              "calcs": [
-                "lastNotNull"
-              ]
+              "calcs": ["lastNotNull"]
             }
           },
           "fieldConfig": {
@@ -110,16 +158,18 @@ data:
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
-                  { "color": "green", "value": null }
+                  { "color": "green", "value": null },
+                  { "color": "yellow", "value": 1000 },
+                  { "color": "red", "value": 10000 }
                 ]
               },
-              "mappings": []
+              "unit": "short"
             }
           },
           "targets": [
             {
-              "expr": "sum(sqs_events_sent_total{namespace='toggle-master'}) by (service)",
-              "legendFormat": "{{service}} - fila(toggle-analytics-queue)",
+              "expr": "sum(increase(sqs_events_sent_total{namespace='toggle-master'}[1h])) by (service)",
+              "legendFormat": "{{service}}",
               "instant": true
             }
           ]
@@ -128,7 +178,7 @@ data:
           "id": 7,
           "title": "Status das Dependências",
           "type": "stat",
-          "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
+          "gridPos": { "x": 0, "y": 24, "w": 24, "h": 6 },
           "datasource": "Prometheus",
           "options": {
             "colorMode": "background",
@@ -141,24 +191,46 @@ data:
           },
           "fieldConfig": {
             "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "red", "value": null },
+                  { "color": "green", "value": 1 }
+                ]
+              },
               "mappings": [
-                { "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } },
-                { "type": "special", "options": { "match": "null", "result": { "text": "DOWN", "color": "red" } } }
+                { 
+                  "type": "value", 
+                  "options": { 
+                    "0": { "text": "DOWN", "color": "red" }, 
+                    "1": { "text": "UP", "color": "green" } 
+                  } 
+                },
+                { 
+                  "type": "special", 
+                  "options": { 
+                    "match": "null", 
+                    "result": { "text": "UNKNOWN", "color": "yellow" } 
+                  } 
+                }
               ]
             }
           },
           "targets": [
             { 
-              "expr": "clamp_max(sum by (service) (last_over_time(db_up{namespace='toggle-master'}[2m]) or on(service) (label_replace(vector(0), 'service', 'auth', '', '') or label_replace(vector(0), 'service', 'flag', '', '') or label_replace(vector(0), 'service', 'targeting', '', ''))), 1)",
-              "legendFormat": "DB — {{service}}" 
+              "expr": "max(db_up{namespace='toggle-master'}) by (service) or vector(0)",
+              "legendFormat": "DB — {{service}}",
+              "instant": true
             },
             { 
-              "expr": "max(last_over_time(redis_up{namespace='toggle-master'}[2m]) or vector(0))", 
-              "legendFormat": "Redis" 
+              "expr": "max(redis_up{namespace='toggle-master'}) or vector(0)", 
+              "legendFormat": "Redis",
+              "instant": true
             },
             { 
-              "expr": "max(last_over_time(sqs_up{namespace='toggle-master'}[2m]) or vector(0))", 
-              "legendFormat": "SQS" 
+              "expr": "max(sqs_up{namespace='toggle-master'}) or vector(0)", 
+              "legendFormat": "SQS",
+              "instant": true
             }
           ]
         },
@@ -166,11 +238,115 @@ data:
           "id": 8,
           "title": "Logs em Tempo Real — toggle-master",
           "type": "logs",
-          "gridPos": { "x": 0, "y": 24, "w": 24, "h": 10 },
+          "gridPos": { "x": 0, "y": 30, "w": 24, "h": 10 },
           "datasource": "Loki",
           "targets": [{
-            "expr": "{exporter=\"OTLP\"} |= \"toggle-master\"",
+            "expr": "{k8s_namespace_name=\"toggle-master\"}",
             "legendFormat": ""
+          }]
+        },
+        {
+          "id": 9,
+          "title": "Taxa de Sucesso vs Erros HTTP",
+          "type": "timeseries",
+          "gridPos": { "x": 0, "y": 40, "w": 24, "h": 8 },
+          "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "axisLabel": "requests/sec",
+                "fillOpacity": 20,
+                "lineWidth": 2
+              },
+              "unit": "reqps",
+              "min": 0
+            },
+            "overrides": [
+              {
+                "matcher": { "id": "byRegexp", "options": ".*sucesso.*" },
+                "properties": [
+                  { "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } }
+                ]
+              },
+              {
+                "matcher": { "id": "byRegexp", "options": ".*erro.*" },
+                "properties": [
+                  { "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "legend": {
+              "calcs": ["last", "mean"],
+              "displayMode": "table",
+              "placement": "bottom"
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum(rate(http_requests_total{namespace='toggle-master', status=~'OK|Created'}[5m])) by (service)",
+              "legendFormat": "✓ {{service}} (sucesso)",
+              "refId": "A"
+            },
+            {
+              "expr": "sum(rate(http_requests_total{namespace='toggle-master', status!~'OK|Created'}[5m])) by (service)",
+              "legendFormat": "✗ {{service}} (erro)",
+              "refId": "B"
+            }
+          ]
+        },
+        {
+          "id": 10,
+          "title": "Requests por Path e Método",
+          "type": "table",
+          "gridPos": { "x": 0, "y": 48, "w": 12, "h": 10 },
+          "datasource": "Prometheus",
+          "targets": [{
+            "expr": "topk(20, sum(rate(http_requests_total{namespace='toggle-master'}[5m])) by (service, method, path, status))",
+            "format": "table",
+            "instant": true
+          }],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true,
+                  "__name__": true
+                },
+                "indexByName": {
+                  "service": 0,
+                  "method": 1,
+                  "path": 2,
+                  "status": 3,
+                  "Value": 4
+                },
+                "renameByName": {
+                  "Value": "req/s"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "id": 11,
+          "title": "Distribuição de Status por Serviço",
+          "type": "piechart",
+          "gridPos": { "x": 12, "y": 48, "w": 12, "h": 10 },
+          "datasource": "Prometheus",
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "right",
+              "values": ["value", "percent"]
+            },
+            "pieType": "donut"
+          },
+          "targets": [{
+            "expr": "sum(increase(http_requests_total{namespace='toggle-master'}[1h])) by (status)",
+            "legendFormat": "{{status}}",
+            "instant": true
           }]
         }
       ]
