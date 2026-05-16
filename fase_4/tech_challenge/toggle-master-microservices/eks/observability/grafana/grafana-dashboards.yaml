@@ -60,61 +60,6 @@ data:
         },
         {
           "id": 5,
-          "title": "Histórico de Erros: Volume por Endpoint",
-          "type": "table",
-          "gridPos": { "x": 0, "y": 16, "w": 24, "h": 8 },
-          "datasource": "Prometheus",
-          "targets": [
-            {
-              "expr": "sum(increase(http_requests_total{namespace='toggle-master', status!~'OK|Success|ok|success'}[$__range])) by (service, status, method, path)",
-              "format": "table",
-              "instant": true,
-              "refId": "A"
-            }
-          ],
-          "transformations": [
-            {
-              "id": "organize",
-              "options": {
-                "excludeByName": { "Time": true },
-                "renameByName": {
-                  "Value": "Total de Erros",
-                  "service": "Serviço",
-                  "status": "Código/Status",
-                  "method": "Método",
-                  "path": "Rota"
-                }
-              }
-            },
-            {
-              "id": "filterByValue",
-              "options": {
-                "filters": [
-                  { "fieldName": "Total de Erros", "config": { "id": "greater", "options": { "value": 0 } } }
-                ]
-              }
-            }
-          ],
-          "fieldConfig": {
-            "defaults": {
-              "custom": {
-                "align": "auto",
-                "displayMode": "color-background"
-              },
-              "color": { "mode": "thresholds" },
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  { "color": "green", "value": null },
-                  { "color": "orange", "value": 1 },
-                  { "color": "red", "value": 10 }
-                ]
-              }
-            }
-          }
-        },
-        {
-          "id": 6,
           "title": "SQS — Eventos Enviados por serviço",
           "type": "stat",
           "gridPos": { "x": 0, "y": 34, "w": 24, "h": 8 },
@@ -154,7 +99,7 @@ data:
           ]
         },
         {
-          "id": 7,
+          "id": 6,
           "title": "Status das Dependências",
           "type": "stat",
           "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
@@ -192,7 +137,7 @@ data:
           ]
         },
         {
-          "id": 8,
+          "id": 7,
           "title": "Logs em Tempo Real — toggle-master",
           "type": "logs",
           "gridPos": { "x": 0, "y": 24, "w": 24, "h": 10 },
