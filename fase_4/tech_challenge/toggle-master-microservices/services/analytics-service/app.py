@@ -16,6 +16,7 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk.resources import Resource
+from opentelemetry.instrumentation.botocore import BotocoreInstrumentor
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
 from opentelemetry.trace import Status, StatusCode
@@ -51,6 +52,7 @@ provider.add_span_processor(processor)
 trace.set_tracer_provider(provider)
 
 RequestsInstrumentor().instrument()
+BotocoreInstrumentor().instrument()
 
 # --- Configuração ---
 AWS_REGION = os.getenv("AWS_REGION")
