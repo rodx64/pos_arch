@@ -30,7 +30,7 @@ dos seus 5 microsserviços
 APM)
 - [x] `Gerenciamento de Incidentes`: crie uma conta no PagerDuty OU
 OpsGenie e integre o alerta para abrir um incidente automaticamente.
-- [ ] `Notificação (ChatOps)`: configure o envio de uma notificação
+- [x] `Notificação (ChatOps)`: configure o envio de uma notificação
 detalhada para um canal do Slack, Discord ou Teams.
-- [ ] `Self-Healing`: crie uma automação (Runbook Automation, AWS Lambda, ou GitHub Action disparada via webhook) que reaja automaticamente ao alerta criado
+- [x] `Self-Healing`: crie uma automação (Runbook Automation, AWS Lambda, ou GitHub Action disparada via webhook) que reaja automaticamente ao alerta criado
 
