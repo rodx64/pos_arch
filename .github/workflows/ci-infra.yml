@@ -360,7 +360,36 @@ jobs:
             exit 1
           fi
           rm -rf .terragrunt-cache
-          terragrunt apply -auto-approve
+          
+          echo "Iniciando Apply da Observabilidade..."
+          
+          set +e
+          OUTPUT=$(terragrunt apply -auto-approve 2>&1)
+          EXIT_CODE=$?
+          set -e
+          if [ $EXIT_CODE -ne 0 ]; then
+            echo "$OUTPUT"
+            if echo "$OUTPUT" | grep -q "Duplicate of an existing monitor_id"; then
+              echo "Detectado monitor duplicado no Datadog. Iniciando Auto-Import..."
+              MONITOR_ID=$(echo "$OUTPUT" | grep -oP 'monitor_id:\K\d+')
+              RESOURCE_ADDR=$(echo "$OUTPUT" | grep -oP 'with \Kdatadog_monitor\.[a-zA-Z0-9_]+' | head -n 1)
+              if [ -n "$MONITOR_ID" ] && [ -n "$RESOURCE_ADDR" ]; then
+                echo "Importando recurso [$RESOURCE_ADDR] usando o ID [$MONITOR_ID]..."
+                terragrunt import "$RESOURCE_ADDR" "$MONITOR_ID" --terragrunt-non-interactive
+                echo "Rodando apply novamente após o import..."
+                terragrunt apply -auto-approve
+                else
+                echo "Falha ao extrair ID ou Endereço do Recurso da string de erro."
+                exit 1
+              fi
+              else
+              echo "Erro no apply que não é de duplicação. Abortando."
+              exit $EXIT_CODE
+            fi
+          else
+            echo "$OUTPUT"
+            echo "Apply executado com sucesso na primeira tentativa."
+          fi
 
   argocd-install:
     name: Install — ArgoCD
