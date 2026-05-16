@@ -124,7 +124,7 @@ data:
           "targets": [
             { 
               "expr": "clamp_max(sum by (service) (last_over_time(db_up{namespace='toggle-master'}[2m]) or on(service) (label_replace(vector(0), 'service', 'auth', '', '') or label_replace(vector(0), 'service', 'flag', '', '') or label_replace(vector(0), 'service', 'targeting', '', ''))), 1)",
-              "legendFormat": "DB — {{service}}" 
+              "legendFormat": "{{service}}" 
             },
             { 
               "expr": "max(last_over_time(redis_up{namespace='toggle-master'}[2m]) or vector(0))", 
