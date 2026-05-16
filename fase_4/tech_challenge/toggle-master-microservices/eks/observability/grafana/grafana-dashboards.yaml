@@ -83,7 +83,7 @@ data:
         },
         {
           "id": 5,
-          "title": "Quantidade de Erros HTTP por Serviço (Acumulado 1m)",
+          "title": "Quantidade Real de Erros (Acumulado 2m)",
           "type": "timeseries",
           "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
           "datasource": "Prometheus",
@@ -94,21 +94,24 @@ data:
               "color": { "mode": "fixed", "fixedColor": "red" },
               "custom": {
                 "drawStyle": "area",
-                "fillOpacity": 45,
+                "fillOpacity": 50,
                 "lineThickness": 2,
                 "axisPlacement": "left",
-                "axisSoftMax": 10
+                "axisSoftMax": 5
               },
               "unit": "short"
             }
           },
           "targets": [
             {
-              "expr": "sum(increase(http_requests_total{namespace='toggle-master', status!~'OK|Created'}[1m])) by (service, status)",
+              "expr": "sum(increase(http_requests_total{namespace='toggle-master', status!~'OK|Created'}[2m])) by (service, status)",
               "legendFormat": "{{service}} - {{status}}",
               "refId": "A"
             }
-          ]
+          ],
+          "options": {
+            "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["max", "last"] }
+          }
         },
         {
           "id": 12,
