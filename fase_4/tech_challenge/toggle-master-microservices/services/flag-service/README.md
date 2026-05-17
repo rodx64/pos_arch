@@ -104,4 +104,3 @@ curl -X PUT http://localhost:8002/flags/enable-new-dashboard \
 -d '{"is_enabled": false}'
 ```
 Saída esperada: (O JSON da flag atualizada, com `"is_enabled": false`).
-
