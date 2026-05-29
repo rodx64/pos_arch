@@ -15,6 +15,7 @@ load_dotenv()
 app = Flask(__name__)
 
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
+AWS_ENDPOINT_URL = os.getenv("AWS_ENDPOINT_URL")
 DYNAMODB_TABLE = os.getenv("AWS_DYNAMODB_TABLE")
 
 if not DYNAMODB_TABLE:
@@ -22,7 +23,16 @@ if not DYNAMODB_TABLE:
     sys.exit(1)
 
 try:
-    dynamodb = boto3.resource("dynamodb", region_name=AWS_REGION)
+    if AWS_ENDPOINT_URL:
+        log.info("🧱 Ambiente local detectado — conectando ao LocalStack.")
+        dynamodb = boto3.resource(
+            "dynamodb",
+            region_name=AWS_REGION,
+            endpoint_url=AWS_ENDPOINT_URL,
+        )
+    else:
+        dynamodb = boto3.resource("dynamodb", region_name=AWS_REGION)
+
     table = dynamodb.Table(DYNAMODB_TABLE)
     log.info(f"Conectado à tabela DynamoDB: {DYNAMODB_TABLE}")
 except Exception as e:

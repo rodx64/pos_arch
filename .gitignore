@@ -15,6 +15,7 @@
 !/fase_*/tech_challenge/toggle-master-*/**
 !/fase_*/tech_challenge/donation-ms/
 !/fase_*/tech_challenge/donation-ms/**
+/fase_*/tech_challenge/donation-ms/localstack-data/
 
 # Doc
 !/fase_*/tech_challenge/doc/

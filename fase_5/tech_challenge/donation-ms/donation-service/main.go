@@ -3,11 +3,9 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -54,8 +52,13 @@ func main() {
 	var sqsSvc *sqs.SQS
 	queueURL := os.Getenv("AWS_SQS_URL")
 	region := os.Getenv("AWS_REGION")
+	endpoint := os.Getenv("AWS_ENDPOINT_URL")
 	if queueURL != "" && region != "" {
-		sess, _ := session.NewSession(&aws.Config{Region: aws.String(region)})
+		config := aws.NewConfig().WithRegion(region)
+		if endpoint != "" {
+			config = config.WithEndpoint(endpoint)
+		}
+		sess, _ := session.NewSession(config)
 		sqsSvc = sqs.New(sess)
 		log.Println("Integração com AWS SQS ativada.")
 	}
