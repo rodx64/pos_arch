@@ -4,6 +4,7 @@ import uuid
 import time
 import logging
 import boto3
+import botocore.exceptions
 from flask import Flask, request, jsonify
 from dotenv import load_dotenv
 
@@ -22,6 +23,40 @@ if not DYNAMODB_TABLE:
     log.critical("Erro: AWS_DYNAMODB_TABLE não definida.")
     sys.exit(1)
 
+
+def wait_for_service(client, retries=10, delay=2):
+    for attempt in range(1, retries + 1):
+        try:
+            client.list_tables(Limit=1)
+            return
+        except Exception:
+            log.info(f"Aguardando serviço AWS estar disponível ({attempt}/{retries})...")
+            time.sleep(delay)
+    raise RuntimeError("Serviço AWS não ficou disponível a tempo")
+
+
+def ensure_dynamodb_table(dynamodb, table_name):
+    table = dynamodb.Table(table_name)
+    try:
+        table.load()
+        log.info(f"Tabela DynamoDB existente encontrada: {table_name}")
+        return table
+    except botocore.exceptions.ClientError as error:
+        code = error.response.get("Error", {}).get("Code")
+        if code == "ResourceNotFoundException":
+            log.info(f"Tabela {table_name} não encontrada. Criando...")
+            table = dynamodb.create_table(
+                TableName=table_name,
+                AttributeDefinitions=[{"AttributeName": "volunteer_id", "AttributeType": "S"}],
+                KeySchema=[{"AttributeName": "volunteer_id", "KeyType": "HASH"}],
+                BillingMode="PAY_PER_REQUEST",
+            )
+            table.wait_until_exists()
+            log.info(f"Tabela DynamoDB criada: {table_name}")
+            return table
+        raise
+
+
 try:
     if AWS_ENDPOINT_URL:
         log.info("🧱 Ambiente local detectado — conectando ao LocalStack.")
@@ -33,7 +68,8 @@ try:
     else:
         dynamodb = boto3.resource("dynamodb", region_name=AWS_REGION)
 
-    table = dynamodb.Table(DYNAMODB_TABLE)
+    wait_for_service(dynamodb.meta.client)
+    table = ensure_dynamodb_table(dynamodb, DYNAMODB_TABLE)
     log.info(f"Conectado à tabela DynamoDB: {DYNAMODB_TABLE}")
 except Exception as e:
     log.critical(f"Falha ao conectar no DynamoDB: {e}")
