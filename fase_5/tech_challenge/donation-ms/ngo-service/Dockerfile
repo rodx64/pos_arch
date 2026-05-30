@@ -16,7 +16,7 @@ RUN apk add --no-cache \
     libffi-dev
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir --prefix=/install setuptools wheel -r requirements.txt
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
 # ==========================
 # 🧩 STAGE 2 — Runtime final
@@ -31,6 +31,7 @@ RUN apk add --no-cache \
     libffi
 
 RUN pip install --no-cache-dir \
+    setuptools==81.0.0 wheel \
     opentelemetry-distro \
     opentelemetry-exporter-otlp || true
 
