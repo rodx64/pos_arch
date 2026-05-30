@@ -45,9 +45,9 @@ services:
 
   ngo-service:
     build:
-      context: ./ngo-service
+      context: ../services/ngo-service
     env_file:
-      - ./ngo-service/.env
+      - ../services/ngo-service/.env
     ports:
       - "8081:8081"
     depends_on:
@@ -58,9 +58,9 @@ services:
 
   donation-service:
     build:
-      context: ./donation-service
+      context: ../services/donation-service
     env_file:
-      - ./donation-service/.env
+      - ../services/donation-service/.env
     ports:
       - "8082:8082"
     depends_on:
@@ -73,9 +73,9 @@ services:
 
   volunteer-service:
     build:
-      context: ./volunteer-service
+      context: ../services/volunteer-service
     env_file:
-      - ./volunteer-service/.env
+      - ../services/volunteer-service/.env
     ports:
       - "8083:8083"
     depends_on:
