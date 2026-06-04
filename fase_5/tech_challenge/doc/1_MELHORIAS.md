@@ -42,19 +42,29 @@ Este documento lista as melhorias aplicadas no challenge do `tech_challenge`, co
 - O mesmo padrão de validação foi mantido para suportar ambientes AWS reais quando `AWS_ENDPOINT_URL` não estiver definido.
 - Isso permite rodar o projeto localmente e também em nuvem com mínima alteração de configuração.
 
-## 7. Aplicações envolvidas
+## 7. Versionamento de Banco de Dados com Flyway (Novo)
+
+- Adotado o **Flyway** para gerenciamento e versionamento profissional de schemas nos bancos de dados relacionais (`donation-service` e `ngo-service`).
+- Separação de responsabilidades: as aplicações não criam mais as próprias tabelas em tempo de execução, delegando a função para scripts versionados (ex: `V1__initial_schema.sql`).
+- Implementação de imagens Docker exclusivas (`Dockerfile.migration`) baseadas no Flyway, mantendo os containers das aplicações enxutos e focados na regra de negócio.
+- Criação de um módulo exclusivo no **Terraform** (`db-migrations`) orquestrado via **Terragrunt**, disparando *Kubernetes Jobs* que garantem a criação/atualização das tabelas antes que as aplicações subam no EKS.
+- Adaptação dos pipelines de CI/CD (GitHub Actions) para realizar o build e push simultâneo da aplicação e da migração, com atualização automática das tags no repositório de infraestrutura.
+
+## 8. Aplicações envolvidas
 
 As melhorias abrangem os seguintes componentes do projeto:
 
-- `donation-service`
-- `ngo-service`
-- `volunteer-service`
+- `donation-service` (Go + PostgreSQL via Flyway)
+- `ngo-service` (Python + PostgreSQL via Flyway)
+- `volunteer-service` (Python + DynamoDB)
 - `postgres` via Docker Compose
 - `localstack` para emulação de AWS local
+- Infraestrutura EKS via Terraform/Terragrunt
 
-## 8. Benefícios gerais
+## 9. Benefícios gerais
 
 - Ambiente local mais confiável e previsível.
 - Aproximação mais segura entre desenvolvimento local e deploy em AWS.
 - Menos dependência de intervenção manual para criar recursos ou esperar inicialização.
+- Ciclo de vida de banco de dados imutável, versionado e auditável no próprio repositório.
 - Maior estabilidade para testes de integração e desenvolvimento contínuo.
