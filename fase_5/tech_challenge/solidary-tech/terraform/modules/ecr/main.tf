@@ -23,6 +23,8 @@ resource "aws_ecr_lifecycle_policy" "this" {
   for_each   = { for repo in var.repositories : repo => repo }
   repository = each.key
 
+  depends_on = [aws_ecr_repository.this]
+
   policy = jsonencode({
     rules = [
       {
