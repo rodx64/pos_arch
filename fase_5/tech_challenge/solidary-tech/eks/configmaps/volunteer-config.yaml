@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: volunteer-config
+  namespace: solidary-tech
+data:
+  PORT: "8083"
+  LOG_LEVEL: "INFO"
+  AWS_REGION: us-east-1

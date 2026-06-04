@@ -157,16 +157,16 @@ Este repositório centraliza todas as entregas práticas (Tech Challenges) desen
     - [x] Zabbix, Prometheus, Grafana, OpenTelemetry, Jaeger, StatsD e Loki.
     - [x] Instalação, configuração e integração.
     - [x] Monitoramento OpenSource no Kubernetes.
-- [ ] APM
-    - [ ] Métricas e Performance com Datadog, New Relic e ELK.
-    - [ ] Logs, Métricas e Traces na prática.
-    - [ ] Alertas Inteligentes e Automação.
-    - [ ] Troubleshooting Avançado e Otimização de Performance/Custos com APM.
-- [ ] Automação de Incidentes
-    - [ ] Monitoramento Ativo, escalation e call rotation.
-    - [ ] MTTR baixo com PagerDuty e OpsGenie.
-    - [ ] Notificação com Slack, Teams, Email.
-    - [ ] Automação com Functions.
+- [x] APM
+    - [x] Métricas e Performance com Datadog, New Relic e ELK.
+    - [x] Logs, Métricas e Traces na prática.
+    - [x] Alertas Inteligentes e Automação.
+    - [x] Troubleshooting Avançado e Otimização de Performance/Custos com APM.
+- [x] Automação de Incidentes
+    - [x] Monitoramento Ativo, escalation e call rotation.
+    - [x] MTTR baixo com PagerDuty e OpsGenie.
+    - [x] Notificação com Slack, Teams, Email.
+    - [x] Automação com Functions.
 
 📁 Pasta: `fase-04`
 
