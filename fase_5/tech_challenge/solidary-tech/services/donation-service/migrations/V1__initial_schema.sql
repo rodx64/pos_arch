@@ -6,4 +6,3 @@ CREATE TABLE IF NOT EXISTS donations (
     status VARCHAR(20) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
--- trigger

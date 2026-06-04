@@ -37,4 +37,4 @@ jobs:
       - name: Terragrunt Apply
         run: |
           cd ${{ env.SERVICE_DIR }}
-          terragrunt apply --auto-approve
+          terragrunt apply --auto-approve --terragrunt-non-interactive
