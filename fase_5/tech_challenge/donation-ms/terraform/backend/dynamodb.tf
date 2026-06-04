@@ -9,8 +9,8 @@ resource "aws_dynamodb_table" "locks" {
   }
 
   tags = {
-    Purpose = "State Locking"
-    Project = "solidary-tech"
+    Purpose    = "State Locking"
+    Project    = "solidary-tech"
     CostCenter = "solidary-core"
   }
 }

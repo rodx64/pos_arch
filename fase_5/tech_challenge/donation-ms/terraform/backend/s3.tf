@@ -3,8 +3,8 @@ resource "aws_s3_bucket" "state" {
   force_destroy = true
 
   tags = {
-    Purpose = "Terraform Backend"
-    Project = "solidary-tech"
+    Purpose    = "Terraform Backend"
+    Project    = "solidary-tech"
     CostCenter = "solidary-core"
   }
 }
