@@ -147,18 +147,18 @@ jobs:
           exit-code: 1
           format: table
 
-      - name: Push image
-        uses: docker/build-push-action@v5
-        with:
-          context: ${{ env.SERVICE_DIR }}
-          file: ${{ env.SERVICE_DIR }}/Dockerfile
-          push: true
-          tags: |
-            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.SERVICE_NAME }}-${{ github.sha }}
-            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.SERVICE_NAME }}-latest
-          platforms: linux/amd64
-          provenance: false
-          sbom: false
+      - name: Push images (App & Migration)
+        run: |
+          # Push App
+          docker push ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.SERVICE_NAME }}-${{ github.sha }}
+          docker tag ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.SERVICE_NAME }}-${{ github.sha }} ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.SERVICE_NAME }}-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.SERVICE_NAME }}-latest
+
+          # Build e Push Migration
+          docker build -f ${{ env.SERVICE_DIR }}/Dockerfile.migration -t ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.SERVICE_NAME }}-migration-${{ github.sha }} ${{ env.SERVICE_DIR }}
+          docker push ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.SERVICE_NAME }}-migration-${{ github.sha }}
+          docker tag ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.SERVICE_NAME }}-migration-${{ github.sha }} ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.SERVICE_NAME }}-migration-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.SERVICE_NAME }}-migration-latest
 
   update-tag:
     name: Update Tag — donation
@@ -173,26 +173,42 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           ref: ${{ github.ref_name }}
 
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
       - name: Configure git
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Update image tag in deployment
+      - name: Update image tag in deployment and terragrunt
         env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ env.SERVICE_NAME }}-${{ github.sha }}
+          MIG_TAG: ${{ env.SERVICE_NAME }}-migration-${{ github.sha }}
         run: |
           SERVICE_SHORT=$(echo "${{ env.SERVICE_NAME }}" | sed 's/-service//')
           DEPLOY_FILE="fase_5/tech_challenge/solidary-tech/eks/deployments/${SERVICE_SHORT}.yaml"
+          sed -i "s|${{ env.ECR_REPOSITORY }}:${{ env.SERVICE_NAME }}-.*|${{ env.ECR_REPOSITORY }}:${IMAGE_TAG}|g" "$DEPLOY_FILE"
 
-          sed -i "s|solidary-tech:${{ env.SERVICE_NAME }}-.*|${{ env.ECR_REPOSITORY }}:${IMAGE_TAG}|g" \
-            "$DEPLOY_FILE"
+          TG_FILE="fase_5/tech_challenge/solidary-tech/db-migrations/dev/terragrunt.hcl"
+          sed -i "s|donation_migration_image = \".*/${{ env.ECR_REPOSITORY }}:${{ env.SERVICE_NAME }}-migration-.*\"|donation_migration_image = \"${REGISTRY}/${{ env.ECR_REPOSITORY }}:${MIG_TAG}\"|g" "$TG_FILE"
 
-          if git diff --quiet "$DEPLOY_FILE"; then
+          git add "$DEPLOY_FILE" "$TG_FILE"
+          
+          if git diff --cached --quiet; then
             echo "Nenhuma mudança na tag — pulando commit."
             exit 0
           fi
 
-          git add "$DEPLOY_FILE"
-          git commit -m "ci: update ${{ env.SERVICE_NAME }} image to ${IMAGE_TAG} [skip ci]"
+          git commit -m "ci: update ${{ env.SERVICE_NAME }} images (app & migration) to ${github.sha} [skip ci]"
           git push

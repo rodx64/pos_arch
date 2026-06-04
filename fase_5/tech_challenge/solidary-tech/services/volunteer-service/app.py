@@ -125,5 +125,5 @@ def get_volunteers_by_ngo(ngo_id):
 
 if __name__ == '__main__':
     port = int(os.getenv("PORT", 8083))
-    host = os.getenv("HOST", "127.0.0.1")
+    host = os.getenv("HOST", "0.0.0.0")
     app.run(host=host, port=port)
