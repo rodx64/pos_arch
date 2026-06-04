@@ -15,16 +15,24 @@ load_dotenv()
 app = Flask(__name__)
 
 DATABASE_URL = os.getenv("DATABASE_URL")
-if not DATABASE_URL:
-    log.critical("Erro: DATABASE_URL não definida.")
-    sys.exit(1)
+pool = None
+
+def init_db_pool(database_url=None):
+    if database_url is None:
+        database_url = os.getenv("DATABASE_URL")
+    if not database_url:
+        raise RuntimeError("Erro: DATABASE_URL não definida.")
+    return SimpleConnectionPool(1, 10, dsn=database_url)
 
 try:
-    pool = SimpleConnectionPool(1, 10, dsn=DATABASE_URL)
+    pool = init_db_pool(DATABASE_URL)
     log.info("Pool de conexões com o PostgreSQL (ngo-service) inicializado.")
 except Exception as e:
-    log.critical(f"Erro ao conectar ao PostgreSQL: {e}")
-    sys.exit(1)
+    if __name__ == '__main__':
+        log.critical(f"Erro ao conectar ao PostgreSQL: {e}")
+        sys.exit(1)
+    else:
+        log.error(f"Erro ao conectar ao PostgreSQL: {e}")
 
 @app.route('/health')
 def health():
