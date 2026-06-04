@@ -85,5 +85,5 @@ def get_ngos():
 
 if __name__ == '__main__':
     port = int(os.getenv("PORT", 8081))
-    host = os.getenv("HOST", "0.0.0.0") # nosec B104
+    host = os.getenv("HOST", "0.0.0.0")  # nosec B104
     app.run(host=host, port=port)
