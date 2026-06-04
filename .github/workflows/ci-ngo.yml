@@ -17,7 +17,7 @@ on:
 env:
   SERVICE_DIR: fase_5/tech_challenge/solidary-tech/services/ngo-service
   SERVICE_NAME: ngo-service
-  ECR_REPOSITORY: ${{ env.SERVICE_NAME }}
+  ECR_REPOSITORY: ngo-service
 
 jobs:
   test:
