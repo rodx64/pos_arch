@@ -44,7 +44,10 @@ func main() {
 	}
 
 	db, err := sql.Open("pgx", dbURL)
-	if err != nil || db.Ping() != nil {
+	if err != nil {
+		log.Fatalf("Erro ao conectar ao banco de dados: %v", err)
+	}
+	if err = db.Ping(); err != nil {
 		log.Fatalf("Erro ao conectar ao banco de dados: %v", err)
 	}
 	log.Println("Conectado ao PostgreSQL (donation-service).")
@@ -58,7 +61,10 @@ func main() {
 		if endpoint != "" {
 			config = config.WithEndpoint(endpoint)
 		}
-		sess, _ := session.NewSession(config)
+		sess, err := session.NewSession(config)
+		if err != nil {
+			log.Fatalf("Erro ao criar sessão AWS: %v", err)
+		}
 		sqsSvc = sqs.New(sess)
 		log.Println("Integração com AWS SQS ativada.")
 	}
@@ -69,14 +75,30 @@ func main() {
 	mux.HandleFunc("/health", app.HealthHandler)
 	mux.HandleFunc("/donations", app.DonationHandler)
 
-	log.Printf("donation-service rodando na porta %s", port)
-	log.Fatal(http.ListenAndServe(":"+port, mux))
+	host := os.Getenv("HOST")
+	if host == "" {
+		host = "127.0.0.1"
+	}
+	addr := host + ":" + port
+
+	server := &http.Server{
+		Addr:         addr,
+		Handler:      mux,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  120 * time.Second,
+	}
+
+	log.Println("donation-service rodando")
+	log.Fatal(server.ListenAndServe())
 }
 
 func (a *App) HealthHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"status":"ok","service":"donation-service"}`))
+	if _, err := w.Write([]byte(`{"status":"ok","service":"donation-service"}`)); err != nil {
+		log.Printf("Erro ao escrever health response: %v", err)
+	}
 }
 
 func (a *App) DonationHandler(w http.ResponseWriter, r *http.Request) {
@@ -106,7 +128,9 @@ func (a *App) DonationHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(d)
+		if err := json.NewEncoder(w).Encode(d); err != nil {
+			log.Printf("Erro ao codificar resposta de doação: %v", err)
+		}
 		return
 	}
 
@@ -121,11 +145,17 @@ func (a *App) DonationHandler(w http.ResponseWriter, r *http.Request) {
 		donations := []Donation{}
 		for rows.Next() {
 			var d Donation
-			rows.Scan(&d.ID, &d.NgoID, &d.Amount, &d.DonorName, &d.Status, &d.CreatedAt)
+			if err := rows.Scan(&d.ID, &d.NgoID, &d.Amount, &d.DonorName, &d.Status, &d.CreatedAt); err != nil {
+				log.Printf("Erro ao ler linha de doação: %v", err)
+				http.Error(w, `{"error":"Erro interno"}`, http.StatusInternalServerError)
+				return
+			}
 			donations = append(donations, d)
 		}
 
-		json.NewEncoder(w).Encode(donations)
+		if err := json.NewEncoder(w).Encode(donations); err != nil {
+			log.Printf("Erro ao codificar lista de doações: %v", err)
+		}
 		return
 	}
 
