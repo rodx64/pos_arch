@@ -17,7 +17,7 @@ on:
 env:
   SERVICE_DIR: fase_5/tech_challenge/solidary-tech/services/donation-service
   SERVICE_NAME: donation-service
-  ECR_REPOSITORY: donation-service
+  ECR_REPOSITORY: solidary-tech
 
 jobs:
   test:
