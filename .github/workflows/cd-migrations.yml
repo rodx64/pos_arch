@@ -1,0 +1,40 @@
+name: CD — DB Migrations
+
+on:
+  push:
+    branches: ["develop"]
+    paths:
+      - "fase_5/tech_challenge/solidary-tech/db-migrations/**"
+
+env:
+  SERVICE_DIR: fase_5/tech_challenge/solidary-tech/db-migrations/**
+
+jobs:
+  deploy:
+    name: Terragrunt Apply
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.5.7"
+
+      - name: Setup Terragrunt
+        run: |
+          sudo wget -q -O /usr/local/bin/terragrunt https://github.com/gruntwork-io/terragrunt/releases/download/v0.54.19/terragrunt_linux_amd64
+          sudo chmod +x /usr/local/bin/terragrunt
+
+      - name: Terragrunt Apply
+        run: |
+          cd ${{ env.SERVICE_DIR }}
+          terragrunt apply --auto-approve
