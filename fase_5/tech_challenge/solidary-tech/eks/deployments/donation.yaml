@@ -33,7 +33,7 @@ spec:
               "instances": [
                 {
                   "openmetrics_endpoint": "http://%%host%%:8082/metrics",
-                  "namespace": "toggle_master",
+                  "namespace": "solidary_tech",
                   "metrics": [
                     "http_requests_total",
                     "http_request_duration_seconds",
