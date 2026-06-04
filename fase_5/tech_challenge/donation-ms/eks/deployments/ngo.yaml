@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ngo-deployment
+  namespace: solidary-tech
+  labels:
+    app: ngo
+    tier: backend
+    tags.datadoghq.com/env: "dev"
+    tags.datadoghq.com/service: "ngo-service"
+    tags.datadoghq.com/version: "1.0.0"
+spec:
+  selector:
+    matchLabels:
+      app: ngo
+      tier: backend
+  template:
+    metadata:
+      labels:
+        app: ngo
+        tier: backend
+        tags.datadoghq.com/env: "dev"
+        tags.datadoghq.com/service: "ngo-service"
+        tags.datadoghq.com/version: "1.0.0"
+      annotations:
+        admission.datadoghq.com/enabled: "true"
+    spec:
+      containers:
+        - name: ngo-container
+          image: 829281471119.dkr.ecr.us-east-1.amazonaws.com/solidary-tech:ngo-service-4040a0528ce86ee7d0aa10c65f7e6d53bca0c94c
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8081
+          env:
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://otel-collector.monitoring.svc.cluster.local:4318/v1/traces"
+            - name: OTEL_EXPORTER_OTLP_INSECURE
+              value: "true"
+            - name: OTEL_LOGS_EXPORTER
+              value: "otlp"
+            - name: OTEL_METRICS_EXPORTER
+              value: "otlp"
+            - name: OTEL_TRACES_EXPORTER
+              value: "otlp"
+            - name: OTEL_SERVICE_NAME
+              value: "ngo-service"
+            - name: DD_LOGS_INJECTION
+              value: "true"
+            - name: DD_ENV
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['tags.datadoghq.com/env']
+            - name: DD_SERVICE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['tags.datadoghq.com/service']
+            - name: DD_VERSION
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['tags.datadoghq.com/version']
+          envFrom:
+            - configMapRef:
+                name: ngo-config
+            - secretRef:
+                name: ngo-secret
+          resources:
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+            requests:
+              memory: "128Mi"
+              cpu: "250m"
