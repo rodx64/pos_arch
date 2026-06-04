@@ -1,5 +1,5 @@
 include "root" {
-  path = "${get_repo_root()}/fase_5/tech_challenge/donation-ms/terraform/root.hcl"
+  path = "${get_repo_root()}/fase_5/tech_challenge/solidary-tech/terraform/root.hcl"
 }
 
 remote_state {
@@ -18,11 +18,11 @@ remote_state {
 }
 
 terraform {
-  source = "${get_repo_root()}/fase_5/tech_challenge/donation-ms/terraform/modules/k8s-secrets"
+  source = "${get_repo_root()}/fase_5/tech_challenge/solidary-tech/terraform/modules/k8s-secrets"
 }
 
 dependency "infra" {
-  config_path  = "${get_repo_root()}/fase_5/tech_challenge/donation-ms/terraform/environments/dev/"
+  config_path  = "${get_repo_root()}/fase_5/tech_challenge/solidary-tech/terraform/environments/dev/"
   skip_outputs = false
 
   # mock - "somente para os comandos validate e plan. Se o output real não estiver disponível, use os valores fictícios abaixo em vez de falhar."

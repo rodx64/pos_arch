@@ -4,18 +4,18 @@ on:
   push:
     branches: ["develop"]
     paths:
-      - "fase_5/tech_challenge/donation-ms/services/volunteer-service/**"
+      - "fase_5/tech_challenge/solidary-tech/services/volunteer-service/**"
   pull_request:
     branches: ["develop"]
     paths:
-      - "fase_5/tech_challenge/donation-ms/services/volunteer-service/**"
+      - "fase_5/tech_challenge/solidary-tech/services/volunteer-service/**"
   workflow_run:
     workflows: ["CI/CD — Terraform Infrastructure"]
     types: [completed]
     branches: ["develop", "main"]
 
 env:
-  SERVICE_DIR: fase_5/tech_challenge/donation-ms/services/volunteer-service
+  SERVICE_DIR: fase_5/tech_challenge/solidary-tech/services/volunteer-service
   SERVICE_NAME: volunteer-service
   ECR_REPOSITORY: solidary-tech
 
@@ -199,7 +199,7 @@ jobs:
           IMAGE_TAG: ${{ env.SERVICE_NAME }}-${{ github.sha }}
         run: |
           SERVICE_SHORT=$(echo "${{ env.SERVICE_NAME }}" | sed 's/-service//')
-          DEPLOY_FILE="fase_5/tech_challenge/donation-ms/eks/deployments/${SERVICE_SHORT}.yaml"
+          DEPLOY_FILE="fase_5/tech_challenge/solidary-tech/eks/deployments/${SERVICE_SHORT}.yaml"
 
           sed -i "s|solidary-tech:${{ env.SERVICE_NAME }}-.*|solidary-tech:${IMAGE_TAG}|g" \
             "$DEPLOY_FILE"
