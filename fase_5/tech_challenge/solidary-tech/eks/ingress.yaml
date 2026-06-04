@@ -25,14 +25,14 @@ spec:
             pathType: ImplementationSpecific
             backend:
               service:
-                name: donations-service
+                name: donation-service
                 port:
                   number: 8082
           - path: /volunteers(/|$)(.*)
             pathType: ImplementationSpecific
             backend:
               service:
-                name: volunteers-service
+                name: volunteer-service
                 port:
                   number: 8083
           - path: /prometheus(/|$)(.*)
