@@ -1,18 +1,3 @@
-locals {
-  services = {
-    donation = {
-      db_url      = var.donation_db_url
-      image       = var.donation_migration_image
-      secret_name = "donation-db-creds"
-    }
-    ngo = {
-      db_url      = var.ngo_db_url
-      image       = var.ngo_migration_image
-      secret_name = "ngo-db-creds"
-    }
-  }
-}
-
 resource "kubernetes_job_v1" "flyway_migration" {
   for_each = local.services
 
@@ -38,7 +23,22 @@ resource "kubernetes_job_v1" "flyway_migration" {
 
           env {
             name  = "FLYWAY_URL"
-            value = replace(each.value.db_url, "postgresql://", "jdbc:postgresql://")
+            # [2] = Host, [3] = Porta, [4] = Banco de Dados
+            value = "jdbc:postgresql://${local.parsed_urls[each.key][2]}:${local.parsed_urls[each.key][3]}/${local.parsed_urls[each.key][4]}"
+          }
+          env {
+            name  = "FLYWAY_USER"
+            # [0] = Usuário (com urldecode para remover caracteres especiais como %21)
+            value = urldecode(local.parsed_urls[each.key][0])
+          }
+          env {
+            name  = "FLYWAY_PASSWORD"
+            # [1] = Senha (descodificada)
+            value = urldecode(local.parsed_urls[each.key][1])
+          }
+          env {
+            name  = "FLYWAY_LOCATIONS"
+            value = "filesystem:/flyway/sql"
           }
 
           args = ["migrate", "-connectRetries=60"]
