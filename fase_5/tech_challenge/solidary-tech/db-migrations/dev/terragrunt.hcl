@@ -40,7 +40,7 @@ inputs = {
 
   eks_cluster_endpoint = dependency.infra.outputs.eks_cluster_endpoint
   eks_cluster_ca       = dependency.infra.outputs.eks_cluster_ca
-  eks_cluster_token    = dependency.infra.outputs.eks_cluster_token
+  eks_cluster_token = run_cmd("--terragrunt-quiet", "aws", "eks", "get-token", "--cluster-name", "solidary-tech-eks", "--query", "status.token", "--output", "text")
   
   eks_tunnel_host      = "https://127.0.0.1:6443"
 }
