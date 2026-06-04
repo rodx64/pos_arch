@@ -30,7 +30,7 @@ dependency "infra" {
   mock_outputs = {
     rds_endpoints        = { "donation-db" = "mock:5432", "ngo-db" = "mock:5432" }
     rds_secret_arns      = { "donation-db" = "mock", "ngo-db" = "mock" }
-    dynamodb_table_names = { "VolunteerTable" = "mock_table" }
+    dynamodb_table_names = { "volunteer-table" = "mock_table" }
     sqs_queue_urls       = { "donation-queue" = "https://mock" }
     eks_cluster_endpoint = "https://mock"
     eks_cluster_ca       = "bW9jaw=="
@@ -46,7 +46,7 @@ inputs = {
   ngo_db_endpoint        = dependency.infra.outputs.rds_endpoints["ngo-db"]
   ngo_db_secret_arn      = dependency.infra.outputs.rds_secret_arns["ngo-db"]
   
-  dynamodb_table_name     = dependency.infra.outputs.dynamodb_table_names["VolunteerTable"]
+  dynamodb_table_name     = dependency.infra.outputs.dynamodb_table_names["volunteer-table"]
   sqs_queue_url           = dependency.infra.outputs.sqs_queue_urls["donation-queue"]
   
   eks_cluster_endpoint    = dependency.infra.outputs.eks_cluster_endpoint

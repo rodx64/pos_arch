@@ -56,8 +56,8 @@ inputs = {
 
   ### DynamoDB
   dynamodb_tables = {
-    VolunteerTable = {
-      table_name = "VolunteerTable"
+    volunteer-table = {
+      table_name = "volunteer-table"
       hash_key   = "volunteer_id"
     }
   }

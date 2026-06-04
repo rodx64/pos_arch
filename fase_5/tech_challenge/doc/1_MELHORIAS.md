@@ -10,7 +10,7 @@ Este documento lista as melhorias aplicadas no challenge do `tech_challenge`, co
 - Criado `init-aws.sh` como hook de startup do LocalStack para provisionar recursos necessários automaticamente.
 - Tornada a inicialização do LocalStack idempotente para reinícios seguros:
   - fila SQS: `donation-queue`
-  - tabela DynamoDB: `VolunteerTable`
+  - tabela DynamoDB: `volunteer-table`
 
 ## 2. Melhoria de infraestrutura local e orquestração
 
@@ -33,7 +33,7 @@ Este documento lista as melhorias aplicadas no challenge do `tech_challenge`, co
 ## 5. Resiliência do `volunteer-service`
 
 - Adicionada função genérica `wait_for_service(...)` para aguardar disponibilidade de AWS/LocalStack antes de prosseguir.
-- Implementado `ensure_dynamodb_table(...)` para verificar e criar `VolunteerTable` automaticamente, evitando erros de tabela inexistente.
+- Implementado `ensure_dynamodb_table(...)` para verificar e criar `volunteer-table` automaticamente, evitando erros de tabela inexistente.
 - Isso torna o serviço robusto tanto em ambiente local quanto em AWS real.
 
 ## 6. Integração e credenciais AWS
