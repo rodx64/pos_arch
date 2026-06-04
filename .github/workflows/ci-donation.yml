@@ -185,7 +185,7 @@ jobs:
           SERVICE_SHORT=$(echo "${{ env.SERVICE_NAME }}" | sed 's/-service//')
           DEPLOY_FILE="fase_5/tech_challenge/solidary-tech/eks/deployments/${SERVICE_SHORT}.yaml"
 
-          sed -i "s|solidary-tech:${{ env.SERVICE_NAME }}-.*|solidary-tech:${IMAGE_TAG}|g" \
+          sed -i "s|solidary-tech:${{ env.SERVICE_NAME }}-.*|${{ env.ECR_REPOSITORY }}:${IMAGE_TAG}|g" \
             "$DEPLOY_FILE"
 
           if git diff --quiet "$DEPLOY_FILE"; then
