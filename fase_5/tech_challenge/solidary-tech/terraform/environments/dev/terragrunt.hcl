@@ -45,7 +45,7 @@ inputs = {
   ### SQS
   sqs_queues = {
     donations = {
-      queue_name                 = "donation-events-queue"
+      queue_name                 = "donation-queue"
       visibility_timeout_seconds = 30
       message_retention_seconds  = 86400
       create_dlq                 = true
