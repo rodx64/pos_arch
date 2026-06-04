@@ -41,7 +41,7 @@ resource "kubernetes_job_v1" "flyway_migration" {
             value = "filesystem:/flyway/sql"
           }
 
-          args = ["migrate", "-connectRetries=60"]
+          args = ["migrate", "-connectRetries=60", "-baselineOnMigrate=true"]
         }
         restart_policy = "Never"
       }
