@@ -17,12 +17,14 @@ app = Flask(__name__)
 DATABASE_URL = os.getenv("DATABASE_URL")
 pool = None
 
+
 def init_db_pool(database_url=None):
     if database_url is None:
         database_url = os.getenv("DATABASE_URL")
     if not database_url:
         raise RuntimeError("Erro: DATABASE_URL não definida.")
     return SimpleConnectionPool(1, 10, dsn=database_url)
+
 
 try:
     pool = init_db_pool(DATABASE_URL)
@@ -34,16 +36,18 @@ except Exception as e:
     else:
         log.error(f"Erro ao conectar ao PostgreSQL: {e}")
 
+
 @app.route('/health')
 def health():
     return jsonify({"status": "ok", "service": "ngo-service"})
+
 
 @app.route('/ngos', methods=['POST'])
 def create_ngo():
     data = request.get_json()
     if not data or not all(k in data for k in ('name', 'email', 'cause', 'city')):
         return jsonify({"error": "Campos obrigatórios ausentes"}), 400
-    
+
     conn = pool.getconn()
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
@@ -64,6 +68,7 @@ def create_ngo():
     finally:
         pool.putconn(conn)
 
+
 @app.route('/ngos', methods=['GET'])
 def get_ngos():
     conn = pool.getconn()
@@ -76,6 +81,7 @@ def get_ngos():
         return jsonify({"error": "Erro interno"}), 500
     finally:
         pool.putconn(conn)
+
 
 if __name__ == '__main__':
     port = int(os.getenv("PORT", 8081))
