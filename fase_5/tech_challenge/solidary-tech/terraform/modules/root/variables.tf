@@ -28,6 +28,12 @@ variable "ecr_repositories" {
   default = []
 }
 
+variable "ecr_tag_prefixes" {
+  type        = list(string)
+  default     = []
+  description = "Lista de prefixos de tag para a política de lifecycle do ECR"
+}
+
 variable "force_delete" {
   type = bool
 }

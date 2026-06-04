@@ -25,7 +25,8 @@ inputs = {
   azs             = ["us-east-1a", "us-east-1b", "us-east-1c"]
   
   ### ECR
-  ecr_repositories = ["donation-service", "ngo-service", "volunteer-service"]
+  ecr_repositories = ["solidary-tech"]
+  ecr_tag_prefixes = ["donation-service", "ngo-service", "volunteer-service"]
   force_delete     = true
 
   ### RDS

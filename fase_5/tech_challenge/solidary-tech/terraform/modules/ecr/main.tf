@@ -32,7 +32,7 @@ resource "aws_ecr_lifecycle_policy" "this" {
         description  = "Keep last 10 images per service tag"
         selection = {
           tagStatus     = "tagged"
-          tagPrefixList = var.repositories
+          tagPrefixList = length(var.tag_prefixes) > 0 ? var.tag_prefixes : var.repositories
           countType     = "imageCountMoreThan"
           countNumber   = 10
         }

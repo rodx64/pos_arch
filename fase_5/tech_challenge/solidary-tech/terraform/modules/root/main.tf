@@ -22,6 +22,7 @@ module "ecr" {
   project_name = "solidary-tech"
   env          = var.env
   repositories = var.ecr_repositories
+  tag_prefixes = length(var.ecr_tag_prefixes) > 0 ? var.ecr_tag_prefixes : var.ecr_repositories
   force_delete = var.force_delete
 }
 
