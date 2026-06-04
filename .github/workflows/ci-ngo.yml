@@ -226,5 +226,5 @@ jobs:
             exit 0
           fi
 
-          git commit -m "ci: update ${{ env.SERVICE_NAME }} images (app & migration) to ${github.sha} [skip ci]"
+          git commit -m "ci: update ${{ env.SERVICE_NAME }} images (app & migration) to ${{ github.sha }} [skip ci]"
           git push
