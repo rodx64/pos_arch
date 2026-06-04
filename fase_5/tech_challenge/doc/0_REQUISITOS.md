@@ -9,7 +9,7 @@ utilização de todas as disciplinas anteriores:
 
 - [x] Docker e Kubernetes: criação de Dockerfiles otimizados para os 3
     novos serviços e implantação no Kubernetes (EKS, AKS ou GKE).
-- [ ] Infraestrutura como Código (IaC): provisionamento de todo o
+- [x] Infraestrutura como Código (IaC): provisionamento de todo o
     ambiente (Cluster, Bancos de Dados, Mensageria, Rede) via
     Terraform.
 - [ ] CI/CD e DevSecOps: pipelines automatizados (ex: GitHub Actions)
