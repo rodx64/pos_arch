@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql/driver"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -11,13 +10,6 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 )
-
-type anyTime struct{}
-
-func (a anyTime) Match(v driver.Value) bool {
-	_, ok := v.(time.Time)
-	return ok
-}
 
 func TestHealthHandler(t *testing.T) {
 	app := &App{}
