@@ -12,10 +12,10 @@ utilização de todas as disciplinas anteriores:
 - [x] Infraestrutura como Código (IaC): provisionamento de todo o
     ambiente (Cluster, Bancos de Dados, Mensageria, Rede) via
     Terraform.
-- [ ] CI/CD e DevSecOps: pipelines automatizados (ex: GitHub Actions)
+- [x] CI/CD e DevSecOps: pipelines automatizados (ex: GitHub Actions)
     contemplando testes, scans de segurança (SAST/SCA com
     ferramentas como Trivy/Sonar) e construção da imagem.
-- [ ] GitOps: entrega contínua configurada através de ferramentas como
+- [x] GitOps: entrega contínua configurada através de ferramentas como
     ArgoCD ou FluxCD.
 - [ ] Observabilidade e APM: stack completa rodando (Prometheus,
     Grafana, Loki e/ou OpenTelemetry) e instrumentação dos códigos no
