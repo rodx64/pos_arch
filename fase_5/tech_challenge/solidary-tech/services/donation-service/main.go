@@ -77,7 +77,7 @@ func main() {
 
 	host := os.Getenv("HOST")
 	if host == "" {
-		host = "127.0.0.1"
+		host = "0.0.0.0"
 	}
 	addr := host + ":" + port
 
