@@ -51,7 +51,11 @@ func TestDonationHandlerPostSuccess(t *testing.T) {
 	}
 	defer db.Close()
 
-	app := &App{DB: db}
+	app := &App{
+		DB:      db,
+		Metrics: newMetrics(),
+	}
+
 	body := strings.NewReader(`{"ngo_id":1,"amount":100.5,"donor_name":"John Doe"}`)
 	req := httptest.NewRequest(http.MethodPost, "/donations", body)
 	req.Header.Set("Content-Type", "application/json")
