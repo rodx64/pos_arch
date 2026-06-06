@@ -504,6 +504,52 @@ jobs:
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: ${{ secrets.AWS_REGION }}
 
+      - name: Get bastion IP and EKS endpoint
+        id: infra
+        run: |
+          BASTION_IP=$(aws ec2 describe-instances \
+            --filters \
+              "Name=tag:Name,Values=solidary-tech-dev-bastion" \
+              "Name=instance-state-name,Values=running" \
+            --query 'Reservations[0].Instances[0].PublicIpAddress' \
+            --output text)
+
+          if [ -z "$BASTION_IP" ] || [ "$BASTION_IP" = "None" ]; then
+            echo "ERROR: Bastion IP not found."
+            exit 1
+          fi
+
+          EKS_ENDPOINT=$(aws eks describe-cluster \
+            --name solidary-tech-eks \
+            --query 'cluster.endpoint' \
+            --output text | sed 's|https://||')
+
+          echo "bastion_ip=$BASTION_IP" >> $GITHUB_OUTPUT
+          echo "eks_endpoint=$EKS_ENDPOINT" >> $GITHUB_OUTPUT
+
+      - name: Save SSH key
+        run: |
+          echo "${{ secrets.EC2_SSH_KEY }}" > /tmp/iac-key.pem
+          chmod 400 /tmp/iac-key.pem
+
+      - name: Open SSH tunnel via bastion
+        run: |
+          ssh -i /tmp/iac-key.pem \
+            -o StrictHostKeyChecking=no \
+            -o ServerAliveInterval=60 \
+            -L 6443:${{ steps.infra.outputs.eks_endpoint }}:443 \
+            ubuntu@${{ steps.infra.outputs.bastion_ip }} \
+            -N -f
+          sleep 5
+
+      - name: Configure kubectl
+        run: |
+          aws eks update-kubeconfig --region ${{ secrets.AWS_REGION }} --name solidary-tech-eks
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          CLUSTER_ARN="arn:aws:eks:${{ secrets.AWS_REGION }}:${ACCOUNT_ID}:cluster/solidary-tech-eks"
+          kubectl config set-cluster "$CLUSTER_ARN" --server=https://127.0.0.1:6443 --insecure-skip-tls-verify=true
+          kubectl config use-context "$CLUSTER_ARN"
+
       - name: Get NLB Hostname
         run: |
           echo "Aguardando o AWS provisionar o NLB..."
@@ -539,4 +585,16 @@ jobs:
           fi
 
           git commit -m "ci: update ingress host with NLB DNS [skip ci]"
-          git push
+          
+          MAX_RETRIES=5
+          for i in $(seq 1 $MAX_RETRIES); do
+            if git push; then
+              echo "Push realizado com sucesso!"
+              exit 0
+            fi
+            echo "Conflito detectado. Sincronizando..."
+            git pull --rebase --autostash
+            sleep $(( (RANDOM % 5) + 3 ))
+          done
+          echo "Falha ao sincronizar após $MAX_RETRIES tentativas."
+          exit 1
