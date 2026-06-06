@@ -47,7 +47,7 @@ spec:
     spec:
       containers:
         - name: donation-container
-          image: 356969227282.dkr.ecr.us-east-1.amazonaws.com/solidary-tech:donation-service-ddfda5a05275079731ab850529b583af4428e60f
+          image: 356969227282.dkr.ecr.us-east-1.amazonaws.com/solidary-tech:donation-service-32500a15cc53e06149d5bf69373ff94cd3bfdc57
           imagePullPolicy: Always
           ports:
             - containerPort: 8082
