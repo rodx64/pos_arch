@@ -37,7 +37,7 @@ except Exception as e:
         log.error(f"Erro ao conectar ao PostgreSQL: {e}")
 
 
-@app.route('/health')
+@app.route('/ngos/health')
 def health():
     return jsonify({"status": "ok", "service": "ngo-service"})
 

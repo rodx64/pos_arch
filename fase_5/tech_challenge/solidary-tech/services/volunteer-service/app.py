@@ -83,7 +83,7 @@ def get_table():
     return table
 
 
-@app.route('/health')
+@app.route('/volunteers/health')
 def health():
     return jsonify({"status": "ok", "service": "volunteer-service"})
 

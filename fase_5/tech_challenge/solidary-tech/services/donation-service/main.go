@@ -72,7 +72,7 @@ func main() {
 	app := &App{DB: db, SqsSvc: sqsSvc, SqsQueueURL: queueURL}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/health", app.HealthHandler)
+	mux.HandleFunc("/donations/health", app.HealthHandler)
 	mux.HandleFunc("/donations", app.DonationHandler)
 
 	host := os.Getenv("HOST")
