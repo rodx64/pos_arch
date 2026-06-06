@@ -1,0 +1,151 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-solidary-tech
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/instance: solidary-tech
+data:
+  solidary-tech.json: |
+    {
+      "title": "Solidary Tech — Saúde do Ecossistema",
+      "uid": "solidary-tech-health",
+      "timezone": "browser",
+      "refresh": "30s",
+      "time": { "from": "now-1h", "to": "now" },
+      "panels": [
+        {
+          "id": 1,
+          "title": "CPU por Pod (solidary-tech)",
+          "type": "timeseries",
+          "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+          "datasource": "Prometheus",
+          "targets": [{
+            "expr": "sum(rate(k8s_pod_cpu_time{k8s_namespace_name='solidary-tech'}[5m])) by (k8s_pod_name)",
+            "legendFormat": "{{k8s_pod_name}}"
+          }]
+        },
+        {
+          "id": 2,
+          "title": "Memória por Pod (solidary-tech)",
+          "type": "timeseries",
+          "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+          "datasource": "Prometheus",
+          "targets": [{
+            "expr": "sum(k8s_pod_memory_working_set{k8s_namespace_name='solidary-tech'}) by (k8s_pod_name)",
+            "legendFormat": "{{k8s_pod_name}}"
+          }]
+        },
+        {
+          "id": 3,
+          "title": "Taxa de Requisições HTTP por Serviço",
+          "type": "timeseries",
+          "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+          "datasource": "Prometheus",
+          "targets": [{
+            "expr": "sum(increase(http_requests_total{namespace='solidary-tech', status=~'OK|Success|ok|success'}[5m])) by (service, status)",
+            "legendFormat": "{{service}} - {{status}}"
+          }]
+        },
+        {
+          "id": 4,
+          "title": "Latência P99 por Serviço (ms)",
+          "type": "timeseries",
+          "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+          "datasource": "Prometheus",
+          "targets": [{
+            "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{namespace='solidary-tech'}[15m])) by (le, service)) * 1000",
+            "legendFormat": "p99 {{service}}"
+          }]
+        },
+        {
+          "id": 5,
+          "title": "SQS — Eventos Enviados por serviço",
+          "type": "stat",
+          "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+          "datasource": "Prometheus",
+          "pluginVersion": "10.x",
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "textMode": "auto",
+            "reduceOptions": {
+              "values": false,
+              "calcs": [
+                "lastNotNull"
+              ]
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null }
+                ]
+              },
+              "mappings": []
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum(sqs_events_sent_total{namespace='solidary-tech'}) by (service)",
+              "legendFormat": "{{service}} - fila(solidary-tech-queue)",
+              "instant": true
+            }
+          ]
+        },
+        {
+          "id": 6,
+          "title": "Status das Dependências",
+          "type": "stat",
+          "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
+          "datasource": "Prometheus",
+          "options": {
+            "colorMode": "background",
+            "graphMode": "none",
+            "textMode": "auto",
+            "reduceOptions": {
+              "calcs": ["lastNotNull"],
+              "values": false
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [
+                { "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } },
+                { "type": "special", "options": { "match": "null", "result": { "text": "DOWN", "color": "red" } } }
+              ]
+            }
+          },
+          "targets": [
+            { 
+              "expr": "clamp_max(sum by (service) (last_over_time(db_up{namespace='solidary-tech'}[2m]) or on(service) (label_replace(vector(0), 'service', 'donation', '', '') or label_replace(vector(0), 'service', 'ngo', '', '') or label_replace(vector(0), 'service', 'volunteer', '', ''))), 1)",
+              "legendFormat": "{{service}}" 
+            },
+            { 
+              "expr": "max(last_over_time(redis_up{namespace='solidary-tech'}[2m]) or vector(0))", 
+              "legendFormat": "Redis" 
+            },
+            { 
+              "expr": "max(last_over_time(sqs_up{namespace='solidary-tech'}[2m]) or vector(0))", 
+              "legendFormat": "SQS" 
+            }
+          ]
+        },
+        {
+          "id": 7,
+          "title": "Logs em Tempo Real — solidary-tech",
+          "type": "logs",
+          "gridPos": { "x": 0, "y": 24, "w": 24, "h": 10 },
+          "datasource": "Loki",
+          "targets": [{
+            "expr": "{exporter=\"OTLP\"} |= \"solidary-tech\"",
+            "legendFormat": ""
+          }]
+        }
+      ]
+    }

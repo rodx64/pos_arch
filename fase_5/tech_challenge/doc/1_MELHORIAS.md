@@ -36,13 +36,7 @@ Este documento lista as melhorias aplicadas no challenge do `tech_challenge`, co
 - Implementado `ensure_dynamodb_table(...)` para verificar e criar `volunteer-table` automaticamente, evitando erros de tabela inexistente.
 - Isso torna o serviço robusto tanto em ambiente local quanto em AWS real.
 
-## 6. Integração e credenciais AWS
-
-- Atualizados arquivos `.env` para contemplar credenciais AWS necessárias ao conectar com LocalStack.
-- O mesmo padrão de validação foi mantido para suportar ambientes AWS reais quando `AWS_ENDPOINT_URL` não estiver definido.
-- Isso permite rodar o projeto localmente e também em nuvem com mínima alteração de configuração.
-
-## 7. Versionamento de Banco de Dados com Flyway (Novo)
+## 6. Versionamento de Banco de Dados com Flyway (Novo)
 
 - Adotado o **Flyway** para gerenciamento e versionamento profissional de schemas nos bancos de dados relacionais (`donation-service` e `ngo-service`).
 - Separação de responsabilidades: as aplicações não criam mais as próprias tabelas em tempo de execução, delegando a função para scripts versionados (ex: `V1__initial_schema.sql`).
@@ -50,7 +44,7 @@ Este documento lista as melhorias aplicadas no challenge do `tech_challenge`, co
 - Criação de um módulo exclusivo no **Terraform** (`db-migrations`) orquestrado via **Terragrunt**, disparando *Kubernetes Jobs* que garantem a criação/atualização das tabelas antes que as aplicações subam no EKS.
 - Adaptação dos pipelines de CI/CD (GitHub Actions) para realizar o build e push simultâneo da aplicação e da migração, com atualização automática das tags no repositório de infraestrutura.
 
-## 8. Aplicações envolvidas
+## 7. Aplicações envolvidas
 
 As melhorias abrangem os seguintes componentes do projeto:
 
@@ -61,7 +55,7 @@ As melhorias abrangem os seguintes componentes do projeto:
 - `localstack` para emulação de AWS local
 - Infraestrutura EKS via Terraform/Terragrunt
 
-## 9. Benefícios gerais
+## 8. Benefícios gerais
 
 - Ambiente local mais confiável e previsível.
 - Aproximação mais segura entre desenvolvimento local e deploy em AWS.
