@@ -38,7 +38,7 @@ variable "datadog_app_key" {
 
 variable "datadog_url" {
   type    = string
-  default = "https://api.us5.datadoghq.com/"
+  default = "https://api.datadoghq.com/"
 }
 
 variable "datadog_cluster_agent_token" {
