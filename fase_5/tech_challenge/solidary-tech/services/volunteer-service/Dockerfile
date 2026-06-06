@@ -34,6 +34,8 @@ RUN pip install --no-cache-dir \
     opentelemetry-distro \
     opentelemetry-exporter-otlp || true
 
+RUN opentelemetry-bootstrap -a install
+
 COPY --from=builder /install /usr/local
 COPY . .
 

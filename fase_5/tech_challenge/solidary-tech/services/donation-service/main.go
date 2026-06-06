@@ -1,11 +1,13 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -13,6 +15,16 @@ import (
 	"github.com/aws/aws-sdk-go/service/sqs"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/joho/godotenv"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
 )
 
 type Donation struct {
@@ -28,10 +40,134 @@ type App struct {
 	DB          *sql.DB
 	SqsSvc      *sqs.SQS
 	SqsQueueURL string
+	Metrics     *AppMetrics
+}
+
+type AppMetrics struct {
+	httpRequestsTotal     *prometheus.CounterVec
+	httpRequestDuration   *prometheus.HistogramVec
+	dbUp                  prometheus.Gauge
+	donationsCreatedTotal prometheus.Counter
+}
+
+func newMetrics() *AppMetrics {
+	m := &AppMetrics{
+		httpRequestsTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "http_requests_total",
+				Help: "Total de requisições HTTP",
+			},
+			[]string{"method", "path", "status"},
+		),
+		httpRequestDuration: prometheus.NewHistogramVec(
+			prometheus.HistogramOpts{
+				Name:    "http_request_duration_seconds",
+				Help:    "Duração das requisições",
+				Buckets: prometheus.DefBuckets,
+			},
+			[]string{"method", "path", "status"},
+		),
+		dbUp: prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: "db_up",
+			Help: "Status da conexão com o banco de dados (1 = UP, 0 = DOWN)",
+		}),
+		donationsCreatedTotal: prometheus.NewCounter(prometheus.CounterOpts{
+			Name: "donations_created_total",
+			Help: "Total de doações criadas com sucesso",
+		}),
+	}
+
+	prometheus.MustRegister(
+		m.httpRequestsTotal,
+		m.httpRequestDuration,
+		m.dbUp,
+		m.donationsCreatedTotal,
+	)
+
+	return m
+}
+
+func initTracer() (func(context.Context) error, error) {
+	ctx := context.Background()
+	res, err := resource.New(ctx,
+		resource.WithAttributes(
+			semconv.ServiceNameKey.String("donation-service"),
+			semconv.DeploymentEnvironmentKey.String(os.Getenv("DD_ENV")),
+		),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	endpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+	if endpoint == "" {
+		endpoint = "otel-collector.monitoring.svc.cluster.local:4317"
+	}
+
+	traceExporter, err := otlptracegrpc.New(ctx,
+		otlptracegrpc.WithInsecure(),
+		otlptracegrpc.WithEndpoint(endpoint),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	tp := sdktrace.NewTracerProvider(
+		sdktrace.WithBatcher(traceExporter),
+		sdktrace.WithResource(res),
+	)
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
+
+	return tp.Shutdown, nil
+}
+
+func (a *App) watchDB() {
+	ticker := time.NewTicker(15 * time.Second)
+	defer ticker.Stop()
+	for range ticker.C {
+		if err := a.DB.Ping(); err != nil {
+			log.Printf("DB ping falhou: %v", err)
+			a.Metrics.dbUp.Set(0)
+		} else {
+			a.Metrics.dbUp.Set(1)
+		}
+	}
+}
+
+func (a *App) instrumentHandler(path string, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		rw := &responseWriter{ResponseWriter: w, status: http.StatusOK}
+		next.ServeHTTP(rw, r)
+		duration := time.Since(start).Seconds()
+		a.Metrics.httpRequestsTotal.WithLabelValues(r.Method, path, http.StatusText(rw.status)).Inc()
+		a.Metrics.httpRequestDuration.WithLabelValues(r.Method, path, http.StatusText(rw.status)).Observe(duration)
+	})
+}
+
+type responseWriter struct {
+	http.ResponseWriter
+	status int
+}
+
+func (rw *responseWriter) WriteHeader(code int) {
+	rw.status = code
+	rw.ResponseWriter.WriteHeader(code)
 }
 
 func main() {
 	_ = godotenv.Load()
+
+	shutdown, err := initTracer()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer func() {
+		if err := shutdown(context.Background()); err != nil {
+			log.Printf("Erro ao fechar o tracer: %v", err)
+		}
+	}()
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -47,10 +183,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Erro ao conectar ao banco de dados: %v", err)
 	}
-	if err = db.Ping(); err != nil {
-		log.Fatalf("Erro ao conectar ao banco de dados: %v", err)
-	}
-	log.Println("Conectado ao PostgreSQL (donation-service).")
+	defer db.Close()
 
 	var sqsSvc *sqs.SQS
 	queueURL := os.Getenv("AWS_SQS_URL")
@@ -69,11 +202,20 @@ func main() {
 		log.Println("Integração com AWS SQS ativada.")
 	}
 
-	app := &App{DB: db, SqsSvc: sqsSvc, SqsQueueURL: queueURL}
+	app := &App{
+		DB:          db,
+		SqsSvc:      sqsSvc,
+		SqsQueueURL: queueURL,
+		Metrics:     newMetrics(),
+	}
+
+	app.Metrics.dbUp.Set(1)
+	go app.watchDB()
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/donations/health", app.HealthHandler)
-	mux.HandleFunc("/donations", app.DonationHandler)
+	mux.Handle("/metrics", promhttp.Handler())
+	mux.Handle("/donations/health", otelhttp.NewHandler(app.instrumentHandler("/donations/health", http.HandlerFunc(app.HealthHandler)), "HealthCheck"))
+	mux.Handle("/donations", otelhttp.NewHandler(app.instrumentHandler("/donations", http.HandlerFunc(app.DonationHandler)), "Donations"))
 
 	host := os.Getenv("HOST")
 	if host == "" {
@@ -89,8 +231,11 @@ func main() {
 		IdleTimeout:  120 * time.Second,
 	}
 
-	log.Println("donation-service rodando")
-	log.Fatal(server.ListenAndServe())
+	cleanPort := strings.ReplaceAll(strings.ReplaceAll(port, "\n", ""), "\r", "")
+	log.Printf("donation-service (OTel + Prom) rodando na porta %s", cleanPort)
+	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Fatal(err)
+	}
 }
 
 func (a *App) HealthHandler(w http.ResponseWriter, r *http.Request) {
@@ -111,8 +256,8 @@ func (a *App) DonationHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		d.Status = "APPROVED" // Simulação de gateway de pagamento
-		err := a.DB.QueryRow(
+		d.Status = "APPROVED"
+		err := a.DB.QueryRowContext(r.Context(),
 			"INSERT INTO donations (ngo_id, amount, donor_name, status) VALUES ($1, $2, $3, $4) RETURNING id, created_at",
 			d.NgoID, d.Amount, d.DonorName, d.Status,
 		).Scan(&d.ID, &d.CreatedAt)
@@ -122,6 +267,8 @@ func (a *App) DonationHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, `{"error":"Erro interno"}`, http.StatusInternalServerError)
 			return
 		}
+
+		a.Metrics.donationsCreatedTotal.Inc()
 
 		if a.SqsSvc != nil {
 			go a.sendNotificationEvent(d)
@@ -135,7 +282,7 @@ func (a *App) DonationHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method == http.MethodGet {
-		rows, err := a.DB.Query("SELECT id, ngo_id, amount, donor_name, status, created_at FROM donations ORDER BY id DESC")
+		rows, err := a.DB.QueryContext(r.Context(), "SELECT id, ngo_id, amount, donor_name, status, created_at FROM donations ORDER BY id DESC")
 		if err != nil {
 			http.Error(w, `{"error":"Erro interno"}`, http.StatusInternalServerError)
 			return
