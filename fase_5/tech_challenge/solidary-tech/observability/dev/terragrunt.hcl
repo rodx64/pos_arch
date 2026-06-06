@@ -1,0 +1,48 @@
+include "root" {
+  path = "${get_repo_root()}/fase_5/tech_challenge/solidary-tech/terraform/root.hcl"
+}
+
+remote_state {
+  backend = "s3"
+  config = {
+    bucket         = "solidary-iac-state"
+    key            = "observability/dev/terraform.tfstate"
+    region         = "us-east-1"
+    encrypt        = true
+    dynamodb_table = "terraform-locks"
+  }
+  generate = {
+    path      = "backend.tf"
+    if_exists = "overwrite"
+  }
+}
+
+terraform {
+  source = "${get_repo_root()}/fase_5/tech_challenge/solidary-tech/terraform/modules/observability"
+}
+
+dependency "infra" {
+  config_path  = "${get_repo_root()}/fase_5/tech_challenge/solidary-tech/terraform/environments/dev/"
+  skip_outputs = false
+
+  # mock - "somente para os comandos validate e plan. Se o output real não estiver disponível, use os valores fictícios abaixo em vez de falhar."
+  mock_outputs_allowed_terraform_commands = ["validate", "plan"]
+  mock_outputs = {
+    eks_cluster_endpoint = "https://mock"
+    eks_cluster_ca       = "bW9jaw=="
+    eks_cluster_token    = "mock"
+  }
+}
+
+inputs = {
+  namespace            = "monitoring"
+
+  eks_cluster_endpoint = dependency.infra.outputs.eks_cluster_endpoint
+  eks_cluster_ca       = dependency.infra.outputs.eks_cluster_ca
+  eks_cluster_token    = dependency.infra.outputs.eks_cluster_token
+  eks_tunnel_host      = "https://127.0.0.1:6443"
+
+  datadog_api_key      = get_env("DATADOG_API_KEY")
+  datadog_cluster_agent_token = get_env("DATADOG_CLUSTER_AGENT_TOKEN")
+  datadog_app_key      = get_env("DATADOG_APP_KEY")
+}
