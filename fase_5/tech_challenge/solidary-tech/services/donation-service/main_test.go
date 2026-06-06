@@ -13,7 +13,7 @@ import (
 
 func TestHealthHandler(t *testing.T) {
 	app := &App{}
-	req := httptest.NewRequest(http.MethodGet, "/health", nil)
+	req := httptest.NewRequest(http.MethodGet, "/donations/health", nil)
 	rr := httptest.NewRecorder()
 
 	app.HealthHandler(rr, req)

@@ -25,7 +25,7 @@ class TestHealthEndpoint(unittest.TestCase):
         self.client = app.app.test_client()
 
     def test_health_returns_ok(self):
-        resp = self.client.get('/health')
+        resp = self.client.get('/ngos/health')
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.get_json(), {'status': 'ok', 'service': 'ngo-service'})
 
