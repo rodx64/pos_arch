@@ -141,6 +141,7 @@ verify_connection() {
     # log "Prometheus:   http://localhost:${PROM_PORT}"
     log "Argo CD:      http://localhost:${ARGO_PORT}"
     # log "Grafana:      http://localhost:${GRAFANA_PORT}/grafana" 
+    print_argo_password
   else
     error "Falha ao conectar no cluster."
   fi
@@ -167,6 +168,13 @@ cmd_stop() {
   pkill -f "L ${LOCAL_PORT}:" 2>/dev/null || true
   pkill -f "port-forward" 2>/dev/null || true
   log "Todos os túneis encerrados."
+}
+
+print_argo_password() {
+  if [ -f "$ARGO_PID_FILE" ]; then
+    ARGO_PASSWORD=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 --decode)
+    log "Senha Argo CD: ${ARGO_PASSWORD}"
+  fi
 }
 
 cmd_status() {
