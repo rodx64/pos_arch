@@ -484,3 +484,59 @@ jobs:
           kubectl -n argocd wait --for=jsonpath='{.status.health.status}'=Healthy application/solidary-tech --timeout=300s || true
           echo "ArgoCD Application 'solidary-tech' configurada."
           kubectl -n argocd get application solidary-tech
+
+  update-ingress-host:
+    name: Update Ingress Host with NLB DNS
+    runs-on: ubuntu-latest
+    needs: argocd-app
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: ${{ github.ref_name }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Get NLB Hostname
+        run: |
+          echo "Aguardando o AWS provisionar o NLB..."
+          sleep 30
+          
+          for i in {1..10}; do
+            NLB_HOST=$(kubectl get svc ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+            if [ -n "$NLB_HOST" ]; then
+              echo "NLB Host encontrado: $NLB_HOST"
+              echo "NLB_HOST=$NLB_HOST" >> $GITHUB_ENV
+              break
+            fi
+            echo "Ainda sem DNS... tentando novamente em 15s"
+            sleep 15
+          done
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Update Ingress YAML and Commit
+        run: |
+          INGRESS_FILE="${{ env.EKS_DIR }}/ingress.yaml"
+          
+          sed -i "s|host: .*|host: ${NLB_HOST}|g" "$INGRESS_FILE"
+
+          git add "$INGRESS_FILE"
+          
+          if git diff --cached --quiet; then
+            echo "O Host já está atualizado. Pulando commit."
+            exit 0
+          fi
+
+          git commit -m "ci: update ingress host with NLB DNS [skip ci]"
+          git push

@@ -211,4 +211,20 @@ jobs:
           fi
 
           git commit -m "ci: update ${{ env.SERVICE_NAME }} images (app & migration) to ${{ github.sha }} [skip ci]"
-          git push
+          
+          MAX_RETRIES=5
+          for i in $(seq 1 $MAX_RETRIES); do
+            if git push; then
+              echo "Push realizado com sucesso!"
+              exit 0
+            fi
+            
+            echo "Conflito detectado (Tentativa $i de $MAX_RETRIES). Sincronizando com o repositório..."
+            
+            git pull --rebase --autostash
+            
+            sleep $(( (RANDOM % 5) + 3 ))
+          done
+
+          echo "Falha ao sincronizar as tags após $MAX_RETRIES tentativas."
+          exit 1
