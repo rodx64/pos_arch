@@ -689,11 +689,13 @@ jobs:
         run: |
           INGRESS_API_FILE="${{ env.EKS_DIR }}/ingress.yaml"
           INGRESS_PROM_FILE="${{ env.EKS_DIR }}/ingress-prometheus.yaml"
+          INGRESS_GRAFANA_FILE="${{ env.EKS_DIR }}/observability/ingress.yaml"
           
           sed -i "s|host: .*|host: ${NLB_HOST}|g" "$INGRESS_API_FILE"
           sed -i "s|host: .*|host: ${NLB_HOST}|g" "$INGRESS_PROM_FILE"
+          sed -i "s|host: .*|host: ${NLB_HOST}|g" "$INGRESS_GRAFANA_FILE"
 
-          git add "$INGRESS_API_FILE" "$INGRESS_PROM_FILE"
+          git add "$INGRESS_API_FILE" "$INGRESS_PROM_FILE" "$INGRESS_GRAFANA_FILE"
           
           if git diff --cached --quiet; then
             echo "Os Hosts já estão atualizados. Pulando commit."
