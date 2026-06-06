@@ -77,4 +77,3 @@ Para executar com LocalStack, defina `AWS_ENDPOINT_URL=http://localstack:4566` e
 - Na inicialização, o serviço conecta ao DynamoDB e cria a tabela configurada se necessário.
 - Os voluntários são armazenados com `volunteer_id`, `name`, `email`, `ngo_id` e `registered_at`.
 
-<!--  -->
