@@ -17,7 +17,7 @@ utilização de todas as disciplinas anteriores:
     ferramentas como Trivy/Sonar) e construção da imagem.
 - [x] GitOps: entrega contínua configurada através de ferramentas como
     ArgoCD ou FluxCD.
-- [ ] Observabilidade e APM: stack completa rodando (Prometheus,
+- [x] Observabilidade e APM: stack completa rodando (Prometheus,
     Grafana, Loki e/ou OpenTelemetry) e instrumentação dos códigos no
     APM (Datadog ou New Relic) com Distributed Tracing.
 
