@@ -7,14 +7,42 @@ import botocore.exceptions
 from boto3.dynamodb.conditions import Attr
 from flask import Flask, request, jsonify
 from dotenv import load_dotenv
-from prometheus_flask_exporter.multiprocess import PrometheusMetrics
+
+from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.instrumentation.flask import FlaskInstrumentor
+from opentelemetry.instrumentation.requests import RequestsInstrumentor
+from opentelemetry.instrumentation.psycopg2 import Psycopg2Instrumentor
+from prometheus_flask_exporter import PrometheusMetrics
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 log = logging.getLogger(__name__)
 
 load_dotenv()
 
+resource = Resource(attributes={
+    "service.name": "volunteer-service",
+    "deployment.environment": os.getenv("DD_ENV", "dev")
+})
+provider = TracerProvider(resource=resource)
+processor = BatchSpanProcessor(OTLPSpanExporter(
+    endpoint=os.getenv(
+        "OTEL_EXPORTER_OTLP_ENDPOINT",
+        "http://otel-collector.monitoring.svc.cluster.local:4318/v1/traces"
+    ),
+))
+provider.add_span_processor(processor)
+trace.set_tracer_provider(provider)
+
+RequestsInstrumentor().instrument()
+Psycopg2Instrumentor().instrument()
+
 app = Flask(__name__)
+FlaskInstrumentor().instrument_app(app)
+
 metrics = PrometheusMetrics(app)
 
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
