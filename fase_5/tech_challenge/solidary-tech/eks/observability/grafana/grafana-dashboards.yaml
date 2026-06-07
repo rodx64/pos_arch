@@ -43,7 +43,7 @@ data:
           "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
           "datasource": "Prometheus",
           "targets": [{
-            "expr": "sum(increase(http_requests_total{namespace='solidary-tech', status=~'OK|Success|ok|success'}[5m])) by (service, status)",
+            "expr": "sum by (service, status) (increase(http_requests_total{namespace='solidary-tech'}[5m])) or sum by (service, status) (increase(flask_http_request_total{namespace='solidary-tech'}[5m]))",
             "legendFormat": "{{service}} - {{status}}"
           }]
         },
@@ -54,13 +54,13 @@ data:
           "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
           "datasource": "Prometheus",
           "targets": [{
-            "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{namespace='solidary-tech'}[15m])) by (le, service)) * 1000",
+            "expr": "histogram_quantile(0.99, sum by (le, service) (rate(http_request_duration_seconds_bucket{namespace='solidary-tech'}[15m]))) * 1000 or histogram_quantile(0.99, sum by (le, service) (rate(flask_http_request_duration_seconds_bucket{namespace='solidary-tech'}[15m]))) * 1000",
             "legendFormat": "p99 {{service}}"
           }]
         },
         {
           "id": 5,
-          "title": "SQS — Eventos Enviados por serviço",
+          "title": "Doações Criadas",
           "type": "stat",
           "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
           "datasource": "Prometheus",
@@ -92,15 +92,15 @@ data:
           },
           "targets": [
             {
-              "expr": "sum(sqs_events_sent_total{namespace='solidary-tech'}) by (service)",
-              "legendFormat": "{{service}} - fila(solidary-tech-queue)",
+              "expr": "sum(increase(donations_created_total{namespace='solidary-tech'}[5m]))",
+              "legendFormat": "Doações Realizadas",
               "instant": true
             }
           ]
         },
         {
           "id": 6,
-          "title": "Status das Dependências",
+          "title": "Status dos Bancos (RDS)",
           "type": "stat",
           "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
           "datasource": "Prometheus",
@@ -123,16 +123,8 @@ data:
           },
           "targets": [
             { 
-              "expr": "clamp_max(sum by (service) (last_over_time(db_up{namespace='solidary-tech'}[2m]) or on(service) (label_replace(vector(0), 'service', 'donation', '', '') or label_replace(vector(0), 'service', 'ngo', '', '') or label_replace(vector(0), 'service', 'volunteer', '', ''))), 1)",
-              "legendFormat": "{{service}}" 
-            },
-            { 
-              "expr": "max(last_over_time(redis_up{namespace='solidary-tech'}[2m]) or vector(0))", 
-              "legendFormat": "Redis" 
-            },
-            { 
-              "expr": "max(last_over_time(sqs_up{namespace='solidary-tech'}[2m]) or vector(0))", 
-              "legendFormat": "SQS" 
+              "expr": "max by (service) (last_over_time(db_up{namespace='solidary-tech'}[2m]))",
+              "legendFormat": "PostgreSQL ({{service}})" 
             }
           ]
         },
