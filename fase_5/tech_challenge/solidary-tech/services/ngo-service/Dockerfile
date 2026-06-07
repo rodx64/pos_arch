@@ -40,10 +40,13 @@ RUN opentelemetry-bootstrap -a install
 COPY --from=builder /install /usr/local
 COPY . .
 
-ENV PROMETHEUS_MULTIPROC_DIR=/tmp/prometheus_multiproc
-RUN mkdir -p /tmp/prometheus_multiproc
-
 RUN adduser -D appuser
+
+ENV PROMETHEUS_MULTIPROC_DIR=/tmp/prometheus_multiproc
+RUN mkdir -p /tmp/prometheus_multiproc && \
+    chown appuser:appuser /tmp/prometheus_multiproc && \
+    chmod 755 /tmp/prometheus_multiproc
+
 USER appuser
 
 EXPOSE 8081
