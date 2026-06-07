@@ -15,6 +15,7 @@ from opentelemetry.sdk.resources import Resource
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
 from opentelemetry.instrumentation.psycopg2 import Psycopg2Instrumentor
+from prometheus_client import Gauge
 from prometheus_flask_exporter import PrometheusMetrics
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -40,6 +41,7 @@ RequestsInstrumentor().instrument()
 Psycopg2Instrumentor().instrument()
 
 app = Flask(__name__)
+db_up = Gauge('db_up', 'Status da conexão com PostgreSQL')
 FlaskInstrumentor().instrument_app(app)
 
 metrics = PrometheusMetrics(app)
@@ -59,7 +61,9 @@ def init_db_pool(database_url=None):
 try:
     pool = init_db_pool(DATABASE_URL)
     log.info("Pool de conexões com o PostgreSQL (ngo-service) inicializado.")
+    db_up.set(1)
 except Exception as e:
+    db_up.set(0)
     if __name__ == '__main__':
         log.critical(f"Erro ao conectar ao PostgreSQL: {e}")
         sys.exit(1)
