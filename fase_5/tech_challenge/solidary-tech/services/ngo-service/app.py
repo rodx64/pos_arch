@@ -1,11 +1,13 @@
 import os
+os.makedirs('/tmp/prometheus_multiproc', exist_ok=True)
+os.environ['PROMETHEUS_MULTIPROC_DIR'] = '/tmp/prometheus_multiproc'
 import sys
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from psycopg2.pool import SimpleConnectionPool
 from flask import Flask, request, jsonify
 from dotenv import load_dotenv
-from prometheus_flask_exporter import PrometheusMetrics
+from prometheus_flask_exporter.multiprocess import GunicornPrometheusMetrics
 import logging
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -14,7 +16,7 @@ log = logging.getLogger(__name__)
 load_dotenv()
 
 app = Flask(__name__)
-metrics = PrometheusMetrics(app)
+metrics = GunicornPrometheusMetrics(app)
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 pool = None

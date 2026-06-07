@@ -39,6 +39,9 @@ RUN opentelemetry-bootstrap -a install
 COPY --from=builder /install /usr/local
 COPY . .
 
+ENV PROMETHEUS_MULTIPROC_DIR=/tmp/prometheus_multiproc
+RUN mkdir -p /tmp/prometheus_multiproc
+
 RUN adduser -D appuser
 USER appuser
 
