@@ -27,7 +27,7 @@ spec:
         prometheus.io/port: "8081"
         prometheus.io/path: "/metrics"
         admission.datadoghq.com/enabled: "true"
-        ad.datadoghq.com/flag-container.checks: |
+        ad.datadoghq.com/ngo-container.checks: |
           {
             "openmetrics": {
               "instances": [
