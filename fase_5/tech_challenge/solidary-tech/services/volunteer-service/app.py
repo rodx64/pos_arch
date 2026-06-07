@@ -7,6 +7,7 @@ import botocore.exceptions
 from boto3.dynamodb.conditions import Attr
 from flask import Flask, request, jsonify
 from dotenv import load_dotenv
+from prometheus_flask_exporter import PrometheusMetrics
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 log = logging.getLogger(__name__)
@@ -14,6 +15,7 @@ log = logging.getLogger(__name__)
 load_dotenv()
 
 app = Flask(__name__)
+metrics = PrometheusMetrics(app)
 
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
 AWS_ENDPOINT_URL = os.getenv("AWS_ENDPOINT_URL")

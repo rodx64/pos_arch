@@ -23,7 +23,27 @@ spec:
         tags.datadoghq.com/service: "volunteer-service"
         tags.datadoghq.com/version: "1.0.0"
       annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8083"
+        prometheus.io/path: "/metrics"
         admission.datadoghq.com/enabled: "true"
+        ad.datadoghq.com/flag-container.checks: |
+          {
+            "openmetrics": {
+              "instances": [
+                {
+                  "openmetrics_endpoint": "http://%%host%%:8083/metrics",
+                  "namespace": "solidary_tech",
+                  "metrics": [
+                    "http_requests_total",
+                    "http_request_duration_seconds",
+                    "process_cpu_seconds_total",
+                    "process_resident_memory_bytes"
+                  ]
+                }
+              ]
+            }
+          }
     spec:
       containers:
         - name: volunteer-container
