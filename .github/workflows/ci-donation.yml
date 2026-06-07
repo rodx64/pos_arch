@@ -198,33 +198,25 @@ jobs:
         run: |
           SERVICE_SHORT=$(echo "${{ env.SERVICE_NAME }}" | sed 's/-service//')
           DEPLOY_FILE="fase_5/tech_challenge/solidary-tech/eks/deployments/${SERVICE_SHORT}.yaml"
-          sed -i "s|${{ env.ECR_REPOSITORY }}:${{ env.SERVICE_NAME }}-.*|${{ env.ECR_REPOSITORY }}:${IMAGE_TAG}|g" "$DEPLOY_FILE"
-
           TG_FILE="fase_5/tech_challenge/solidary-tech/db-migrations/dev/terragrunt.hcl"
-          sed -i "s|donation_migration_image = \".*/${{ env.ECR_REPOSITORY }}:${{ env.SERVICE_NAME }}-migration-.*\"|donation_migration_image = \"${REGISTRY}/${{ env.ECR_REPOSITORY }}:${MIG_TAG}\"|g" "$TG_FILE"
+          sed -i "s|${{ env.ECR_REPOSITORY }}:${{ env.SERVICE_NAME }}-[^\"]*|${{ env.ECR_REPOSITORY }}:${IMAGE_TAG}|g" "$DEPLOY_FILE"
+          sed -i "s|donation_migration_image = \"[^\"]*\"|donation_migration_image = \"${REGISTRY}/${{ env.ECR_REPOSITORY }}:${MIG_TAG}\"|g" "$TG_FILE"
 
           git add "$DEPLOY_FILE" "$TG_FILE"
-          
+
           if git diff --cached --quiet; then
-            echo "Nenhuma mudança na tag — pulando commit."
+            echo "Nenhuma mudança — pulando commit."
             exit 0
           fi
 
           git commit -m "ci: update ${{ env.SERVICE_NAME }} images (app & migration) to ${{ github.sha }} [skip ci]"
-          
+
           MAX_RETRIES=5
           for i in $(seq 1 $MAX_RETRIES); do
             if git push; then
-              echo "Push realizado com sucesso!"
               exit 0
             fi
-            
-            echo "Conflito detectado (Tentativa $i de $MAX_RETRIES). Sincronizando com o repositório..."
-            
             git pull --rebase --autostash
-            
             sleep $(( (RANDOM % 5) + 3 ))
           done
-
-          echo "Falha ao sincronizar as tags após $MAX_RETRIES tentativas."
           exit 1

@@ -217,7 +217,7 @@ jobs:
           sed -i "s|${{ env.ECR_REPOSITORY }}:${{ env.SERVICE_NAME }}-.*|${{ env.ECR_REPOSITORY }}:${IMAGE_TAG}|g" "$DEPLOY_FILE"
 
           TG_FILE="fase_5/tech_challenge/solidary-tech/db-migrations/dev/terragrunt.hcl"
-          sed -i "s|ngo_migration_image = \".*/${{ env.ECR_REPOSITORY }}:${{ env.SERVICE_NAME }}-migration-.*\"|ngo_migration_image = \"${REGISTRY}/${{ env.ECR_REPOSITORY }}:${MIG_TAG}\"|g" "$TG_FILE"
+          sed -i "s|ngo_migration_image = \"[^\"]*\"|ngo_migration_image = \"${REGISTRY}/${{ env.ECR_REPOSITORY }}:${MIG_TAG}\"|g" "$TG_FILE"
 
           git add "$DEPLOY_FILE" "$TG_FILE"
           
