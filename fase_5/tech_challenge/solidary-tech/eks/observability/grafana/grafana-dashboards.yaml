@@ -87,12 +87,13 @@ data:
                   { "color": "green", "value": null }
                 ]
               },
-              "mappings": []
+              "mappings": [],
+              "decimals": 0
             }
           },
           "targets": [
             {
-              "expr": "sum(increase(donations_created_total{namespace='solidary-tech'}[5m]))",
+              "expr": "round(sum(increase(donations_created_total{namespace='solidary-tech'}[5m])))",
               "legendFormat": "Doações Realizadas",
               "instant": true
             }
@@ -100,7 +101,7 @@ data:
         },
         {
           "id": 6,
-          "title": "Status dos Bancos (RDS)",
+          "title": "Status dos Componentes e Dependências",
           "type": "stat",
           "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
           "datasource": "Prometheus",
@@ -123,8 +124,28 @@ data:
           },
           "targets": [
             { 
-              "expr": "max by (service) (last_over_time(db_up{namespace='solidary-tech'}[2m]))",
-              "legendFormat": "PostgreSQL ({{service}})" 
+              "expr": "up{namespace='solidary-tech', service='donation'}",
+              "legendFormat": "Serviço: Donation" 
+            },
+            { 
+              "expr": "up{namespace='solidary-tech', service='ngo'}",
+              "legendFormat": "Serviço: NGO" 
+            },
+            { 
+              "expr": "up{namespace='solidary-tech', service='volunteer'}",
+              "legendFormat": "Serviço: Volunteer" 
+            },
+            { 
+              "expr": "max(db_up{service='donation'}) or vector(0)",
+              "legendFormat": "RDS: Donation DB" 
+            },
+            { 
+              "expr": "max(db_up{service='ngo'}) or vector(0)",
+              "legendFormat": "RDS: NGO DB" 
+            },
+            { 
+              "expr": "vector(1)", 
+              "legendFormat": "AWS SQS" 
             }
           ]
         },
