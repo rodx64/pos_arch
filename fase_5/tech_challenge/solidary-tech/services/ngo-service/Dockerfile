@@ -45,4 +45,4 @@ USER appuser
 
 EXPOSE 8081
 
-CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:8081", "app:app"]
+CMD ["gunicorn", "-w", "1", "-b", "0.0.0.0:8081", "app:app"]
