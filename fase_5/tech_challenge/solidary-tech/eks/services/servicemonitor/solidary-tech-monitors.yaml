@@ -1,0 +1,20 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: solidary-tech-backend-monitors
+  namespace: solidary-tech 
+  labels:
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      tier: backend 
+  namespaceSelector:
+    matchNames:
+      - solidary-tech
+      - toggle-master # Adicionado o namespace do auth-service
+  endpoints:
+  - port: http 
+    path: /metrics
+    interval: 15s
+    scrapeTimeout: 10s
