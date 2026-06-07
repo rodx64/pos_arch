@@ -35,7 +35,7 @@ inputs = {
   donation_db_url = dependency.secrets.outputs.donation_db_url
   ngo_db_url      = dependency.secrets.outputs.ngo_db_url
 
-  donation_migration_image = "356969227282.dkr.ecr.us-east-1.amazonaws.com/solidary-tech:donation-service-migration-13c1607b2fa4ec2a6c1332ff703147c6883b4eb7"
+  donation_migration_image = "356969227282.dkr.ecr.us-east-1.amazonaws.com/solidary-tech:donation-service-migration-9108335f23858a627c2f9149d393a0dd5e8e8d43"
   ngo_migration_image      = "356969227282.dkr.ecr.us-east-1.amazonaws.com/solidary-tech:ngo-service-migration-4e361cb88c18284f7709972b1a0eabdbe80b80d1"
 
   eks_cluster_endpoint = dependency.infra.outputs.eks_cluster_endpoint
