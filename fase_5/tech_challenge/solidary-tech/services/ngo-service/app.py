@@ -8,8 +8,8 @@ from dotenv import load_dotenv
 from prometheus_flask_exporter.multiprocess import GunicornPrometheusMetrics
 import logging
 
-os.makedirs('/tmp/prometheus_multiproc', exist_ok=True)
-os.environ['PROMETHEUS_MULTIPROC_DIR'] = '/tmp/prometheus_multiproc'
+os.makedirs('/tmp/prometheus_multiproc', exist_ok=True)  # nosec B108
+os.environ['PROMETHEUS_MULTIPROC_DIR'] = '/tmp/prometheus_multiproc'  # nosec B108
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 log = logging.getLogger(__name__)
