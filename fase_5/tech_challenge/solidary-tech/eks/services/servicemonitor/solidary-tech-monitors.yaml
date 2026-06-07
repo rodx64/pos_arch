@@ -15,7 +15,6 @@ spec:
   namespaceSelector:
     matchNames:
       - solidary-tech
-      - toggle-master
   selector:
     matchLabels:
       tier: backend
