@@ -93,7 +93,7 @@ data:
           },
           "targets": [
             {
-              "expr": "round(sum(increase(donations_created_total{namespace='solidary-tech'}[5m])))",
+              "expr": "sum(increase(donations_created_total{namespace='solidary-tech'}[5m]))",
               "legendFormat": "Doações Realizadas",
               "instant": true
             }
