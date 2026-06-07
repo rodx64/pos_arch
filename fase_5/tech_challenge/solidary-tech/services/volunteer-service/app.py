@@ -1,6 +1,4 @@
 import os
-os.makedirs('/tmp/prometheus_multiproc', exist_ok=True)
-os.environ['PROMETHEUS_MULTIPROC_DIR'] = '/tmp/prometheus_multiproc'
 import uuid
 import time
 import logging
@@ -10,6 +8,9 @@ from boto3.dynamodb.conditions import Attr
 from flask import Flask, request, jsonify
 from dotenv import load_dotenv
 from prometheus_flask_exporter.multiprocess import GunicornPrometheusMetrics
+
+os.makedirs('/tmp/prometheus_multiproc', exist_ok=True)
+os.environ['PROMETHEUS_MULTIPROC_DIR'] = '/tmp/prometheus_multiproc'
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 log = logging.getLogger(__name__)
