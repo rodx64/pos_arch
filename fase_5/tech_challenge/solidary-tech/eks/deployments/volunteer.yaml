@@ -27,7 +27,7 @@ spec:
     spec:
       containers:
         - name: volunteer-container
-          image: 356969227282.dkr.ecr.us-east-1.amazonaws.com/solidary-tech:volunteer-service-26871e7dc889cbfddc3f846814ddb90306facfc7
+          image: 356969227282.dkr.ecr.us-east-1.amazonaws.com/solidary-tech:volunteer-service-057331be4c9b6fa1685730a8dc4090a3d374f9bb
           imagePullPolicy: Always
           ports:
             - containerPort: 8083
