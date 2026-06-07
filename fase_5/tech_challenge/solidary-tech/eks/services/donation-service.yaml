@@ -3,6 +3,10 @@ kind: Service
 metadata:
   name: donation-service
   namespace: solidary-tech
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8082"
+    prometheus.io/path: "/metrics"
   labels:
     app: donation
 spec:
