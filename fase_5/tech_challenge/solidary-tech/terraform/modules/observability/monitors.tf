@@ -49,7 +49,7 @@ resource "datadog_monitor" "slo_burn_rate_alert" {
   name = "[${upper(var.env)}][SRE] Consumo Crítico de Error Budget: ${each.key}-service"
   type = "slo alert"
 
-  query = "error_budget_burn_rate(\"${datadog_service_level_objective.availability_slo[each.key].id}\", \"7d\").over(\"1h\") > 14.4"
+  query = "burn_rate(\"${datadog_service_level_objective.availability_slo[each.key].id}\").over(\"7d\").long_window(\"1h\").short_window(\"5m\") > 14.4"
 
   message = <<EOT
   Atenção! O serviço *${each.key}-service* está consumindo seu Error Budget de forma acelerada (Burn Rate > 14.4x).
@@ -59,6 +59,10 @@ resource "datadog_monitor" "slo_burn_rate_alert" {
   
   @pagerduty-SolidaryTech
   EOT
+
+  monitor_thresholds {
+    critical = 14.4
+  }
 }
 
 resource "datadog_service_level_objective" "business_journey_donation_slo" {
