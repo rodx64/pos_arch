@@ -1,6 +1,7 @@
-variable "environment" {
-  type    = string
-  default = "dev"
+variable "env" {
+  description = "Ambiente de deploy (ex: dev, prod)"
+  type        = string
+  default     = "dev"
 }
 
 variable "namespace" {
@@ -44,4 +45,14 @@ variable "datadog_url" {
 variable "datadog_cluster_agent_token" {
   type      = string
   sensitive = true
+}
+
+variable "slo_services" {
+  description = "Mapa de serviços e seus limiares de SLO para os monitores"
+  type = map(object({
+    slo_target         = number
+    latency_percentile = number  # (ex: 90, 95, 99)
+    latency_threshold  = number  # Limiar em segundos (ex: 0.25)
+  }))
+  default = {}
 }

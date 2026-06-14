@@ -44,5 +44,23 @@ inputs = {
 
   datadog_api_key      = get_env("DATADOG_API_KEY")
   datadog_cluster_agent_token = get_env("DATADOG_CLUSTER_AGENT_TOKEN")
-  datadog_app_key      = get_env("DATADOG_APP_KEY")
+  datadog_app_key             = get_env("DATADOG_APP_KEY")
+
+  slo_services = {
+    "donation" = {
+      slo_target         = 99.9
+      latency_percentile = 99
+      latency_threshold  = 0.25
+    }
+    "ngo" = {
+      slo_target         = 99.5
+      latency_percentile = 95
+      latency_threshold  = 0.50
+    }
+    "volunteer" = {
+      slo_target         = 99.5
+      latency_percentile = 90
+      latency_threshold  = 0.80
+    }
+  }
 }

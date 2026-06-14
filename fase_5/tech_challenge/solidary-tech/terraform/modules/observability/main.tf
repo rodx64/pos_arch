@@ -2,7 +2,7 @@ resource "kubernetes_namespace" "monitoring" {
   metadata {
     name = var.namespace
     labels = {
-      environment = var.environment
+      environment = var.env
     }
   }
 }
