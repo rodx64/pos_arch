@@ -13,7 +13,7 @@ resource "datadog_service_level_objective" "availability_slo" {
   thresholds {
     timeframe = "7d"
     target    = each.value.slo_target
-    warning   = each.value.slo_target - 0.05
+    warning   = each.value.slo_warning
   }
 
   tags = ["env:${var.env}", "service:${each.key}-service", "tier:slo"]

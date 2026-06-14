@@ -1,4 +1,4 @@
-resource "kubernetes_namespace" "monitoring" {
+resource "kubernetes_namespace_v1" "monitoring" {
   metadata {
     name = var.namespace
     labels = {
@@ -19,7 +19,7 @@ resource "kubernetes_secret_v1" "datadog" {
     token   = var.datadog_cluster_agent_token
   }
 
-  depends_on = [kubernetes_namespace.monitoring]
+  depends_on = [kubernetes_namespace_v1.monitoring]
 }
 
 resource "kubectl_manifest" "datadog_manifests" {
