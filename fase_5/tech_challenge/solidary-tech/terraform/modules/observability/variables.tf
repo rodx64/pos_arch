@@ -51,8 +51,8 @@ variable "slo_services" {
   description = "Mapa de serviços e seus limiares de SLO para os monitores"
   type = map(object({
     slo_target         = number
-    latency_percentile = number  # (ex: 90, 95, 99)
-    latency_threshold  = number  # Limiar em segundos (ex: 0.25)
+    latency_percentile = number # (ex: 90, 95, 99)
+    latency_threshold  = number # Limiar em segundos (ex: 0.25)
   }))
   default = {}
 }

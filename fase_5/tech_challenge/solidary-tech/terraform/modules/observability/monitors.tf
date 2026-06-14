@@ -4,7 +4,7 @@ resource "datadog_service_level_objective" "availability_slo" {
   name        = "[${upper(var.env)}] ${each.key}-service - Disponibilidade Geral"
   type        = "metric"
   description = "SLO gerenciado via Terraform para o serviço ${each.key}"
-  
+
   query {
     numerator   = "sum:openmetrics.http_requests_total{env:${var.env},service:${each.key},!status:5xx}.as_count()"
     denominator = "sum:openmetrics.http_requests_total{env:${var.env},service:${each.key}}.as_count()"
