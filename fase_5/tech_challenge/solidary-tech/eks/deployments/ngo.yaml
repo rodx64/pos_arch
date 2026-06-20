@@ -40,7 +40,7 @@ spec:
                     "process_cpu_seconds_total",
                     "process_resident_memory_bytes"
                   ],
-                  "send_distribution_buckets": true
+                  "histogram_buckets_as_distributions": true
                 }
               ]
             }
