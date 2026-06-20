@@ -34,3 +34,6 @@ kubectl create secret generic datadog-secret \
 kubectl get ingress -n toggle-master 
 
 kubectl get svc -n monitoring
+
+Deve ser habilitado na métrica o Percentiles 
+ex: https://app.datadoghq.com/metric/summary?metric=solidary_tech.http_request_duration_seconds
