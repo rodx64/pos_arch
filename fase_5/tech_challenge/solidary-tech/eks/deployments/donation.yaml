@@ -39,7 +39,8 @@ spec:
                     "http_request_duration_seconds",
                     "process_cpu_seconds_total",
                     "process_resident_memory_bytes"
-                  ]
+                  ],
+                  "send_distribution_buckets": true
                 }
               ]
             }
