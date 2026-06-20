@@ -6,8 +6,8 @@ resource "datadog_service_level_objective" "availability_slo" {
   description = "SLO gerenciado via Terraform para o serviço ${each.key}"
 
   query {
-    numerator   = "sum:openmetrics.http_requests_total{env:${var.env},service:${each.key},!status:5xx}.as_count()"
-    denominator = "sum:openmetrics.http_requests_total{env:${var.env},service:${each.key}}.as_count()"
+    numerator   = "sum:solidary_tech.http_requests_total{env:${var.env},service:${each.key},!status:5xx}.as_count()"
+    denominator = "sum:solidary_tech.http_requests_total{env:${var.env},service:${each.key}}.as_count()"
   }
 
   thresholds {
@@ -25,7 +25,7 @@ resource "datadog_monitor" "latency" {
   name = "[${upper(var.env)}][P2] SLO Performance: Latência P${each.value.latency_percentile} Degradada no ${each.key}-service"
   type = "query alert"
 
-  query = "avg(last_5m):p${each.value.latency_percentile}:openmetrics.http_request_duration_seconds_histogram{env:${var.env},service:${each.key}} > ${each.value.latency_threshold}"
+  query = "avg(last_5m):p${each.value.latency_percentile}:solidary_tech.http_request_duration_seconds_histogram{env:${var.env},service:${each.key}} > ${each.value.latency_threshold}"
 
   message = <<EOT
   A latência P${each.value.latency_percentile} do *${each.key}-service* ultrapassou o limiar crítico de ${each.value.latency_threshold}s.
