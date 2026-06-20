@@ -25,7 +25,7 @@ resource "datadog_monitor" "latency" {
   name = "[${upper(var.env)}][P2] SLO Performance: Latência P${each.value.latency_percentile} Degradada no ${each.key}-service"
   type = "query alert"
 
-  query = "p${each.value.latency_percentile}(last_5m):sum:solidary_tech.http_request_duration_seconds.bucket{env:${var.env},service:${each.key}} by {le}.as_count() > ${each.value.latency_threshold}"
+  query = "p${each.value.latency_percentile}(last_5m):solidary_tech.http_request_duration_seconds{env:${var.env},service:${each.key}} > ${each.value.latency_threshold}"
 
   message = <<EOT
   A latência P${each.value.latency_percentile} do *${each.key}-service* ultrapassou o limiar crítico de ${each.value.latency_threshold}s.
