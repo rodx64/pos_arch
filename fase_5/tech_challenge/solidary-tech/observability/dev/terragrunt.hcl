@@ -47,19 +47,19 @@ inputs = {
   datadog_app_key             = get_env("DATADOG_APP_KEY")
 
   slo_services = {
-  "donation-service" = {
+  "donation" = {
     slo_target         = 99.9
     slo_warning        = 99.95
     latency_percentile = 99
     latency_threshold  = 0.25
   }
-  "ngo-service" = {
+  "ngo" = {
     slo_target         = 99.5
     slo_warning        = 99.80
     latency_percentile = 95
     latency_threshold  = 0.50
   }
-  "volunteer-service" = {
+  "volunteer" = {
     slo_target         = 99.5
     slo_warning        = 99.80
     latency_percentile = 90
