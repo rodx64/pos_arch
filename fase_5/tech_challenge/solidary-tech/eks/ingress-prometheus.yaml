@@ -9,7 +9,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: a5858899b10504a8d88dbcf7bf8a0dea-559dddb09a05b3cb.elb.us-east-1.amazonaws.com
+    - host: a954c8dbb4a244d5dab197470da62ab3-3ee1847475830378.elb.us-east-1.amazonaws.com
       http:
         paths:
           - path: /prometheus(/|$)(.*)
