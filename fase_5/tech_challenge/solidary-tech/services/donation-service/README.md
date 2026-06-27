@@ -90,3 +90,4 @@ O arquivo `db/init.sql` define a tabela `donations` com as colunas:
 - `donor_name`
 - `status`
 - `created_at`
+
