@@ -122,6 +122,7 @@ def get_table():
 def health():
     return jsonify({"status": "ok", "service": "volunteer-service"})
 
+
 @app.route('/cpu')
 def cpu_stress():
     """
