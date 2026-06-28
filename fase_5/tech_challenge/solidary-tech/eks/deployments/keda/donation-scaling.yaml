@@ -1,0 +1,22 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: donation-scaling
+  namespace: solidary-tech
+spec:
+  scaleTargetRef:
+    name: donation-deployment # serviço crítico de SLO (99.9% / P99 250ms)
+  minReplicaCount: 1
+  maxReplicaCount: 4
+  cooldownPeriod: 120
+  triggers:
+    - type: prometheus
+      metadata:
+        serverAddress: http://prometheus.monitoring.svc.cluster.local:9090
+        metricName: donation_http_request_rate
+        query: sum(rate(http_requests_total{service="donation"}[2m]))
+        threshold: "50"   # req/s por réplica — ajustar após baseline do k6
+    - type: cpu
+      metricType: Utilization
+      metadata:
+        value: "70"

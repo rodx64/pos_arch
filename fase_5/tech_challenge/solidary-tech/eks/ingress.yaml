@@ -1,0 +1,32 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: solidary-tech-ingress
+  namespace: solidary-tech
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: a954c8dbb4a244d5dab197470da62ab3-3ee1847475830378.elb.us-east-1.amazonaws.com
+      http:
+        paths:
+          - path: /ngos
+            pathType: Prefix
+            backend:
+              service:
+                name: ngo-service
+                port:
+                  number: 8081
+          - path: /donations
+            pathType: Prefix
+            backend:
+              service:
+                name: donation-service
+                port:
+                  number: 8082
+          - path: /volunteers
+            pathType: Prefix
+            backend:
+              service:
+                name: volunteer-service
+                port:
+                  number: 8083

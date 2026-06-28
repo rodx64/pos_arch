@@ -1,0 +1,37 @@
+terraform {
+  required_version = ">= 1.5"
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = ">= 5.0.0, < 6.0.0"
+    }
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = ">= 2.0.0"
+    }
+    datadog = {
+      source  = "DataDog/datadog"
+      version = "~> 3.0"
+    }
+    kubectl = {
+      source  = "gavinbunney/kubectl"
+      version = ">= 1.14.0"
+    }
+  }
+}
+
+provider "aws" {}
+
+provider "kubernetes" {
+  host                   = var.eks_tunnel_host != "" ? var.eks_tunnel_host : var.eks_cluster_endpoint
+  cluster_ca_certificate = var.eks_tunnel_host != "" ? "" : base64decode(var.eks_cluster_ca)
+  insecure               = var.eks_tunnel_host != ""
+  token                  = var.eks_cluster_token
+}
+
+provider "datadog" {
+  api_key = var.datadog_api_key
+  app_key = var.datadog_app_key
+  api_url = var.datadog_url
+}
+

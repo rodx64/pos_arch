@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: volunteer-service
+  namespace: solidary-tech
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8083"
+    prometheus.io/path: "/metrics"
+  labels:
+    app: volunteer
+spec:
+  type: ClusterIP
+  selector:
+    app: volunteer
+  ports:
+    - protocol: TCP
+      port: 8083
+      targetPort: 8083

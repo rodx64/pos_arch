@@ -4,28 +4,31 @@ on:
   push:
     branches: ["main", "develop"]
     paths:
-      - "fase_3/tech_challenge/toggle-master-microservices/terraform/**"
+      - "fase_5/tech_challenge/solidary-tech/terraform/**"
   pull_request:
     branches: ["main", "develop"]
     paths:
-      - "fase_3/tech_challenge/toggle-master-microservices/terraform/**"
+      - "fase_5/tech_challenge/solidary-tech/terraform/**"
+  workflow_dispatch: {}
 
 env:
-  TERRAFORM_DIR: fase_3/tech_challenge/toggle-master-microservices/terraform
-  BACKEND_DIR: fase_3/tech_challenge/toggle-master-microservices/terraform/backend
-  TERRAGRUNT_DIR: fase_3/tech_challenge/toggle-master-microservices/terraform/environments/dev
-  K8S_SECRETS_DIR: fase_3/tech_challenge/toggle-master-microservices/k8s-secrets/dev
-  EKS_DIR: fase_3/tech_challenge/toggle-master-microservices/eks
+  TERRAFORM_DIR: fase_5/tech_challenge/solidary-tech/terraform
+  BACKEND_DIR: fase_5/tech_challenge/solidary-tech/terraform/backend
+  TERRAGRUNT_DIR: fase_5/tech_challenge/solidary-tech/terraform/environments/dev
+  K8S_SECRETS_DIR: fase_5/tech_challenge/solidary-tech/k8s-secrets/dev
+  OBSERVABILITY_DIR: fase_5/tech_challenge/solidary-tech/observability/dev
+  EKS_DIR: fase_5/tech_challenge/solidary-tech/eks
   TG_VERSION: "0.82.2"
   TOFU_VERSION: "1.10.1"
+  KEDA_VERSION: "2.15.1"
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: write
 
 jobs:
   bootstrap:
-    name: Bootstrap — S3 + DynamoDB
+    name: Bootstrap
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -50,7 +53,7 @@ jobs:
       - name: Import existing resources
         working-directory: ${{ env.BACKEND_DIR }}
         run: |
-          terraform import aws_s3_bucket.state toggle-iac-state 2>/dev/null || true
+          terraform import aws_s3_bucket.state solidary-iac-state 2>/dev/null || true
           terraform import aws_dynamodb_table.locks terraform-locks 2>/dev/null || true
 
       - name: Terraform apply — backend
@@ -122,8 +125,7 @@ jobs:
       - name: Terragrunt plan
         working-directory: ${{ env.TERRAGRUNT_DIR }}
         env:
-          TF_VAR_AUTH_MASTER_KEY: ${{ secrets.AUTH_MASTER_KEY }}
-          TF_VAR_EVALUATION_API_KEY: ${{ secrets.EVALUATION_API_KEY }}
+          TF_VAR_DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY}}
         run: |
           terragrunt run --all --terragrunt-non-interactive plan \
             -no-color 2>&1 | tee plan_output.txt
@@ -175,21 +177,31 @@ jobs:
           tg_version: ${{ env.TG_VERSION }}
           tofu_version: ${{ env.TOFU_VERSION }}
 
-      - name: Import existing ECR repository
+      - name: Import ECR if exists
         working-directory: ${{ env.TERRAGRUNT_DIR }}
-        env:
-          TF_VAR_AUTH_MASTER_KEY: ${{ secrets.AUTH_MASTER_KEY }}
-          TF_VAR_EVALUATION_API_KEY: ${{ secrets.EVALUATION_API_KEY }}
         run: |
-          terragrunt import \
-            'module.ecr.aws_ecr_repository.this["toggle-master"]' \
-            toggle-master 2>/dev/null || true
+          REPO_NAME="solidary-tech"
+          REGION="${{ secrets.AWS_REGION }}"
+          
+          CHECK=$(aws ecr describe-repositories --repository-names "$REPO_NAME" --region "$REGION" 2>&1 || true)
+
+          if [[ "$CHECK" == *"$REPO_NAME"* && "$CHECK" != *"RepositoryNotFoundException"* ]]; then
+            echo "Repositório $FOUND_REPO confirmado na AWS."
+            
+            IN_STATE=$(terragrunt state list 2>/dev/null | grep -c "module.ecr.aws_ecr_repository.this" || true)
+            
+            if [ "$IN_STATE" -eq "0" ]; then
+              echo " Importando para o Terraform State..."
+              terragrunt import "module.ecr.aws_ecr_repository.this[\"$REPO_NAME\"]" "$REPO_NAME" --terragrunt-non-interactive
+            else
+              echo "Já mapeado."
+            fi
+          else
+            echo "Repositório não existe na conta/região. O Terraform criará um novo."
+          fi
 
       - name: Terragrunt apply
         working-directory: ${{ env.TERRAGRUNT_DIR }}
-        env:
-          TF_VAR_AUTH_MASTER_KEY: ${{ secrets.AUTH_MASTER_KEY }}
-          TF_VAR_EVALUATION_API_KEY: ${{ secrets.EVALUATION_API_KEY }}
         run: |
           terragrunt run --all --terragrunt-non-interactive apply
 
@@ -220,7 +232,7 @@ jobs:
         run: |
           BASTION_IP=$(aws ec2 describe-instances \
             --filters \
-              "Name=tag:Name,Values=toggle-master-dev-bastion" \
+              "Name=tag:Name,Values=solidary-tech-dev-bastion" \
               "Name=instance-state-name,Values=running" \
             --query 'Reservations[0].Instances[0].PublicIpAddress' \
             --output text)
@@ -231,7 +243,7 @@ jobs:
           fi
 
           EKS_ENDPOINT=$(aws eks describe-cluster \
-            --name toggle-master-eks \
+            --name solidary-tech-eks \
             --query 'cluster.endpoint' \
             --output text | sed 's|https://||')
 
@@ -256,14 +268,126 @@ jobs:
       - name: Terragrunt apply — k8s secrets
         working-directory: ${{ env.K8S_SECRETS_DIR }}
         env:
-          TF_VAR_AUTH_MASTER_KEY: ${{ secrets.AUTH_MASTER_KEY }}
-          TF_VAR_EVALUATION_API_KEY: ${{ secrets.EVALUATION_API_KEY }}
           KUBE_HOST: "https://127.0.0.1:6443"
           KUBE_INSECURE: "true"
         run: terragrunt apply -auto-approve
+  
+  observability:
+    name: Apply — Observability
+    runs-on: ubuntu-latest
+    needs: k8s-secrets
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
 
-  argocd-install:
-    name: Install — ArgoCD
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Setup Terragrunt
+        uses: gruntwork-io/terragrunt-action@v3
+        with:
+          tg_version: ${{ env.TG_VERSION }}
+          tofu_version: ${{ env.TOFU_VERSION }}
+
+      - name: Get bastion IP and EKS endpoint
+        id: infra
+        run: |
+          BASTION_IP=$(aws ec2 describe-instances \
+            --filters \
+              "Name=tag:Name,Values=solidary-tech-dev-bastion" \
+              "Name=instance-state-name,Values=running" \
+            --query 'Reservations[0].Instances[0].PublicIpAddress' \
+            --output text)
+
+          if [ -z "$BASTION_IP" ] || [ "$BASTION_IP" = "None" ]; then
+            echo "ERROR: Bastion IP not found."
+            exit 1
+          fi
+
+          EKS_ENDPOINT=$(aws eks describe-cluster \
+            --name solidary-tech-eks \
+            --query 'cluster.endpoint' \
+            --output text | sed 's|https://||')
+
+          echo "bastion_ip=$BASTION_IP" >> $GITHUB_OUTPUT
+          echo "eks_endpoint=$EKS_ENDPOINT" >> $GITHUB_OUTPUT
+
+      - name: Save SSH key
+        run: |
+          echo "${{ secrets.EC2_SSH_KEY }}" > /tmp/iac-key.pem
+          chmod 400 /tmp/iac-key.pem
+
+      - name: Open SSH tunnel via bastion
+        run: |
+          ssh -i /tmp/iac-key.pem \
+            -o StrictHostKeyChecking=no \
+            -o ServerAliveInterval=60 \
+            -L 6443:${{ steps.infra.outputs.eks_endpoint }}:443 \
+            ubuntu@${{ steps.infra.outputs.bastion_ip }} \
+            -N -f
+          sleep 5
+
+      - name: Terragrunt apply — observability
+        working-directory: ${{ env.OBSERVABILITY_DIR }}
+        env:
+          DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
+          DATADOG_APP_KEY: ${{ secrets.DATADOG_APP_KEY}}
+          DATADOG_CLUSTER_AGENT_TOKEN: ${{ secrets.DATADOG_CLUSTER_AGENT_TOKEN }}
+          TF_VAR_DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
+          TF_VAR_DATADOG_APP_KEY: ${{ secrets.DATADOG_APP_KEY}}
+          TF_VAR_DATADOG_CLUSTER_AGENT_TOKEN: ${{ secrets.DATADOG_CLUSTER_AGENT_TOKEN }}
+        run: |
+          if [ -z "${{ secrets.DATADOG_API_KEY }}" ]; then
+            echo "ERROR: DATADOG_API_KEY vazio no GitHub Secrets"
+            exit 1
+          fi
+          if [ -z "${{ secrets.DATADOG_APP_KEY }}" ]; then
+            echo "ERROR: DATADOG_APP_KEY vazio no GitHub Secrets"
+            exit 1
+          fi
+          if [ -z "${{ secrets.DATADOG_CLUSTER_AGENT_TOKEN }}" ]; then
+            echo "ERROR: DATADOG_CLUSTER_AGENT_TOKEN vazio no GitHub Secrets"
+            exit 1
+          fi
+          rm -rf .terragrunt-cache
+          
+          echo "Iniciando Apply da Observabilidade..."
+          
+          set +e
+          OUTPUT=$(terragrunt apply -auto-approve 2>&1)
+          EXIT_CODE=$?
+          set -e
+          if [ $EXIT_CODE -ne 0 ]; then
+            echo "$OUTPUT"
+            if echo "$OUTPUT" | grep -q "Duplicate of an existing monitor_id"; then
+              echo "Detectado monitor duplicado no Datadog. Iniciando Auto-Import..."
+              MONITOR_ID=$(echo "$OUTPUT" | grep -oP 'monitor_id:\K\d+')
+              RESOURCE_ADDR=$(echo "$OUTPUT" | grep -oP 'with \Kdatadog_monitor\.[a-zA-Z0-9_]+' | head -n 1)
+              if [ -n "$MONITOR_ID" ] && [ -n "$RESOURCE_ADDR" ]; then
+                echo "Importando recurso [$RESOURCE_ADDR] usando o ID [$MONITOR_ID]..."
+                terragrunt import "$RESOURCE_ADDR" "$MONITOR_ID" --terragrunt-non-interactive
+                echo "Rodando apply novamente após o import..."
+                terragrunt apply -auto-approve
+                else
+                echo "Falha ao extrair ID ou Endereço do Recurso da string de erro."
+                exit 1
+              fi
+              else
+              echo "Erro no apply que não é de duplicação. Abortando."
+              exit $EXIT_CODE
+            fi
+          else
+            echo "$OUTPUT"
+            echo "Apply executado com sucesso na primeira tentativa."
+          fi
+
+  cluster-addons:
+    name: Install — Cluster Add-ons
     runs-on: ubuntu-latest
     needs: k8s-secrets
     if: github.event_name == 'push'
@@ -283,13 +407,18 @@ jobs:
         run: |
           BASTION_IP=$(aws ec2 describe-instances \
             --filters \
-              "Name=tag:Name,Values=toggle-master-dev-bastion" \
+              "Name=tag:Name,Values=solidary-tech-dev-bastion" \
               "Name=instance-state-name,Values=running" \
             --query 'Reservations[0].Instances[0].PublicIpAddress' \
             --output text)
 
+          if [ -z "$BASTION_IP" ] || [ "$BASTION_IP" = "None" ]; then
+            echo "ERROR: Bastion IP not found."
+            exit 1
+          fi
+
           EKS_ENDPOINT=$(aws eks describe-cluster \
-            --name toggle-master-eks \
+            --name solidary-tech-eks \
             --query 'cluster.endpoint' \
             --output text | sed 's|https://||')
 
@@ -313,17 +442,10 @@ jobs:
 
       - name: Configure kubectl
         run: |
-          aws eks update-kubeconfig \
-            --region ${{ secrets.AWS_REGION }} \
-            --name toggle-master-eks
-
+          aws eks update-kubeconfig --region ${{ secrets.AWS_REGION }} --name solidary-tech-eks
           ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-          CLUSTER_ARN="arn:aws:eks:${{ secrets.AWS_REGION }}:${ACCOUNT_ID}:cluster/toggle-master-eks"
-
-          kubectl config set-cluster "$CLUSTER_ARN" \
-            --server=https://127.0.0.1:6443 \
-            --insecure-skip-tls-verify=true
-
+          CLUSTER_ARN="arn:aws:eks:${{ secrets.AWS_REGION }}:${ACCOUNT_ID}:cluster/solidary-tech-eks"
+          kubectl config set-cluster "$CLUSTER_ARN" --server=https://127.0.0.1:6443 --insecure-skip-tls-verify=true
           kubectl config use-context "$CLUSTER_ARN"
 
       - name: Install ArgoCD
@@ -334,8 +456,7 @@ jobs:
             echo "ArgoCD já instalado — pulando instalação."
           else
             echo "Instalando ArgoCD..."
-            kubectl apply -n argocd \
-              -f https://raw.githubusercontent.com/argoproj/argo-cd/v2.14.2/manifests/install.yaml
+            kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/v2.14.2/manifests/install.yaml
           fi
 
           SECRET_KEY=$(openssl rand -base64 32)
@@ -344,27 +465,16 @@ jobs:
             -p="{\"data\":{\"server.secretkey\":\"$(echo -n $SECRET_KEY | base64 | tr -d '\n')\"}}" \
             2>/dev/null || true
 
-          kubectl rollout status deployment/argocd-server \
-            -n argocd \
-            --timeout=720s
+          kubectl rollout status deployment/argocd-server -n argocd --timeout=720s
 
       - name: Expose ArgoCD via LoadBalancer
         run: |
-          kubectl patch svc argocd-server \
-            -n argocd \
-            -p '{"spec":{"type":"LoadBalancer"}}'
+          kubectl patch svc argocd-server -n argocd -p '{"spec":{"type":"LoadBalancer"}}'
 
       - name: Get ArgoCD initial password
         run: |
-          # Aguarda o secret existir
-          kubectl wait --for=condition=Ready \
-            pod -l app.kubernetes.io/name=argocd-server \
-            -n argocd \
-            --timeout=120s
-
-          ARGOCD_PASSWORD=$(kubectl -n argocd get secret argocd-initial-admin-secret \
-            -o jsonpath="{.data.password}" | base64 -d)
-
+          kubectl wait --for=condition=Ready pod -l app.kubernetes.io/name=argocd-server -n argocd --timeout=120s
+          ARGOCD_PASSWORD=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
           echo "::add-mask::$ARGOCD_PASSWORD"
           echo "ArgoCD initial password obtida — salve em um secret se necessário."
 
@@ -375,11 +485,30 @@ jobs:
           else
             kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
           fi
+      
+      - name: Install KEDA
+        run: |
+          if kubectl get deployment keda-operator -n keda &>/dev/null; then
+            echo "KEDA já instalado — pulando instalação."
+          else
+            echo "Instalando KEDA ${{ env.KEDA_VERSION }}..."
+            kubectl apply --server-side -f https://github.com/kedacore/keda/releases/download/v${{ env.KEDA_VERSION }}/keda-${{ env.KEDA_VERSION }}.yaml
+            kubectl wait --namespace keda --for=condition=Ready pod -l app=keda-operator --timeout=180s
+          fi
+
+      - name: Install ingress-nginx
+        run: |
+          if kubectl get deployment ingress-nginx-controller -n ingress-nginx &>/dev/null; then
+            echo "ingress-nginx já instalado — pulando."
+          else
+            kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.0/deploy/static/provider/aws/deploy.yaml
+            kubectl wait --namespace ingress-nginx --for=condition=ready pod --selector=app.kubernetes.io/component=controller --timeout=120s
+          fi
 
   argocd-app:
     name: Configure — ArgoCD Application
     runs-on: ubuntu-latest
-    needs: argocd-install
+    needs: cluster-addons
     if: github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
@@ -397,13 +526,18 @@ jobs:
         run: |
           BASTION_IP=$(aws ec2 describe-instances \
             --filters \
-              "Name=tag:Name,Values=toggle-master-dev-bastion" \
+              "Name=tag:Name,Values=solidary-tech-dev-bastion" \
               "Name=instance-state-name,Values=running" \
             --query 'Reservations[0].Instances[0].PublicIpAddress' \
             --output text)
 
+          if [ -z "$BASTION_IP" ] || [ "$BASTION_IP" = "None" ]; then
+            echo "ERROR: Bastion IP not found."
+            exit 1
+          fi
+
           EKS_ENDPOINT=$(aws eks describe-cluster \
-            --name toggle-master-eks \
+            --name solidary-tech-eks \
             --query 'cluster.endpoint' \
             --output text | sed 's|https://||')
 
@@ -427,17 +561,10 @@ jobs:
 
       - name: Configure kubectl
         run: |
-          aws eks update-kubeconfig \
-            --region ${{ secrets.AWS_REGION }} \
-            --name toggle-master-eks
-
+          aws eks update-kubeconfig --region ${{ secrets.AWS_REGION }} --name solidary-tech-eks
           ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-          CLUSTER_ARN="arn:aws:eks:${{ secrets.AWS_REGION }}:${ACCOUNT_ID}:cluster/toggle-master-eks"
-
-          kubectl config set-cluster "$CLUSTER_ARN" \
-            --server=https://127.0.0.1:6443 \
-            --insecure-skip-tls-verify=true
-
+          CLUSTER_ARN="arn:aws:eks:${{ secrets.AWS_REGION }}:${ACCOUNT_ID}:cluster/solidary-tech-eks"
+          kubectl config set-cluster "$CLUSTER_ARN" --server=https://127.0.0.1:6443 --insecure-skip-tls-verify=true
           kubectl config use-context "$CLUSTER_ARN"
 
       - name: Create ArgoCD Application
@@ -449,7 +576,7 @@ jobs:
           apiVersion: argoproj.io/v1alpha1
           kind: Application
           metadata:
-            name: toggle-master
+            name: solidary-tech
             namespace: argocd
             finalizers:
               - resources-finalizer.argocd.argoproj.io
@@ -463,7 +590,12 @@ jobs:
                 recurse: true
             destination:
               server: https://kubernetes.default.svc
-              namespace: toggle-master
+              namespace: solidary-tech
+            ignoreDifferences:
+              - group: apps
+                kind: Deployment
+                jsonPointers:
+                  - /spec/replicas
             syncPolicy:
               automated:
                 prune: true
@@ -474,13 +606,125 @@ jobs:
 
       - name: Trigger initial sync
         run: |
-          # Aguarda a Application ser registrada
           sleep 10
+          kubectl -n argocd wait --for=jsonpath='{.status.health.status}'=Healthy application/solidary-tech --timeout=300s || true
+          echo "ArgoCD Application 'solidary-tech' configurada."
+          kubectl -n argocd get application solidary-tech
 
-          kubectl -n argocd wait \
-            --for=jsonpath='{.status.health.status}'=Healthy \
-            application/toggle-master \
-            --timeout=300s || true
+  update-ingress-host:
+    name: Update Ingress Host with NLB DNS
+    runs-on: ubuntu-latest
+    needs: argocd-app
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: ${{ github.ref_name }}
 
-          echo "ArgoCD Application 'toggle-master' configurada."
-          kubectl -n argocd get application toggle-master
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Get bastion IP and EKS endpoint
+        id: infra
+        run: |
+          BASTION_IP=$(aws ec2 describe-instances \
+            --filters \
+              "Name=tag:Name,Values=solidary-tech-dev-bastion" \
+              "Name=instance-state-name,Values=running" \
+            --query 'Reservations[0].Instances[0].PublicIpAddress' \
+            --output text)
+
+          if [ -z "$BASTION_IP" ] || [ "$BASTION_IP" = "None" ]; then
+            echo "ERROR: Bastion IP not found."
+            exit 1
+          fi
+
+          EKS_ENDPOINT=$(aws eks describe-cluster \
+            --name solidary-tech-eks \
+            --query 'cluster.endpoint' \
+            --output text | sed 's|https://||')
+
+          echo "bastion_ip=$BASTION_IP" >> $GITHUB_OUTPUT
+          echo "eks_endpoint=$EKS_ENDPOINT" >> $GITHUB_OUTPUT
+
+      - name: Save SSH key
+        run: |
+          echo "${{ secrets.EC2_SSH_KEY }}" > /tmp/iac-key.pem
+          chmod 400 /tmp/iac-key.pem
+
+      - name: Open SSH tunnel via bastion
+        run: |
+          ssh -i /tmp/iac-key.pem \
+            -o StrictHostKeyChecking=no \
+            -o ServerAliveInterval=60 \
+            -L 6443:${{ steps.infra.outputs.eks_endpoint }}:443 \
+            ubuntu@${{ steps.infra.outputs.bastion_ip }} \
+            -N -f
+          sleep 5
+
+      - name: Configure kubectl
+        run: |
+          aws eks update-kubeconfig --region ${{ secrets.AWS_REGION }} --name solidary-tech-eks
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          CLUSTER_ARN="arn:aws:eks:${{ secrets.AWS_REGION }}:${ACCOUNT_ID}:cluster/solidary-tech-eks"
+          kubectl config set-cluster "$CLUSTER_ARN" --server=https://127.0.0.1:6443 --insecure-skip-tls-verify=true
+          kubectl config use-context "$CLUSTER_ARN"
+
+      - name: Get NLB Hostname
+        run: |
+          echo "Aguardando o AWS provisionar o NLB..."
+          sleep 30
+          
+          for i in {1..10}; do
+            NLB_HOST=$(kubectl get svc ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+            if [ -n "$NLB_HOST" ]; then
+              echo "NLB Host encontrado: $NLB_HOST"
+              echo "NLB_HOST=$NLB_HOST" >> $GITHUB_ENV
+              break
+            fi
+            echo "Ainda sem DNS... tentando novamente em 15s"
+            sleep 15
+          done
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Update Ingress YAML and Commit
+        run: |
+          INGRESS_API_FILE="${{ env.EKS_DIR }}/ingress.yaml"
+          INGRESS_PROM_FILE="${{ env.EKS_DIR }}/ingress-prometheus.yaml"
+          INGRESS_GRAFANA_FILE="${{ env.EKS_DIR }}/observability/ingress.yaml"
+          
+          sed -i "s|host: .*|host: ${NLB_HOST}|g" "$INGRESS_API_FILE"
+          sed -i "s|host: .*|host: ${NLB_HOST}|g" "$INGRESS_PROM_FILE"
+          sed -i "s|host: .*|host: ${NLB_HOST}|g" "$INGRESS_GRAFANA_FILE"
+
+          git add "$INGRESS_API_FILE" "$INGRESS_PROM_FILE" "$INGRESS_GRAFANA_FILE"
+          
+          if git diff --cached --quiet; then
+            echo "Os Hosts já estão atualizados. Pulando commit."
+            exit 0
+          fi
+
+          git commit -m "ci: update ingress hosts with NLB DNS [skip ci]"
+          
+          MAX_RETRIES=5
+          for i in $(seq 1 $MAX_RETRIES); do
+            if git push; then
+              echo "Push realizado com sucesso!"
+              exit 0
+            fi
+            echo "Conflito detectado. Sincronizando..."
+            git pull --rebase --autostash
+            sleep $(( (RANDOM % 5) + 3 ))
+          done
+          echo "Falha ao sincronizar após $MAX_RETRIES tentativas."
+          exit 1

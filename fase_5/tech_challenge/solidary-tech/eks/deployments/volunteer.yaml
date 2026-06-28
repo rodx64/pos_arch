@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: volunteer-deployment
+  namespace: solidary-tech
+  labels:
+    app: volunteer
+    tier: backend
+    tags.datadoghq.com/env: "dev"
+    tags.datadoghq.com/service: "volunteer-service"
+    tags.datadoghq.com/version: "1.0.0"
+spec:
+  selector:
+    matchLabels:
+      app: volunteer
+      tier: backend
+  template:
+    metadata:
+      labels:
+        app: volunteer
+        tier: backend
+        tags.datadoghq.com/env: "dev"
+        tags.datadoghq.com/service: "volunteer-service"
+        tags.datadoghq.com/version: "1.0.0"
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8083"
+        prometheus.io/path: "/metrics"
+        admission.datadoghq.com/enabled: "true"
+        ad.datadoghq.com/volunteer-container.checks: |
+          {
+            "openmetrics": {
+              "instances": [
+                {
+                  "openmetrics_endpoint": "http://%%host%%:8083/metrics",
+                  "namespace": "solidary_tech",
+                  "metrics": [
+                    "http_requests_total",
+                    "http_request_duration_seconds",
+                    "process_cpu_seconds_total",
+                    "process_resident_memory_bytes"
+                  ],
+                  "histogram_buckets_as_distributions": true
+                }
+              ]
+            }
+          }
+    spec:
+      containers:
+        - name: volunteer-container
+          image: 356969227282.dkr.ecr.us-east-1.amazonaws.com/solidary-tech:volunteer-service-696aa1e0b78680713f3e10833c1281ae24e7964f
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8083
+          env:
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://otel-collector.monitoring.svc.cluster.local:4318/v1/traces"
+            - name: OTEL_EXPORTER_OTLP_INSECURE
+              value: "true"
+            - name: OTEL_LOGS_EXPORTER
+              value: "otlp"
+            - name: OTEL_METRICS_EXPORTER
+              value: "otlp"
+            - name: OTEL_TRACES_EXPORTER
+              value: "otlp"
+            - name: OTEL_SERVICE_NAME
+              value: "volunteer-service"
+            - name: DD_LOGS_INJECTION
+              value: "true"
+            - name: DD_ENV
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['tags.datadoghq.com/env']
+            - name: DD_SERVICE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['tags.datadoghq.com/service']
+            - name: DD_VERSION
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['tags.datadoghq.com/version']
+          envFrom:
+            - configMapRef:
+                name: volunteer-config
+            - secretRef:
+                name: volunteer-secret
+          resources:
+            limits:
+              memory: "300Mi"
+              cpu: "350m"
+            requests:
+              memory: "180Mi"
+              cpu: "120m"

@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-deployment
+  namespace: toggle-master
+  labels:
+    app: auth
+    tier: backend
+    tags.datadoghq.com/env: "dev"
+    tags.datadoghq.com/service: "auth-service"
+    tags.datadoghq.com/version: "1.0.0"
+spec:
+  selector:
+    matchLabels:
+      app: auth
+      tier: backend
+  template:
+    metadata:
+      labels:
+        app: auth
+        tier: backend
+        tags.datadoghq.com/env: "dev"
+        tags.datadoghq.com/service: "auth-service"
+        tags.datadoghq.com/version: "1.0.0"
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8001"
+        prometheus.io/path: "/metrics"
+        admission.datadoghq.com/enabled: "true"
+        ad.datadoghq.com/auth-container.checks: |
+          {
+            "openmetrics": {
+              "instances": [
+                {
+                  "openmetrics_endpoint": "http://%%host%%:8001/metrics",
+                  "namespace": "toggle_master",
+                  "metrics": [
+                    "http_requests_total",
+                    "http_request_duration_seconds",
+                    "process_cpu_seconds_total",
+                    "process_resident_memory_bytes"
+                  ]
+                }
+              ]
+            }
+          }
+    spec:
+      containers:
+        - name: auth-container
+          image: 829281471119.dkr.ecr.us-east-1.amazonaws.com/toggle-master:auth-service-4040a0528ce86ee7d0aa10c65f7e6d53bca0c94c
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8001
+          env:
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "otel-collector.monitoring.svc.cluster.local:4317"
+            - name: OTEL_EXPORTER_OTLP_INSECURE
+              value: "true"
+            - name: OTEL_LOGS_EXPORTER
+              value: "otlp"
+            - name: OTEL_METRICS_EXPORTER
+              value: "otlp"
+            - name: OTEL_TRACES_EXPORTER
+              value: "otlp"
+            - name: OTEL_SERVICE_NAME
+              value: "auth-service"
+            - name: DD_LOGS_INJECTION
+              value: "true"
+            - name: DD_ENV
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['tags.datadoghq.com/env']
+            - name: DD_SERVICE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['tags.datadoghq.com/service']
+            - name: DD_VERSION
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['tags.datadoghq.com/version']
+          envFrom:
+            - configMapRef:
+                name: auth-config
+            - secretRef:
+                name: auth-secret
+          resources:
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+            requests:
+              memory: "128Mi"
+              cpu: "250m"

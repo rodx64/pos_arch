@@ -1,0 +1,120 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: datadog-agent
+  namespace: monitoring
+  labels:
+    app: datadog-agent
+spec:
+  selector:
+    matchLabels:
+      app: datadog-agent
+  template:
+    metadata:
+      labels:
+        app: datadog-agent
+      annotations:
+        prometheus.io/scrape: "false"
+    spec:
+      serviceAccountName: datadog-agent
+      containers:
+        - name: datadog-agent
+          image: datadog/agent:7
+          ports:
+            - containerPort: 8126
+              name: apm-port
+              protocol: TCP
+          env:
+            - name: DD_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: datadog-secret
+                  key: api-key
+            - name: DD_SITE
+              value: "us5.datadoghq.com"
+            - name: DD_ENV
+              value: "dev"
+            - name: DD_CLUSTER_NAME
+              value: "toggle-master"
+            - name: DD_LOGS_ENABLED
+              value: "true"
+            - name: DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL
+              value: "true"
+            - name: DD_APM_ENABLED
+              value: "true"
+            - name: DD_APM_NON_LOCAL_TRAFFIC
+              value: "true"
+            - name: DD_PROMETHEUS_SCRAPE_ENABLED
+              value: "false"
+            - name: KUBERNETES
+              value: "true"
+            - name: DD_KUBERNETES_KUBELET_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: DD_KUBELET_TLS_VERIFY
+              value: "false"
+            - name: DD_KUBERNETES_KUBELET_NODENAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: DD_HOSTNAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: DD_CRI_SOCKET_PATH
+              value: "/var/run/containerd/containerd.sock"
+            - name: DD_AC_INCLUDE
+              value: "name:.*"
+            - name: DD_IGNORE_AUTOCONF
+              value: "redisdb"
+            - name: DD_CLUSTER_AGENT_ENABLED
+              value: "true"
+            - name: DD_CLUSTER_AGENT_AUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: datadog-secret
+                  key: token
+            - name: DD_CLUSTER_AGENT_KBSERVICE_NAME
+              value: "datadog-cluster-agent"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "200m"
+              memory: "512Mi"
+          volumeMounts:
+            - name: containerd-socket
+              mountPath: /var/run/containerd/containerd.sock
+              readOnly: true
+            - name: procdir
+              mountPath: /host/proc
+              readOnly: true
+            - name: cgroups
+              mountPath: /host/sys/fs/cgroup
+              readOnly: true
+            - name: logpath
+              mountPath: /var/log/pods
+              readOnly: true
+            # Necessário para o Autodiscovery ler anotações dos pods
+            - name: pointerdir
+              mountPath: /opt/datadog-agent/run
+      volumes:
+        - name: containerd-socket
+          hostPath:
+            path: /var/run/containerd/containerd.sock
+            type: Socket
+        - name: procdir
+          hostPath:
+            path: /proc
+        - name: cgroups
+          hostPath:
+            path: /sys/fs/cgroup
+        - name: logpath
+          hostPath:
+            path: /var/log/pods
+        - name: pointerdir
+          hostPath:
+            path: /opt/datadog-agent/run
+            type: DirectoryOrCreate

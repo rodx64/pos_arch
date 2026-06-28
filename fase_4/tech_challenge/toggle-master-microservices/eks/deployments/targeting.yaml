@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: targeting-deployment
+  namespace: toggle-master
+  labels:
+    app: targeting
+    tier: backend
+    tags.datadoghq.com/env: "dev"
+    tags.datadoghq.com/service: "targeting-service"
+    tags.datadoghq.com/version: "1.0.0"
+spec:
+  selector:
+    matchLabels:
+      app: targeting
+      tier: backend
+  template:
+    metadata:
+      labels:
+        app: targeting
+        tier: backend
+        tags.datadoghq.com/env: "dev"
+        tags.datadoghq.com/service: "targeting-service"
+        tags.datadoghq.com/version: "1.0.0"
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8003"
+        prometheus.io/path: "/metrics"
+        admission.datadoghq.com/enabled: "true"
+        ad.datadoghq.com/targeting-container.checks: |
+          {
+            "openmetrics": {
+              "instances": [
+                {
+                  "openmetrics_endpoint": "http://%%host%%:8003/metrics",
+                  "namespace": "toggle_master",
+                  "metrics": [
+                    "http_requests_total",
+                    "http_request_duration_seconds",
+                    "process_cpu_seconds_total",
+                    "process_resident_memory_bytes"
+                  ]
+                }
+              ]
+            }
+          }
+    spec:
+      containers:
+        - name: targeting-container
+          image: 829281471119.dkr.ecr.us-east-1.amazonaws.com/toggle-master:targeting-service-4040a0528ce86ee7d0aa10c65f7e6d53bca0c94c
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8003
+          env:
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://otel-collector.monitoring.svc.cluster.local:4318/v1/traces"
+            - name: OTEL_EXPORTER_OTLP_INSECURE
+              value: "true"
+            - name: OTEL_LOGS_EXPORTER
+              value: "otlp"
+            - name: OTEL_METRICS_EXPORTER
+              value: "otlp"
+            - name: OTEL_TRACES_EXPORTER
+              value: "otlp"
+            - name: OTEL_SERVICE_NAME
+              value: "targeting-service"
+            - name: DD_LOGS_INJECTION
+              value: "true"
+            - name: DD_ENV
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['tags.datadoghq.com/env']
+            - name: DD_SERVICE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['tags.datadoghq.com/service']
+            - name: DD_VERSION
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['tags.datadoghq.com/version']
+          envFrom:
+            - configMapRef:
+                name: targeting-config
+            - secretRef:
+                name: targeting-secret
+          resources:
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+            requests:
+              memory: "128Mi"
+              cpu: "250m"

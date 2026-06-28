@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: datadog-cluster-agent
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: datadog-cluster-agent
+  template:
+    metadata:
+      labels:
+        app: datadog-cluster-agent
+    spec:
+      serviceAccountName: datadog-agent
+      containers:
+        - name: cluster-agent
+          image: gcr.io/datadoghq/cluster-agent:latest
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "400m"
+              memory: "512Mi"
+          env:
+            - name: DD_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: datadog-secret
+                  key: api-key
+            - name: DD_CLUSTER_AGENT_AUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: datadog-secret
+                  key: token
+            - name: DD_SITE
+              value: "datadoghq.com"
+            - name: DD_CLUSTER_NAME
+              value: "solidary-tech"
+            - name: DD_LEADER_ELECTION
+              value: "true"
+            - name: DD_COLLECT_KUBERNETES_EVENTS
+              value: "true"

@@ -1,0 +1,92 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: postgres
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init-postgres.sh:/docker-entrypoint-initdb.d/init-postgres.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - donation-net
+
+  localstack:
+    image: localstack/localstack:0.14.0
+    ports:
+      - "4566:4566"
+      - "4510-4559:4510-4559"
+    environment:
+      - SERVICES=sqs,dynamodb
+      - DEBUG=0
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_DEFAULT_REGION=us-east-1
+      - DATA_DIR=/var/lib/localstack/data
+      - LOCALSTACK_HOST=localstack
+    volumes:
+      - ./localstack-data:/var/lib/localstack/data
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./init-aws.sh:/etc/localstack/init/ready.d/init-aws.sh:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - donation-net
+
+  ngo-service:
+    build:
+      context: ../services/ngo-service
+    env_file:
+      - ../services/ngo-service/.env
+    ports:
+      - "8081:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - donation-net
+
+  donation-service:
+    build:
+      context: ../services/donation-service
+    env_file:
+      - ../services/donation-service/.env
+    ports:
+      - "8082:8082"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      localstack:
+        condition: service_healthy
+    networks:
+      - donation-net
+
+  volunteer-service:
+    build:
+      context: ../services/volunteer-service
+    env_file:
+      - ../services/volunteer-service/.env
+    ports:
+      - "8083:8083"
+    depends_on:
+      localstack:
+        condition: service_healthy
+    networks:
+      - donation-net
+
+volumes:
+  postgres-data:
+
+networks:
+  donation-net:
+    driver: bridge

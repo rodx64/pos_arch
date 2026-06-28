@@ -29,11 +29,11 @@ Este repositório centraliza todas as entregas práticas (Tech Challenges) desen
 
 ```text
 📦 tech-challenges
- ┣ 📂 fase-01-arquitetura-cloud
- ┣ 📂 fase-02-escalabilidade-e-conteinerização
- ┣ 📂 fase-03-pipelines-e-seguranca
- ┣ 📂 fase-04-observabilidade-e-monitoramento
- ┣ 📂 fase-05-multicloud-e-segurança
+ ┣ 📂 fase_1 `arquitetura-cloud`
+ ┣ 📂 fase_2 `escalabilidade-e-conteinerização`
+ ┣ 📂 fase_3 `pipelines-e-seguranca`
+ ┣ 📂 fase_4 `observabilidade-e-monitoramento`
+ ┣ 📂 fase_5 `multicloud-e-segurança`
 ```
 
 ---
@@ -113,32 +113,32 @@ Este repositório centraliza todas as entregas práticas (Tech Challenges) desen
 
 📌 **Conteúdo:**
 
-- [ ] CI / CD
+- [x] CI / CD
     - [x] Criação de pipelines Eficientes com Github Actions.
     - [x] Multistage, Paralelismo e Condições Avançadas.
-    - [ ] Ambientes, Secrets e Multi-Tenant.
-    - [ ] Notificações, Alertas e Observabilidade no CI/CD.
-    - [ ] Deploy Automatizado em Kubernetes na Nuvem
-- [ ] IAAC
-    - [ ] Terraform, Cloud, OpenTofu e Terragrunt.
-    - [ ] Automação com IaC e CI/CD.
-    - [ ] Módulos, Loops e conditions.
-    - [ ] Kubernetes via Terraform: Usando o Provider Kubectl.
-    - [ ] Auditoria, Versionamento e Segurança em IaC.
-- [ ] DevSecOps
-    - [ ] DevSecOps e principais ameaças.
-    - [ ] OWASP, MITRE e Defesa contra DDoS.
-    - [ ] Segurança em Pipelines: SAST e DAST.
-    - [ ] Detecção de Ameaças e Gestão com SIEM.
-    - [ ] LGPD, Auditoria e Conformidade na Cloud.
-- [ ] Segurança na Cloud
-    - [ ] Principais Ameaças em Ambientes Cloud.
-    - [ ] Modelo de Responsabilidade Compartilhada na Nuvem.
-    - [ ] Segurança de Identidade e Acesso (IAM, MFA e Zero Trust).
-    - [ ] Proteção de Dados: Criptografia e Privacidade.
-    - [ ] Ferramentas de CSPM, CWPP e CASB
+    - [x] Ambientes, Secrets e Multi-Tenant.
+    - [x] Notificações, Alertas e Observabilidade no CI/CD.
+    - [x] Deploy Automatizado em Kubernetes na Nuvem
+- [x] IAAC
+    - [x] Terraform, Cloud, OpenTofu e Terragrunt.
+    - [x] Automação com IaC e CI/CD.
+    - [x] Módulos, Loops e conditions.
+    - [x] Kubernetes via Terraform: Usando o Provider Kubectl.
+    - [x] Auditoria, Versionamento e Segurança em IaC.
+- [x] DevSecOps
+    - [x] DevSecOps e principais ameaças.
+    - [x] OWASP, MITRE e Defesa contra DDoS.
+    - [x] Segurança em Pipelines: SAST e DAST.
+    - [x] Detecção de Ameaças e Gestão com SIEM.
+    - [x] LGPD, Auditoria e Conformidade na Cloud.
+- [x] Segurança na Cloud
+    - [x] Principais Ameaças em Ambientes Cloud.
+    - [x] Modelo de Responsabilidade Compartilhada na Nuvem.
+    - [x] Segurança de Identidade e Acesso (IAM, MFA e Zero Trust).
+    - [x] Proteção de Dados: Criptografia e Privacidade.
+    - [x] Ferramentas de CSPM, CWPP e CASB
 
-📁 Pasta: `fase-03`
+📁 Pasta: `fase_03`
 
 ---
 
@@ -148,27 +148,27 @@ Este repositório centraliza todas as entregas práticas (Tech Challenges) desen
 
 📌 **Conteúdo:**
 
-- [ ] Observabilidade e Monitoramento
-    - [ ] Fundamentos de Monitoramento e Observabilidade.
-    - [ ] Os 3 pilares (Logs, Métricas e Traces).
-    - [ ] Métricas de Infraestrutura, Aplicação e Containers.
-    - [ ] Alertas e Notificações (Slack, Teams e Email).
-- [ ] Monitoramento Open Source
-    - [ ] Zabbix, Prometheus, Grafana, OpenTelemetry, Jaeger, StatsD e Loki.
-    - [ ] Instalação, configuração e integração.
-    - [ ] Monitoramento OpenSource no Kubernetes.
-- [ ] APM
-    - [ ] Métricas e Performance com Datadog, New Relic e ELK.
-    - [ ] Logs, Métricas e Traces na prática.
-    - [ ] Alertas Inteligentes e Automação.
-    - [ ] Troubleshooting Avançado e Otimização de Performance/Custos com APM.
-- [ ] Automação de Incidentes
-    - [ ] Monitoramento Ativo, escalation e call rotation.
-    - [ ] MTTR baixo com PagerDuty e OpsGenie.
-    - [ ] Notificação com Slack, Teams, Email.
-    - [ ] Automação com Functions.
+- [x] Observabilidade e Monitoramento
+    - [x] Fundamentos de Monitoramento e Observabilidade.
+    - [x] Os 3 pilares (Logs, Métricas e Traces).
+    - [x] Métricas de Infraestrutura, Aplicação e Containers.
+    - [x] Alertas e Notificações (Slack, Teams e Email).
+- [x] Monitoramento Open Source
+    - [x] Zabbix, Prometheus, Grafana, OpenTelemetry, Jaeger, StatsD e Loki.
+    - [x] Instalação, configuração e integração.
+    - [x] Monitoramento OpenSource no Kubernetes.
+- [x] APM
+    - [x] Métricas e Performance com Datadog, New Relic e ELK.
+    - [x] Logs, Métricas e Traces na prática.
+    - [x] Alertas Inteligentes e Automação.
+    - [x] Troubleshooting Avançado e Otimização de Performance/Custos com APM.
+- [x] Automação de Incidentes
+    - [x] Monitoramento Ativo, escalation e call rotation.
+    - [x] MTTR baixo com PagerDuty e OpsGenie.
+    - [x] Notificação com Slack, Teams, Email.
+    - [x] Automação com Functions.
 
-📁 Pasta: `fase-04`
+📁 Pasta: `fase_04`
 
 ---
 
@@ -178,30 +178,30 @@ Este repositório centraliza todas as entregas práticas (Tech Challenges) desen
 
 📌 **Conteúdo:**
 
-- [ ] Multicloud e Segurança
+- [x] Multicloud e Segurança
     - [ ] Criação e Automação Multicloud (AWS, Azure e GCP).
     - [ ] Segurança e privacidade centralizada.
     - [ ] Disaster Recovery e PCN.
     - [ ] Casos de Uso e Cenários reais
-- [ ] SRE
-    - [ ] SRE (Site Reliability Engineering)
-    - [ ] Cultura e papel do SRE.
-    - [ ] SRE vs DevOps: Diferenças e Colaborações.
-    - [ ] Golden Metrics, Runbooks e Post-Mortem.
-    - [ ] SLA, SLI, SLO e Error Budget.
-    - [ ] MTTR, RTO e RPO
-- [ ] FinOps
-    - [ ] Cultura FinOps na Cloud.
-    - [ ] Rightsizing, Forecast, Savings Plans, Spot Instances.
-    - [ ] Tagueamento de recursos e automação de economia.
-    - [ ] Visibilidade com Kubecost e AWS Cost Explorer.
-- [ ] IT Service Management e AIOps
-    - [ ] A Evolução do ITSM e o Papel do AIOps.
-    - [ ] Boas práticas e Frameworks: ITIL e ISO/IEC 20000.
-    - [ ] Ciclo de Vida e Estratégias de Serviços.
-    - [ ] AIOPs no gerenciamento preditivo da TI.
+- [x] SRE
+    - [x] SRE (Site Reliability Engineering)
+    - [x] Cultura e papel do SRE.
+    - [x] SRE vs DevOps: Diferenças e Colaborações.
+    - [x] Golden Metrics, Runbooks e Post-Mortem.
+    - [x] SLA, SLI, SLO e Error Budget.
+    - [x] MTTR, RTO e RPO
+- [x] FinOps
+    - [x] Cultura FinOps na Cloud.
+    - [x] Rightsizing, Forecast, Savings Plans, Spot Instances.
+    - [x] Tagueamento de recursos e automação de economia.
+    - [x] Visibilidade com Kubecost e AWS Cost Explorer.
+- [x] IT Service Management e AIOps
+    - [x] A Evolução do ITSM e o Papel do AIOps.
+    - [x] Boas práticas e Frameworks: ITIL e ISO/IEC 20000.
+    - [x] Ciclo de Vida e Estratégias de Serviços.
+    - [x] AIOPs no gerenciamento preditivo da TI.
 
-📁 Pasta: `fase-05`
+📁 Pasta: `fase_05`
 
 ---
 
@@ -213,7 +213,7 @@ Este repositório centraliza todas as entregas práticas (Tech Challenges) desen
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge\&logo=docker\&logoColor=white)
 ![Kubernetes](https://img.shields.io/badge/Kubernetes-326CE5?style=for-the-badge\&logo=kubernetes\&logoColor=white)
 ![Terraform](https://img.shields.io/badge/Terraform-7B42BC?style=for-the-badge\&logo=terraform\&logoColor=white)
-
+![Docusaurus](https://docusaurus.io/)
 ---
 
 ## 📄 Documentação

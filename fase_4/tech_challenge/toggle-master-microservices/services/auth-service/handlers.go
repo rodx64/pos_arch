@@ -1,0 +1,118 @@
+package main
+
+import (
+	"encoding/json"
+	"log"
+	"net/http"
+	"strings"
+)
+
+type CreateKeyRequest struct {
+	Name string `json:"name"`
+}
+
+type CreateKeyResponse struct {
+	Name    string `json:"name"`
+	Key     string `json:"key"`
+	Message string `json:"message"`
+}
+
+func (a *App) healthHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(map[string]string{"status": "ok"}); err != nil {
+		log.Printf("Erro ao encodar resposta: %v", err)
+	}
+}
+
+func (a *App) validateKeyHandler(w http.ResponseWriter, r *http.Request) {
+	authHeader := r.Header.Get("Authorization")
+
+	if authHeader == "" {
+		http.Error(w, "Chave não fornecida", http.StatusUnauthorized)
+		return
+	}
+
+	parts := strings.Split(authHeader, " ")
+	if len(parts) != 2 || parts[0] != "Bearer" || parts[1] == "" {
+		http.Error(w, "Formato de autorização inválido", http.StatusUnauthorized)
+		return
+	}
+
+	apiKey := parts[1]
+	keyHash := hashAPIKey(apiKey)
+
+	var id int
+	err := a.DB.QueryRow("SELECT id FROM api_keys WHERE key_hash = $1 AND is_active = true", keyHash).Scan(&id)
+
+	if err != nil {
+		http.Error(w, "Chave inválida", http.StatusUnauthorized)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(map[string]string{"message": "Chave válida"}); err != nil {
+		log.Printf("Erro ao encodar resposta: %v", err)
+	}
+}
+
+func (a *App) createKeyHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Método não permitido", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req CreateKeyRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Corpo da requisição inválido", http.StatusBadRequest)
+		return
+	}
+
+	if req.Name == "" {
+		http.Error(w, "O campo 'name' é obrigatório", http.StatusBadRequest)
+		return
+	}
+
+	newKey, err := generateAPIKey()
+	if err != nil {
+		http.Error(w, "Erro ao gerar a chave", http.StatusInternalServerError)
+		return
+	}
+	newKeyHash := hashAPIKey(newKey)
+
+	var newID int
+	err = a.DB.QueryRow(
+		"INSERT INTO api_keys (name, key_hash) VALUES ($1, $2) RETURNING id",
+		req.Name, newKeyHash,
+	).Scan(&newID)
+
+	if err != nil {
+		log.Printf("Erro ao salvar a chave no banco: %v", err)
+		http.Error(w, "Erro ao salvar a chave", http.StatusInternalServerError)
+		return
+	}
+
+	a.Metrics.keysCreatedTotal.Inc()
+	log.Printf("Nova chave criada com sucesso (ID: %d, Name: %s)", newID, req.Name)
+	w.WriteHeader(http.StatusCreated)
+	if err := json.NewEncoder(w).Encode(CreateKeyResponse{
+		Name:    req.Name,
+		Key:     newKey,
+		Message: "Guarde esta chave com segurança! Você não poderá vê-la novamente.",
+	}); err != nil {
+		log.Printf("Erro ao encodar resposta: %v", err)
+	}
+}
+
+func (a *App) masterKeyAuthMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authHeader := r.Header.Get("Authorization")
+		keyString := strings.TrimPrefix(authHeader, "Bearer ")
+
+		if keyString != a.MasterKey {
+			http.Error(w, "Acesso não autorizado", http.StatusForbidden)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
