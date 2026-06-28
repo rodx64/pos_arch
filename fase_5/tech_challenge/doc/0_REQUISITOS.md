@@ -25,14 +25,14 @@ utilização de todas as disciplinas anteriores:
 
 A engenharia de confiabilidade deve ser a prioridade.
 
-- [ ] Definição de SLOs e SLIs: para o donation-service, defina e
+- [x] Definição de SLOs e SLIs: para o donation-service, defina e
     documente, no mínimo, dois SLIs (Service Level Indicators) baseados
     nas Golden Metrics (ex: Latência e Taxa de Erros). Estabeleça o SLO
     (Service Level Objective) para cada um (ex: 99.9% de sucesso).
-- [ ] Dashboard SRE: crie um painel específico no Grafana ou na
+- [x] Dashboard SRE: crie um painel específico no Grafana ou na
     ferramenta de APM focado exclusivamente nos SLOs e no consumo
     do Error Budget da plataforma.
-- [ ] MTTR: evidencie no relatório como a stack de observabilidade e as
+- [x] MTTR: evidencie no relatório como a stack de observabilidade e as
     automações de resposta a incidentes ajudam a reduzir ativamente o
     MTTR (Mean Time To Recovery).
 
@@ -40,14 +40,14 @@ A engenharia de confiabilidade deve ser a prioridade.
 
 Como o orçamento da ONG é limitado, cada centavo conta.
 
-- [ ] Estratégia de Tagging (IaC): implemente uma política de tags
+- [x] Estratégia de Tagging (IaC): implemente uma política de tags
     rigorosa diretamente no seu código Terraform. Todos os recursos de
     nuvem devem conter tags obrigatórias como Project=SolidaryTech,
     Environment=Production e CostCenter=NGO-Core.
-- [ ] Rightsizing: analise as métricas de CPU/Memória do Kubernetes e
+- [x] Rightsizing: analise as métricas de CPU/Memória do Kubernetes e
     ajuste os requests e limits dos Pods nos manifestos YAML (via GitOps)
     para evitar desperdício de recursos.
-- [ ] Relatório de Forecast: crie uma projeção (Forecast) de custos
+- [x] Relatório de Forecast: crie uma projeção (Forecast) de custos
     mensais da arquitetura. Indique pelo menos uma recomendação
     prática de otimização nativa de nuvem.
 
@@ -55,11 +55,11 @@ Como o orçamento da ONG é limitado, cada centavo conta.
 
 Incidentes devem ser previstos antes de afetarem o doador.
 
-- [ ] Configuração de AIOps: ative as funcionalidades de Inteligência
+- [x] Configuração de AIOps: ative as funcionalidades de Inteligência
     Artificial da sua ferramenta de APM (ex: Watchdog no Datadog ou
     Applied Intelligence no New Relic) para detectar anomalias
     comportamentais automáticas.
-- [ ] Gestão de Incidentes (ITSM): desenhe o fluxo de vida de um
+- [x] Gestão de Incidentes (ITSM): desenhe o fluxo de vida de um
     incidente da SolidaryTech (da detecção via AIOps/Alerta até o Post-
     Mortem e comunicação aos stakeholders).
 

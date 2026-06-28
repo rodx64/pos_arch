@@ -29,11 +29,11 @@ Este repositório centraliza todas as entregas práticas (Tech Challenges) desen
 
 ```text
 📦 tech-challenges
- ┣ 📂 fase-01-arquitetura-cloud
- ┣ 📂 fase-02-escalabilidade-e-conteinerização
- ┣ 📂 fase-03-pipelines-e-seguranca
- ┣ 📂 fase-04-observabilidade-e-monitoramento
- ┣ 📂 fase-05-multicloud-e-segurança
+ ┣ 📂 fase_1 `arquitetura-cloud`
+ ┣ 📂 fase_2 `escalabilidade-e-conteinerização`
+ ┣ 📂 fase_3 `pipelines-e-seguranca`
+ ┣ 📂 fase_4 `observabilidade-e-monitoramento`
+ ┣ 📂 fase_5 `multicloud-e-segurança`
 ```
 
 ---
@@ -138,7 +138,7 @@ Este repositório centraliza todas as entregas práticas (Tech Challenges) desen
     - [x] Proteção de Dados: Criptografia e Privacidade.
     - [x] Ferramentas de CSPM, CWPP e CASB
 
-📁 Pasta: `fase-03`
+📁 Pasta: `fase_03`
 
 ---
 
@@ -168,7 +168,7 @@ Este repositório centraliza todas as entregas práticas (Tech Challenges) desen
     - [x] Notificação com Slack, Teams, Email.
     - [x] Automação com Functions.
 
-📁 Pasta: `fase-04`
+📁 Pasta: `fase_04`
 
 ---
 
@@ -178,30 +178,30 @@ Este repositório centraliza todas as entregas práticas (Tech Challenges) desen
 
 📌 **Conteúdo:**
 
-- [ ] Multicloud e Segurança
+- [x] Multicloud e Segurança
     - [ ] Criação e Automação Multicloud (AWS, Azure e GCP).
     - [ ] Segurança e privacidade centralizada.
     - [ ] Disaster Recovery e PCN.
     - [ ] Casos de Uso e Cenários reais
-- [ ] SRE
-    - [ ] SRE (Site Reliability Engineering)
-    - [ ] Cultura e papel do SRE.
-    - [ ] SRE vs DevOps: Diferenças e Colaborações.
-    - [ ] Golden Metrics, Runbooks e Post-Mortem.
-    - [ ] SLA, SLI, SLO e Error Budget.
-    - [ ] MTTR, RTO e RPO
-- [ ] FinOps
-    - [ ] Cultura FinOps na Cloud.
-    - [ ] Rightsizing, Forecast, Savings Plans, Spot Instances.
-    - [ ] Tagueamento de recursos e automação de economia.
-    - [ ] Visibilidade com Kubecost e AWS Cost Explorer.
-- [ ] IT Service Management e AIOps
-    - [ ] A Evolução do ITSM e o Papel do AIOps.
-    - [ ] Boas práticas e Frameworks: ITIL e ISO/IEC 20000.
-    - [ ] Ciclo de Vida e Estratégias de Serviços.
-    - [ ] AIOPs no gerenciamento preditivo da TI.
+- [x] SRE
+    - [x] SRE (Site Reliability Engineering)
+    - [x] Cultura e papel do SRE.
+    - [x] SRE vs DevOps: Diferenças e Colaborações.
+    - [x] Golden Metrics, Runbooks e Post-Mortem.
+    - [x] SLA, SLI, SLO e Error Budget.
+    - [x] MTTR, RTO e RPO
+- [x] FinOps
+    - [x] Cultura FinOps na Cloud.
+    - [x] Rightsizing, Forecast, Savings Plans, Spot Instances.
+    - [x] Tagueamento de recursos e automação de economia.
+    - [x] Visibilidade com Kubecost e AWS Cost Explorer.
+- [x] IT Service Management e AIOps
+    - [x] A Evolução do ITSM e o Papel do AIOps.
+    - [x] Boas práticas e Frameworks: ITIL e ISO/IEC 20000.
+    - [x] Ciclo de Vida e Estratégias de Serviços.
+    - [x] AIOPs no gerenciamento preditivo da TI.
 
-📁 Pasta: `fase-05`
+📁 Pasta: `fase_05`
 
 ---
 
@@ -213,7 +213,7 @@ Este repositório centraliza todas as entregas práticas (Tech Challenges) desen
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge\&logo=docker\&logoColor=white)
 ![Kubernetes](https://img.shields.io/badge/Kubernetes-326CE5?style=for-the-badge\&logo=kubernetes\&logoColor=white)
 ![Terraform](https://img.shields.io/badge/Terraform-7B42BC?style=for-the-badge\&logo=terraform\&logoColor=white)
-
+![Docusaurus](https://docusaurus.io/)
 ---
 
 ## 📄 Documentação
