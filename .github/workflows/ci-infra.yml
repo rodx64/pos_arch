@@ -9,6 +9,7 @@ on:
     branches: ["main", "develop"]
     paths:
       - "fase_5/tech_challenge/solidary-tech/terraform/**"
+  workflow_dispatch: {}
 
 env:
   TERRAFORM_DIR: fase_5/tech_challenge/solidary-tech/terraform
@@ -19,6 +20,7 @@ env:
   EKS_DIR: fase_5/tech_challenge/solidary-tech/eks
   TG_VERSION: "0.82.2"
   TOFU_VERSION: "1.10.1"
+  KEDA_VERSION: "2.15.1"
 
 permissions:
   contents: write
@@ -384,8 +386,8 @@ jobs:
             echo "Apply executado com sucesso na primeira tentativa."
           fi
 
-  argocd-install:
-    name: Install — ArgoCD
+  cluster-addons:
+    name: Install — Cluster Add-ons
     runs-on: ubuntu-latest
     needs: k8s-secrets
     if: github.event_name == 'push'
@@ -483,6 +485,16 @@ jobs:
           else
             kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
           fi
+      
+      - name: Install KEDA
+        run: |
+          if kubectl get deployment keda-operator -n keda &>/dev/null; then
+            echo "KEDA já instalado — pulando instalação."
+          else
+            echo "Instalando KEDA ${{ env.KEDA_VERSION }}..."
+            kubectl apply --server-side -f https://github.com/kedacore/keda/releases/download/v${{ env.KEDA_VERSION }}/keda-${{ env.KEDA_VERSION }}.yaml
+            kubectl wait --namespace keda --for=condition=Ready pod -l app=keda-operator --timeout=180s
+          fi
 
       - name: Install ingress-nginx
         run: |
@@ -496,7 +508,7 @@ jobs:
   argocd-app:
     name: Configure — ArgoCD Application
     runs-on: ubuntu-latest
-    needs: argocd-install
+    needs: cluster-addons
     if: github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4

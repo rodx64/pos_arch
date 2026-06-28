@@ -9,6 +9,7 @@ on:
     branches: ["main", "develop"]
     paths:
       - "fase_5/tech_challenge/solidary-tech/db-migrations/**"
+  workflow_dispatch: {}
 
 env:
   DB_MIGRATIONS_DIR: fase_5/tech_challenge/solidary-tech/db-migrations/dev

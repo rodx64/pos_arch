@@ -1,5 +1,6 @@
 import os
 import uuid
+import math
 import time
 import logging
 import boto3
@@ -48,6 +49,10 @@ metrics = PrometheusMetrics(app)
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
 AWS_ENDPOINT_URL = os.getenv("AWS_ENDPOINT_URL")
 DYNAMODB_TABLE = os.getenv("AWS_DYNAMODB_TABLE")
+
+# Limites do endpoint sintético de estresse de CPU (/cpu)
+CPU_DEFAULT_DURATION_MS = 50
+CPU_MAX_DURATION_MS = 500
 
 dynamodb = None
 table = None
@@ -116,6 +121,35 @@ def get_table():
 @app.route('/volunteers/health')
 def health():
     return jsonify({"status": "ok", "service": "volunteer-service"})
+
+@app.route('/cpu')
+def cpu_stress():
+    """
+    Endpoint sintético de estresse de CPU, usado pelo k6 (k6-load-test.yaml)
+    e para calibrar HPA/KEDA. Aceita ?duration_ms=N (padrão 50ms, máximo 500ms).
+    Não toca no banco de dados — é puramente computacional (CPU-bound).
+    """
+    try:
+        duration_ms = int(request.args.get('duration_ms', CPU_DEFAULT_DURATION_MS))
+    except (TypeError, ValueError):
+        duration_ms = CPU_DEFAULT_DURATION_MS
+
+    duration_ms = max(1, min(duration_ms, CPU_MAX_DURATION_MS))
+
+    start = time.perf_counter()
+    result = 0.0
+    i = 0
+    while (time.perf_counter() - start) * 1000 < duration_ms:
+        for _ in range(1000):
+            i += 1
+            result += math.sqrt(i) * math.sin(i)
+
+    return jsonify({
+        "status": "ok",
+        "service": "volunteer-service",
+        "duration_ms": duration_ms,
+        "result": result,
+    })
 
 
 @app.route('/volunteers', methods=['POST'])

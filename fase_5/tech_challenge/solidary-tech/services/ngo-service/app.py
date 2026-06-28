@@ -1,5 +1,7 @@
 import os
 import sys
+import math
+import time
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from psycopg2.pool import SimpleConnectionPool
@@ -49,6 +51,10 @@ metrics = PrometheusMetrics(app)
 DATABASE_URL = os.getenv("DATABASE_URL")
 pool = None
 
+# Limites do endpoint sintético de estresse de CPU (/cpu)
+CPU_DEFAULT_DURATION_MS = 50
+CPU_MAX_DURATION_MS = 500
+
 
 def init_db_pool(database_url=None):
     if database_url is None:
@@ -74,6 +80,36 @@ except Exception as e:
 @app.route('/ngos/health')
 def health():
     return jsonify({"status": "ok", "service": "ngo-service"})
+
+
+@app.route('/cpu')
+def cpu_stress():
+    """
+    Endpoint sintético de estresse de CPU, usado pelo k6 (k6-load-test.yaml)
+    e para calibrar HPA/KEDA. Aceita ?duration_ms=N (padrão 50ms, máximo 500ms).
+    Não toca no banco de dados — é puramente computacional (CPU-bound).
+    """
+    try:
+        duration_ms = int(request.args.get('duration_ms', CPU_DEFAULT_DURATION_MS))
+    except (TypeError, ValueError):
+        duration_ms = CPU_DEFAULT_DURATION_MS
+
+    duration_ms = max(1, min(duration_ms, CPU_MAX_DURATION_MS))
+
+    start = time.perf_counter()
+    result = 0.0
+    i = 0
+    while (time.perf_counter() - start) * 1000 < duration_ms:
+        for _ in range(1000):
+            i += 1
+            result += math.sqrt(i) * math.sin(i)
+
+    return jsonify({
+        "status": "ok",
+        "service": "ngo-service",
+        "duration_ms": duration_ms,
+        "result": result,
+    })
 
 
 @app.route('/ngos', methods=['POST'])

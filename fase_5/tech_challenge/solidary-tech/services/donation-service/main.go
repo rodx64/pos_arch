@@ -5,8 +5,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"log"
+	"math"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -156,6 +158,25 @@ func (rw *responseWriter) WriteHeader(code int) {
 	rw.ResponseWriter.WriteHeader(code)
 }
 
+// cpuMaxDurationMs limita o tempo máximo de "queima" de CPU por requisição, evitando que o endpoint seja usado em DDOS.
+const cpuMaxDurationMs = 500
+const cpuDefaultDurationMs = 50
+
+// burnCPU executa um laço de cálculo (sem alocação relevante, sem I/O) com durationMs milissegundos, para gerar carga de
+// CPU real e previsível — usado por testes de carga (k6) e calibração de HPA/KEDA.
+func burnCPU(durationMs int) float64 {
+	deadline := time.Now().Add(time.Duration(durationMs) * time.Millisecond)
+	result := 0.0
+	i := 0
+	for time.Now().Before(deadline) {
+		for j := 0; j < 5000; j++ {
+			i++
+			result += math.Sqrt(float64(i)) * math.Sin(float64(i))
+		}
+	}
+	return result
+}
+
 func main() {
 	_ = godotenv.Load()
 
@@ -216,6 +237,7 @@ func main() {
 	mux.Handle("/metrics", promhttp.Handler())
 	mux.Handle("/donations/health", otelhttp.NewHandler(app.instrumentHandler("/donations/health", http.HandlerFunc(app.HealthHandler)), "HealthCheck"))
 	mux.Handle("/donations", otelhttp.NewHandler(app.instrumentHandler("/donations", http.HandlerFunc(app.DonationHandler)), "Donations"))
+	mux.Handle("/cpu", otelhttp.NewHandler(app.instrumentHandler("/cpu", http.HandlerFunc(app.CPUHandler)), "CPUStress"))
 
 	host := os.Getenv("HOST")
 	if host == "" {
@@ -243,6 +265,35 @@ func (a *App) HealthHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	if _, err := w.Write([]byte(`{"status":"ok","service":"donation-service"}`)); err != nil {
 		log.Printf("Erro ao escrever health response: %v", err)
+	}
+}
+
+// CPUHandler é um endpoint sintético de estresse de CPU, usado pelo k6 (k6-load-test.yaml) para calibrar HPA/KEDA.
+// Aceita um parâmetro opcional "duration_ms" (em milissegundos) para controlar a duração do estresse de CPU.
+// Não tem efeito sobre o banco de dados nem sobre a fila — é puramente computacional.
+func (a *App) CPUHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	durationMs := cpuDefaultDurationMs
+	if raw := r.URL.Query().Get("duration_ms"); raw != "" {
+		if parsed, err := strconv.Atoi(raw); err == nil && parsed > 0 {
+			durationMs = parsed
+		}
+	}
+	if durationMs > cpuMaxDurationMs {
+		durationMs = cpuMaxDurationMs
+	}
+
+	result := burnCPU(durationMs)
+
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(map[string]interface{}{
+		"status":      "ok",
+		"service":     "donation-service",
+		"duration_ms": durationMs,
+		"result":      result,
+	}); err != nil {
+		log.Printf("Erro ao codificar resposta de /cpu: %v", err)
 	}
 }
 
