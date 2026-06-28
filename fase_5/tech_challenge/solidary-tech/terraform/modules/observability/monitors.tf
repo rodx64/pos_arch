@@ -87,7 +87,7 @@ resource "datadog_monitor" "watchdog_traffic_anomaly" {
   name = "[${upper(var.env)}][AIOps] Anomalia de Tráfego — donation-service"
   type = "query alert"
 
-  query = "avg(last_4h):anomalies(sum:solidary_tech.http_requests_total{env:${var.env},service:donation-service}.as_count(), 'basic', 2, direction='both', alert_window='last_15m', interval=60, count_default_zero='true') >= 1"
+  query = "avg(last_4h):anomalies(sum:solidary_tech.http_request_duration_seconds{env:${var.env},service:donation-service}.as_count(), 'basic', 2, direction='both', alert_window='last_5m', interval=60, count_default_zero='true') >= 1"
 
   message = <<EOT
   O Watchdog identificou um padrão de tráfego fora do comportamento histórico esperado no *donation-service*
