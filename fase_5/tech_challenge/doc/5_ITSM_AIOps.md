@@ -64,7 +64,7 @@ flowchart TD
 
 **1. Detecção** — automática, via Watchdog (Seção 1) ou monitores de SLO/latência já existentes. Nenhuma etapa manual de "alguém notar" — é esse o ponto central do requisito de gestão *preditiva*: o alerta de burn rate (`14.4x`) avisa **antes** de o SLO mensal ser de fato violado, e não depois.
 
-**2. Triagem / Ack** — o on-call confirma o alerta no PagerDuty (tag `@pagerduty-SolidaryTech`, já usada nos monitores) e classifica a severidade pela matriz acima. Abre-se um canal de incidente dedicado (ex: Slack) para centralizar a comunicação durante a triagem.
+**2. Triagem / Ack** — o on-call confirma o alerta no PagerDuty (tag `@pagerduty-SolidaryTech`, já usada nos monitores) e classifica a severidade pela matriz acima. Abre-se um canal de incidente dedicado (ex: Teams, Slack, Discord) para centralizar a comunicação durante a triagem.
 
 **3. Diagnóstico** — é aqui que o stack de observabilidade reduz o MTTI de fato (ver [`2_SRE.md`](./2_SRE.md), Seção 3): o trace raiz no APM mostra exatamente qual span/dependência está degradado (ex: latência no `donation-service` originada de lentidão no RDS, não no SQS), o **Watchdog RCA** já sugere a causa mais provável correlacionando com deploys recentes, e os logs do Loki/Datadog são acessados diretamente pelo `trace_id` do span problemático — sem precisar minerar arquivo de log bruto.
 
@@ -75,9 +75,9 @@ flowchart TD
 
 **5. Resolução** — confirmar que os Golden Signals (latência, erro, tráfego, saturação) voltaram à faixa normal e que o burn rate do error budget parou de subir, antes de fechar o incidente no PagerDuty.
 
-**6. Post-Mortem (blameless)** — conduzido em até 48h após a resolução, com timeline objetiva (baseada nos timestamps reais dos monitores/traces, não em memória), causa raiz, impacto quantificado (ex: queda em `donations_created_total` durante a janela do incidente, ou % do error budget mensal consumido) e ações de remediação com responsável e prazo. O foco é processo/sistema, não indivíduo.
+**6. [Post-Mortem (blameless)](https://www.alura.com.br/artigos/o-que-sao-blameless-postmortems)** — conduzido em até 48h após a resolução, com timeline objetiva (baseada nos timestamps reais dos monitores/traces, não em memória), causa raiz, impacto quantificado (ex: queda em `donations_created_total` durante a janela do incidente, ou % do error budget mensal consumido) e ações de remediação com responsável e prazo. O foco é processo/sistema, não indivíduo.
 
-**7. Comunicação aos stakeholders** — resumo do incidente (impacto, duração, causa, correção) enviado à liderança da ONG e à equipe de engenharia. Hoje isso é feito de forma manual (Slack/e-mail); para um canal mais formal e de baixo custo, dado o orçamento da ONG, a recomendação prática é uma página de status simples (ex: Instatus/Atlassian Statuspage, com plano gratuito para poucos serviços) em vez de construir algo customizado — ainda não implementada, fica como próximo passo.
+**7. Comunicação aos stakeholders** — resumo do incidente (impacto, duração, causa, correção) enviado à liderança da ONG e à equipe de engenharia. Hoje isso é feito de forma manual (e-mail); para um canal mais formal e de baixo custo, dado o orçamento da ONG.
 
 ---
 
