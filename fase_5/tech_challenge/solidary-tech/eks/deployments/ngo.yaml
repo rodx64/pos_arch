@@ -86,8 +86,8 @@ spec:
                 name: ngo-secret
           resources:
             limits:
-              memory: "150Mi"
-              cpu: "300m"
+              memory: "350Mi"
+              cpu: "400m"
             requests:
               memory: "200Mi"
               cpu: "150m"
