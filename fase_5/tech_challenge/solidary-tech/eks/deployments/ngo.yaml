@@ -48,7 +48,7 @@ spec:
     spec:
       containers:
         - name: ngo-container
-          image: 356969227282.dkr.ecr.us-east-1.amazonaws.com/solidary-tech:ngo-service-ecb80aab24ba6bfaa8c4a407a826aa7af20fff53
+          image: 356969227282.dkr.ecr.us-east-1.amazonaws.com/solidary-tech:ngo-service-66f81512f8d96494d183e447337fa30975ea5767
           imagePullPolicy: Always
           ports:
             - containerPort: 8081
