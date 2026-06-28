@@ -213,7 +213,7 @@ Este repositório centraliza todas as entregas práticas (Tech Challenges) desen
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge\&logo=docker\&logoColor=white)
 ![Kubernetes](https://img.shields.io/badge/Kubernetes-326CE5?style=for-the-badge\&logo=kubernetes\&logoColor=white)
 ![Terraform](https://img.shields.io/badge/Terraform-7B42BC?style=for-the-badge\&logo=terraform\&logoColor=white)
-![Docusaurus](https://docusaurus.io/)
+![Docusaurus](https://img.shields.io/badge/Docusaurus-25C2A0?style=for-the-badge&logo=docusaurus&logoColor=white)
 ---
 
 ## 📄 Documentação
