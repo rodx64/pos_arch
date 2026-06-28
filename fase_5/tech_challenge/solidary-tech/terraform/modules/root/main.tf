@@ -42,6 +42,7 @@ module "ec2" {
 module "eks" {
   source             = "../eks"
   project_name       = "solidary-tech"
+  env                = var.env
   count              = var.enable_eks ? 1 : 0
   kubernetes_version = var.kubernetes_version
   private_subnet_ids = module.vpc.private_subnet_ids

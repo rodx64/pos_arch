@@ -1,3 +1,8 @@
+variable "env" {
+  type        = string
+  description = "Ambiente (dev/hom/pro). Usado para tags FinOps explícitas no Node Group, já que o ASG criado pelo EKS não herda default_tags do provider de forma garantida."
+}
+
 variable "private_subnet_ids" {
   type = list(string)
 }

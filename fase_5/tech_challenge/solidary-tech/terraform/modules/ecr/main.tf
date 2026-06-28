@@ -14,8 +14,7 @@ resource "aws_ecr_repository" "this" {
   }
 
   tags = {
-    Project = var.project_name
-    Env     = var.env
+    Name = each.key
   }
 }
 

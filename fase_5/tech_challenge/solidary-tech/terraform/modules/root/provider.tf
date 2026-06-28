@@ -8,4 +8,13 @@ terraform {
   }
 }
 
-provider "aws" {}
+provider "aws" {
+  default_tags {
+    tags = {
+      Project     = var.project_name
+      Environment = local.environment_tag
+      CostCenter  = "NGO-Core"
+      ManagedBy   = "Terraform"
+    }
+  }
+}

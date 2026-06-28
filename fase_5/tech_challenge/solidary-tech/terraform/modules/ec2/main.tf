@@ -19,8 +19,7 @@ resource "aws_security_group" "app_sg" {
   }
 
   tags = {
-    Name    = "${var.project_name}-${var.env}-app-sg"
-    Project = var.project_name
+    Name = "${var.project_name}-${var.env}-app-sg"
   }
 }
 
@@ -32,7 +31,6 @@ resource "aws_instance" "bastion" {
   vpc_security_group_ids = [aws_security_group.app_sg.id]
 
   tags = {
-    Name    = "${var.project_name}-${var.env}-bastion"
-    Project = var.project_name
+    Name = "${var.project_name}-${var.env}-bastion"
   }
 }

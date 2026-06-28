@@ -1,3 +1,18 @@
+locals {
+  environment_map = {
+    dev = "Development"
+    hom = "Homologation"
+    pro = "Production"
+  }
+
+  finops_tags = {
+    Project     = var.project_name
+    Environment = lookup(local.environment_map, var.env, title(var.env))
+    CostCenter  = "NGO-Core"
+    ManagedBy   = "Terraform"
+  }
+}
+
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "19.21.0"
@@ -28,12 +43,12 @@ module "eks" {
 
       create_iam_role = false
       iam_role_arn    = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/LabRole"
+
+      tags = local.finops_tags
     }
   }
 
-  tags = {
-    Project = var.project_name
-  }
+  tags = local.finops_tags
 }
 
 resource "aws_security_group_rule" "bastion_to_eks" {

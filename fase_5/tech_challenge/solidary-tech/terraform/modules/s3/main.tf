@@ -3,8 +3,7 @@ resource "aws_s3_bucket" "state" {
   force_destroy = true
 
   tags = {
-    Name    = "${var.project_name}-${var.env}-app"
-    Project = var.project_name
+    Name = "${var.project_name}-${var.env}-app"
   }
 }
 

@@ -72,4 +72,13 @@ inputs = {
   enable_eks         = true
   kubernetes_version = "1.34"
   instance_types     = ["t3.medium"]
+
+  autoscaling_schedule = {
+    enabled    = true
+    start_time = "0 6 * * *" # 06:00h 
+    stop_time  = "0 20 * * *" # 20:00h 
+    min_size   = 1
+    max_size   = 3
+    desired    = 1
+  }
 }

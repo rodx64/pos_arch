@@ -5,9 +5,7 @@ resource "aws_sqs_queue" "dlq" {
   message_retention_seconds = 1209600 # 14 dias na DLQ
 
   tags = {
-    Name    = "${var.queue_name}-dlq"
-    Project = var.project_name
-    Env     = var.env
+    Name = "${var.queue_name}-dlq"
   }
 }
 
@@ -24,8 +22,6 @@ resource "aws_sqs_queue" "this" {
   }) : null
 
   tags = {
-    Name    = var.queue_name
-    Project = var.project_name
-    Env     = var.env
+    Name = var.queue_name
   }
 }

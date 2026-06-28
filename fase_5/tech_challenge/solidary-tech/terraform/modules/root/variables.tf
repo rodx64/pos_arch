@@ -3,6 +3,12 @@ variable "env" {
   type = string
 }
 
+variable "project_name" {
+  type        = string
+  default     = "solidary-tech"
+  description = "Nome do projeto. Usado na tag FinOps obrigatória 'Project' (default_tags do provider). Os módulos filhos continuam recebendo 'solidary-tech' hardcoded como hoje; este default apenas evita quebrar o input já enviado pelo Terragrunt (terragrunt.hcl define project_name = \"solidary-tech\")."
+}
+
 
 ### VPC
 variable "vpc_cidr" {
