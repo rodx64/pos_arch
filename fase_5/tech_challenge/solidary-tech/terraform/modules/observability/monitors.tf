@@ -82,3 +82,23 @@ resource "datadog_service_level_objective" "business_journey_donation_slo" {
 
   tags = ["env:${var.env}", "type:business-journey", "tier:core-cuj"]
 }
+
+resource "datadog_monitor" "watchdog_traffic_anomaly" {
+  name  = "[${upper(var.env)}][AIOps] Anomalia de Tráfego — donation-service"
+  type  = "query alert"
+
+  query = "avg(last_4h):anomalies(sum:solidary_tech.http_requests_total{env:${var.env},service:donation-service}.as_count(), 'basic', 2, direction='both', alert_window='last_15m', interval=60, count_default_zero='true') >= 1"
+
+  message = <<EOT
+  O Watchdog identificou um padrão de tráfego fora do comportamento histórico esperado no *donation-service*
+  (queda ou pico abrupto de doações). Verifique o Watchdog Insights no APM antes de escalar como incidente.
+
+  @pagerduty-SolidaryTech
+  EOT
+
+  monitor_thresholds {
+    critical = 1
+  }
+
+  tags = ["env:${var.env}", "type:aiops-anomaly", "service:donation-service"]
+}
