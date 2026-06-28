@@ -19,8 +19,6 @@ module "s3" {
 module "ecr" {
   source = "../ecr"
 
-  project_name = "solidary-tech"
-  env          = var.env
   repositories = var.ecr_repositories
   tag_prefixes = length(var.ecr_tag_prefixes) > 0 ? var.ecr_tag_prefixes : var.ecr_repositories
   force_delete = var.force_delete
@@ -72,8 +70,6 @@ module "dynamodb" {
   source   = "../dynamodb"
   for_each = var.dynamodb_tables
 
-  project_name  = "solidary-tech"
-  env           = var.env
   table_name    = each.value.table_name
   hash_key      = each.value.hash_key
   hash_key_type = lookup(each.value, "hash_key_type", "S")
@@ -84,8 +80,6 @@ module "sqs" {
   source   = "../sqs"
   for_each = var.sqs_queues
 
-  project_name               = "solidary-tech"
-  env                        = var.env
   queue_name                 = each.value.queue_name
   visibility_timeout_seconds = each.value.visibility_timeout_seconds
   message_retention_seconds  = each.value.message_retention_seconds
