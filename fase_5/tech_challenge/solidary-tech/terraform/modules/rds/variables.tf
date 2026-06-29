@@ -64,3 +64,14 @@ variable "vpc_cidr" {
 variable "vpc_id" {
   type = string
 }
+
+variable "backup_retention_period" {
+  type        = number
+  default     = 7
+  description = "Dias de retenção de backup automático/PITR no RDS"
+}
+
+variable "backup_window" {
+  type    = string
+  default = "03:00-04:00"
+}
