@@ -6,6 +6,12 @@ const config: Config = {
   title: 'Solidary Tech',
   tagline: 'A força da solidariedade, agora na palma da sua mão.',
 
+  url: 'https://rodx64.github.io',
+  baseUrl: '/pos_arch/',
+
+  organizationName: 'rodx64',
+  projectName: 'pos_arch',
+
   themes: ['@docusaurus/theme-mermaid'],
   markdown: {
     mermaid: true,
@@ -14,12 +20,6 @@ const config: Config = {
   future: {
     v4: true,
   },
-
-  url: 'https://your-docusaurus-site.example.com',
-  baseUrl: '/',
-
-  organizationName: 'solidary tech',
-  projectName: 'solidary-tech',
 
   onBrokenLinks: 'throw',
 
@@ -34,8 +34,7 @@ const config: Config = {
       {
         docs: {
           sidebarPath: './sidebars.ts',
-          editUrl:
-            'https://github.com/solidary-tech/solidary-tech/tree/main/docs/src/pages/',
+          editUrl: 'https://github.com/rodx64/pos_arch/tree/main/fase_5/tech_challenge/solidary-tech/docs/',
         },
         blog: {
           showReadingTime: true,
@@ -43,8 +42,7 @@ const config: Config = {
             type: ['rss', 'atom'],
             xslt: true,
           },
-          editUrl:
-            'https://github.com/solidary-tech/solidary-tech/tree/main/docs/src/pages/',
+          editUrl: 'https://github.com/rodx64/pos_arch/tree/main/fase_5/tech_challenge/solidary-tech/docs/',
           onInlineTags: 'warn',
           onInlineAuthors: 'warn',
           onUntruncatedBlogPosts: 'warn',
