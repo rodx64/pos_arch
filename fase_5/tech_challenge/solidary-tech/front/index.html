@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Solidary Tech — Plataforma</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <div class="logo">
+      <div class="logo-icon">🤝</div>
+      <div class="logo-name">Solidary<span>Tech</span></div>
+    </div>
+    <div class="header-impact">
+      <div class="impact-pill">
+        <span style="color:rgba(255,255,255,.6);font-size:12px;">Total de doações</span>
+        <span class="impact-number" id="impact-counter">—</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:rgba(255,255,255,.5)">
+        <div class="status-dot offline" id="status-dot"></div>
+        <span id="status-label">Aguardando</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="config-bar">
+    <div class="svc-badges">
+      <div class="svc-badge"><div class="status-dot offline" id="dot-ngo"></div> ngo:8081</div>
+      <div class="svc-badge"><div class="status-dot offline" id="dot-don"></div> donation:8082</div>
+      <div class="svc-badge"><div class="status-dot offline" id="dot-vol"></div> volunteer:8083</div>
+    </div>
+  </div>
+
+  <div class="container">
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('ngos', this)">
+        <span class="tab-icon">🏢</span> ONGs
+      </button>
+      <button class="tab" onclick="switchTab('donations', this)">
+        <span class="tab-icon">💚</span> Doações
+      </button>
+      <button class="tab" onclick="switchTab('volunteers', this)">
+        <span class="tab-icon">🙋</span> Voluntários
+      </button>
+    </div>
+
+    <div id="panel-ngos" class="panel active">
+      <div class="section-eyebrow">Cadastro</div>
+      <div class="section-title">Organizações parceiras</div>
+      <div class="grid">
+        <div>
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">ONGs cadastradas</span>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span class="card-count" id="ngo-count">0</span>
+                <button class="btn-refresh" onclick="loadNgos()" title="Atualizar">↻</button>
+              </div>
+            </div>
+            <div id="ngo-list"><div class="loading"><div class="spinner"></div>Carregando…</div></div>
+          </div>
+        </div>
+        <div>
+          <div class="card form-card">
+            <div class="card-header">
+              <span class="card-title">Nova ONG</span>
+            </div>
+            <div class="form-body">
+              <div class="field">
+                <label>Nome da organização</label>
+                <input type="text" id="ngo-name" placeholder="Ex: Anjos de Patas">
+              </div>
+              <div class="field">
+                <label>E-mail de contato</label>
+                <input type="email" id="ngo-email" placeholder="contato@ong.org">
+              </div>
+              <div class="field">
+                <label>Causa</label>
+                <input type="text" id="ngo-cause" placeholder="Ex: Proteção Animal">
+              </div>
+              <div class="field">
+                <label>Cidade</label>
+                <input type="text" id="ngo-city" placeholder="Ex: São Paulo">
+              </div>
+              <button class="btn-primary" id="btn-ngo" onclick="createNgo()">
+                <span>Cadastrar ONG</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="panel-donations" class="panel">
+      <div class="section-eyebrow">Transações</div>
+      <div class="section-title">Histórico de doações</div>
+      <div class="grid">
+        <div>
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Doações realizadas</span>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span class="card-count" id="don-count">0</span>
+                <button class="btn-refresh" onclick="loadDonations()" title="Atualizar">↻</button>
+              </div>
+            </div>
+            <div id="don-list"><div class="loading"><div class="spinner"></div>Carregando…</div></div>
+          </div>
+        </div>
+        <div>
+          <div class="card form-card">
+            <div class="card-header">
+              <span class="card-title">Nova doação</span>
+            </div>
+            <div class="form-body">
+              <div class="field">
+                <label>Nome do doador</label>
+                <input type="text" id="don-name" placeholder="Ex: Maria Silva">
+              </div>
+              <div class="field">
+                <label>ONG destinatária (ID)</label>
+                <select id="don-ngo">
+                  <option value="">Selecione uma ONG…</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Valor (R$)</label>
+                <input type="number" id="don-amount" placeholder="Ex: 150.00" min="1" step="0.01">
+              </div>
+              <button class="btn-primary" id="btn-don" onclick="createDonation()">
+                <span>Confirmar doação</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="panel-volunteers" class="panel">
+      <div class="section-eyebrow">Voluntariado</div>
+      <div class="section-title">Voluntários por ONG</div>
+      <div class="grid">
+        <div>
+          <div class="card" style="margin-bottom:0">
+            <div class="card-header">
+              <span class="card-title">Filtrar por ONG</span>
+            </div>
+            <div style="padding:16px 22px;border-bottom:1px solid var(--bg-2)">
+              <div style="display:flex;gap:8px">
+                <select id="vol-filter-ngo" style="flex:1;padding:8px 12px;border:1.5px solid var(--bg-2);border-radius:6px;font-size:14px;font-family:Inter,sans-serif;background:var(--bg);color:var(--text);outline:none">
+                  <option value="">Selecione uma ONG…</option>
+                </select>
+                <button class="btn-primary" style="width:auto;padding:8px 18px" onclick="loadVolunteers()">Buscar</button>
+              </div>
+            </div>
+            <div id="vol-list"><div class="empty"><div class="empty-icon">🔍</div><p>Selecione uma ONG para listar os voluntários.</p></div></div>
+          </div>
+        </div>
+        <div>
+          <div class="card form-card">
+            <div class="card-header">
+              <span class="card-title">Registrar voluntário</span>
+            </div>
+            <div class="form-body">
+              <div class="field">
+                <label>Nome completo</label>
+                <input type="text" id="vol-name" placeholder="Ex: João Costa">
+              </div>
+              <div class="field">
+                <label>E-mail</label>
+                <input type="email" id="vol-email" placeholder="joao@email.com">
+              </div>
+              <div class="field">
+                <label>ONG (ID)</label>
+                <select id="vol-ngo">
+                  <option value="">Selecione uma ONG…</option>
+                </select>
+              </div>
+              <button class="btn-primary" id="btn-vol" onclick="createVolunteer()">
+                <span>Registrar voluntário</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><div id="toast"></div>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
