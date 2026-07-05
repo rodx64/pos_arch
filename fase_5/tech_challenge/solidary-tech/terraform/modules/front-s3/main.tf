@@ -1,5 +1,5 @@
 resource "aws_s3_bucket" "frontend" {
-  bucket        = "${var.project_name}-${var.env}-frontend"
+  bucket        = "${var.project_name}-${var.env}-app"
   force_destroy = true
 }
 
@@ -37,6 +37,3 @@ resource "aws_s3_bucket_policy" "frontend" {
   })
 }
 
-output "website_endpoint" {
-  value = aws_s3_bucket_website_configuration.frontend.website_endpoint
-}
