@@ -5,7 +5,7 @@ metadata:
   namespace: solidary-tech
   annotations:
     nginx.ingress.kubernetes.io/enable-cors: "true"
-    nginx.ingress.kubernetes.io/cors-allow-origin: ""
+    nginx.ingress.kubernetes.io/cors-allow-origin: "http://solidary-tech-dev-frontend.s3-website-us-east-1.amazonaws.com"
     nginx.ingress.kubernetes.io/cors-allow-methods: "PUT, GET, POST, OPTIONS"
     nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Authorization"
 spec:
