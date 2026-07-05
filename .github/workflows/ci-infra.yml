@@ -18,9 +18,11 @@ env:
   K8S_SECRETS_DIR: fase_5/tech_challenge/solidary-tech/k8s-secrets/dev
   OBSERVABILITY_DIR: fase_5/tech_challenge/solidary-tech/observability/dev
   EKS_DIR: fase_5/tech_challenge/solidary-tech/eks
+  VELERO_DIR: fase_5/tech_challenge/solidary-tech/velero/dev
   TG_VERSION: "0.82.2"
   TOFU_VERSION: "1.10.1"
   KEDA_VERSION: "2.15.1"
+  VELERO_DR_REGION: "us-west-2"
 
 permissions:
   contents: write
@@ -389,7 +391,7 @@ jobs:
   cluster-addons:
     name: Install — Cluster Add-ons
     runs-on: ubuntu-latest
-    needs: k8s-secrets
+    needs: [k8s-secrets, velero-infra]
     if: github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
@@ -496,6 +498,32 @@ jobs:
             kubectl wait --namespace keda --for=condition=Ready pod -l app=keda-operator --timeout=180s
           fi
 
+      - name: Install Velero
+        run: |
+          if kubectl get deployment velero -n velero &>/dev/null; then
+            echo "Velero já instalado — pulando instalação."
+          else
+            echo "Baixando Velero CLI..."
+            wget https://github.com/vmware-tanzu/velero/releases/download/v1.13.0/velero-v1.13.0-linux-amd64.tar.gz
+            tar -xvf velero-v1.13.0-linux-amd64.tar.gz
+            sudo mv velero-v1.13.0-linux-amd64/velero /usr/local/bin/
+
+            ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+            ROLE_ARN="arn:aws:iam::${ACCOUNT_ID}:role/LabRole"
+
+            echo "Instalando Velero no cluster (backup cross-region em ${{ env.VELERO_DR_REGION }})..."
+            velero install \
+              --provider aws \
+              --plugins velero/velero-plugin-for-aws:v1.9.0 \
+              --bucket solidary-tech-velero-backups-dev \
+              --backup-location-config region=${{ env.VELERO_DR_REGION }} \
+              --snapshot-location-config region=${{ secrets.AWS_REGION }} \
+              --no-secret \
+              --sa-annotations eks.amazonaws.com/role-arn=${ROLE_ARN}
+
+            kubectl wait --namespace velero --for=condition=ready pod -l component=velero --timeout=120s
+          fi
+
       - name: Install ingress-nginx
         run: |
           if kubectl get deployment ingress-nginx-controller -n ingress-nginx &>/dev/null; then
@@ -504,7 +532,7 @@ jobs:
             kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.0/deploy/static/provider/aws/deploy.yaml
             kubectl wait --namespace ingress-nginx --for=condition=ready pod --selector=app.kubernetes.io/component=controller --timeout=120s
           fi
-
+      
   argocd-app:
     name: Configure — ArgoCD Application
     runs-on: ubuntu-latest
@@ -610,6 +638,32 @@ jobs:
           kubectl -n argocd wait --for=jsonpath='{.status.health.status}'=Healthy application/solidary-tech --timeout=300s || true
           echo "ArgoCD Application 'solidary-tech' configurada."
           kubectl -n argocd get application solidary-tech
+
+  velero-infra:
+    name: Apply — Velero Infrastructure
+    runs-on: ubuntu-latest
+    needs: apply
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Setup Terragrunt
+        uses: gruntwork-io/terragrunt-action@v3
+        with:
+          tg_version: ${{ env.TG_VERSION }}
+          tofu_version: ${{ env.TOFU_VERSION }}
+
+      - name: Terragrunt apply — Velero
+        working-directory: ${{ env.VELERO_DIR }}
+        run: terragrunt apply -auto-approve
 
   update-ingress-host:
     name: Update Ingress Host with NLB DNS

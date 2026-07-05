@@ -45,7 +45,7 @@
 # Arquivos de configuração / ambiente local
 # =========================
 .env
-*.env
+!*.env_example
 
 # =========================
 # Python

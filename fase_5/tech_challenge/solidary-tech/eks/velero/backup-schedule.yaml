@@ -1,0 +1,15 @@
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: daily-backup
+  namespace: velero
+spec:
+  schedule: "0 3 * * *"   # 03:00 UTC (fora do horário de pico de doações)
+  template:
+    includedNamespaces:
+      - solidary-tech
+      - monitoring
+      - argocd
+      - keda
+    snapshotVolumes: false
+    ttl: 720h0m0s

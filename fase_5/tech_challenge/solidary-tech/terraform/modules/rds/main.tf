@@ -22,6 +22,9 @@ module "db" {
   iam_database_authentication_enabled = true
   manage_master_user_password         = true
 
+  backup_retention_period = var.backup_retention_period
+  backup_window           = var.backup_window
+
   tags = local.common_tags
 }
 

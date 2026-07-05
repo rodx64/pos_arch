@@ -1,29 +1,65 @@
 # FinOps
 
-> Relatórios completos de [Forecast][1] e [Right Sizing][2] para o projeto.
+## Tagging Obrigatório (IaC)
 
-## Tagging obrigatório (IaC)
+Todos os recursos AWS criados via Terraform recebem automaticamente, via `default_tags` no [provider AWS][provider-tf], as seguintes tags obrigatórias:
 
-Todos os recursos AWS criados via Terraform recebem automaticamente, via `default_tags` no [provider][3]:
+| Tag | Valor |
+|---|---|
+| `Project` | `SolidaryTech` |
+| `Environment` | `Dev` / `Hom` / `Pro` |
+| `CostCenter` | `NGO-Core` |
+| `ManagedBy` | `Terraform` |
 
-Para que essas tags virem relatório de custo real (Cost Explorer), é necessário um passo manual único: ativar `Project`, `Environment` e `CostCenter` como **Cost Allocation Tags** no AWS Billing Console (leva até 24h para refletir nos dados). Em contas AWS Academy (nosso caso), o acesso ao Billing/Cost Explorer costuma ser bloqueado para a sessão de estudante — nesse caso, o forecast manual (próxima seção) é a fonte de verdade.
+Para que essas tags virem relatório de custo real no Cost Explorer, é necessário um passo manual único: ativar `Project`, `Environment` e `CostCenter` como **Cost Allocation Tags** no AWS Billing Console (leva até 24h para refletir nos dados). Em contas AWS Academy, o acesso ao Billing/Cost Explorer costuma ser bloqueado para a sessão de estudante — nesse caso, o forecast manual (próxima seção) é a fonte de verdade.
+
+> **Exceção documentada:** recursos criados via `aws_autoscaling_group` não herdam `default_tags` automaticamente — é necessário declarar as tags explicitamente no bloco `tag {}` do recurso, conforme [documentação oficial da AWS][asg-tagging].
 
 ## Rightsizing
 
-Os 3 microsserviços partiram de `requests`/`limits` **idênticos**, independente da stack — um anti-padrão clássico (Go sobre-provisionado, Python com Gunicorn de 4 workers sub-provisionado e em risco de OOM). Valores diferenciados por workload, com Gunicorn reduzido de `-w 4` para `-w 2` (escalar horizontalmente via autoscaler, não verticalmente com mais processos por pod):
+Os 3 microsserviços partiram de `requests`/`limits` idênticos, independente da stack — Go sobre-provisionado, Python com Gunicorn de 4 workers sub-provisionado e em risco de OOMKill. Valores diferenciados por workload, validados com carga gerada pelo `k6-load-test.yaml`:
 
-Resultado: ~30% menos CPU reservável no pior caso (3 réplicas/serviço), com memória ajustada para eliminar risco real de OOMKill nos serviços Python.
+| Serviço | requests.cpu | requests.memory | limits.cpu | limits.memory |
+|---|---|---|---|---|
+| `donation-service` | 100m | 80Mi | 300m | 150Mi |
+| `ngo-service` | 150m | 200Mi | 400m | 350Mi |
+| `volunteer-service` | 120m | 180Mi | 350m | 300Mi |
 
-Esse rightsizing caminha junto com a estratégia de scaling: `donation-service` migrou de HPA por CPU para **KEDA** (tráfego HTTP via Prometheus + CPU como rede de segurança); `ngo`/`volunteer` continuam em HPA nativo. Detalhes completos, incluindo por que scaling por fila SQS não foi adotado (sem consumidor hoje), em `4_RIGHTSIZING.md`.
+**Gunicorn reduzido de `-w 4` para `-w 2`:** em Kubernetes, o padrão é escalar horizontalmente (mais réplicas via HPA/KEDA), não verticalmente (mais workers por pod). Com 4 workers competindo por meio vCPU, o ganho de paralelismo é anulado por context switching; com 2 workers, cada processo tem mais recursos e o autoscaler absorve os picos.
 
-## Forecast de custos
+**Impacto agregado (3 réplicas/serviço, pior caso todos no limite):**
 
-- **DEV** roda 100% local (LocalStack + Kind/Docker Compose) — custo zero, economia estimada de ~$237/mês em relação a rodar a mesma topologia na AWS.
-- **HOM** é provisionado **por janela de homologação** (Terragrunt apply/destroy sob demanda, ~32h/mês), não 24/7 — economia de ~95% frente a um modelo agendado fixo.
-- **PRO** (ainda não provisionado) é o único ambiente *always-on*, com recomendações de Savings Plans e RDS Reserved Instances.
+| | CPU total (limits) | Memória total (limits) |
+|---|---|---|
+| **Antes** (uniforme 500m/256Mi) | 3 × 3 × 500m = **4.500m** | 3 × 3 × 256Mi = **2.304Mi** |
+| **Depois** (diferenciado) | (300+400+350) × 3 = **3.150m** | (150+350+300) × 3 = **2.400Mi** |
 
-Recomendação prática de otimização nativa: **AWS Cost Anomaly Detection**, segmentado por `CostCenter=NGO-Core`, para alertar desvios de gasto sem depender de revisão manual diária de billing.
+CPU reservável no pior caso cai **~30%**; memória sobe ligeiramente (~4%), deliberadamente, para eliminar risco de OOMKill nos serviços Python.
 
-[1]: https://github.com/rodx64/pos_arch/blob/develop/fase_5/tech_challenge/doc/3_FORECAST.md
-[2]: https://github.com/rodx64/pos_arch/blob/develop/fase_5/tech_challenge/doc/4_RIGHTSIZING.md
-[3]: https://github.com/rodx64/pos_arch/blob/develop/fase_5/tech_challenge/solidary-tech/terraform/modules/root/provider.tf
+## Scaling
+
+- **`donation-service`**: **KEDA** escalando por tráfego HTTP (Prometheus) com CPU como rede de segurança. `minReplicaCount: 1`, `maxReplicaCount: 4`. HPA nativo removido.
+- **`ngo-service` / `volunteer-service`**: HPA nativo, CPU `averageUtilization: 70%`, `maxReplicas: 3`.
+- **Scaling por fila SQS**: não implementado — a `donation-queue` só tem produtor hoje (sem consumidor no código), então não há profundidade de fila com relação causal para escalar contra.
+
+## Forecast de Custos
+
+| Ambiente | Estratégia | Custo estimado |
+|---|---|---|
+| **DEV** | Local-First (LocalStack + Docker Compose) — custo zero na AWS | **$0/mês** |
+| **HOM** | Infra efêmera por janela de homologação (~32h/mês via `terragrunt apply`/`destroy`), 100% Spot | **~$8/mês** |
+| **PRO** | Always-on, arquitetura mista On-Demand + Spot, Savings Plans 1 ano | **~$237/mês** (simulado) |
+
+**Economia DEV vs. AWS always-on:** ~$237/mês, ~$2.844/ano — o argumento mais direto de FinOps: a decisão mais barata é não provisionar o que não precisa existir ainda.
+
+**HOM vs. always-on agendado (06h–20h):** o modelo por janela (~32h/mês) representa **~95% de economia** frente a um ambiente em horário comercial fixo (~420h/mês). Isso inclui economia no Control Plane do EKS, que é cobrado mesmo com Node Group zerado.
+
+Os valores acima são calculados com base nas taxas públicas On-Demand da AWS para `us-east-1` (EKS $0,10/h, `t3.medium` Spot ~$0,0125/h, `db.t4g.micro` $0,016/h, NAT Gateway $0,045/h) aplicadas sobre as 32h de janela. Detalhamento completo por componente, metodologia e premissas em [`3_FORECAST.md`][forecast].
+
+## Recomendação de Otimização Nativa
+
+**AWS Cost Anomaly Detection** segmentado por `CostCenter=NGO-Core`, com alertas via SNS/e-mail em caso de desvio do padrão histórico de gasto. Essencial no modelo de HOM por janela: qualquer cobrança fora dos períodos de homologação (ex: um `destroy` que falhou silenciosamente) é sinalizada rapidamente, sem depender de revisão manual diária de billing.
+
+[provider-tf]: https://github.com/rodx64/pos_arch/blob/develop/fase_5/tech_challenge/solidary-tech/terraform/modules/root/provider.tf
+[forecast]: https://github.com/rodx64/pos_arch/blob/develop/fase_5/tech_challenge/doc/3_FORECAST.md
+[asg-tagging]: https://docs.aws.amazon.com/autoscaling/ec2/userguide/ec2-auto-scaling-tagging.html
