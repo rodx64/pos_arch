@@ -272,7 +272,13 @@ function loadAll() {
 
 window.addEventListener('DOMContentLoaded', () => {
   if (typeof window.APP_CONFIG !== 'undefined' && window.APP_CONFIG.API_URL) {
-    BASE = window.APP_CONFIG.API_URL.replace(/\/$/, '');
+    let url = window.APP_CONFIG.API_URL.replace(/\/$/, '');
+    
+    if (!url.startsWith('http')) {
+      url = 'http://' + url;
+    }
+    
+    BASE = url;
   } else {
     BASE = 'http://localhost';
   }
