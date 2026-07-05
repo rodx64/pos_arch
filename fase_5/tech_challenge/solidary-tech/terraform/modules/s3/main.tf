@@ -1,4 +1,3 @@
-# 1. CRIAÇÃO ÚNICA DO BUCKET
 resource "aws_s3_bucket" "state" {
   bucket        = "${var.project_name}-${var.env}-app"
   force_destroy = true
@@ -47,7 +46,7 @@ resource "aws_s3_bucket_public_access_block" "app_access" {
 resource "aws_s3_bucket_policy" "app_policy" {
   depends_on = [aws_s3_bucket_public_access_block.app_access]
   bucket     = aws_s3_bucket.state.id
-  
+
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
