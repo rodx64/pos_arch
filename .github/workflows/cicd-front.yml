@@ -33,6 +33,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }} 
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Generate config.js
@@ -47,7 +48,7 @@ jobs:
 
       - name: Sync Frontend to S3
         run: |
-          BUCKET_NAME="solidary-tech-${{ env.ENV_NAME }}-frontend"
+          BUCKET_NAME="solidary-tech-${{ env.ENV_NAME }}-app"
           echo "Sincronizando arquivos com s3://$BUCKET_NAME/"
           
-          aws s3 sync ${{ env.FRONT_DIR }}/ s3://solidary-tech-${{ env.ENV_NAME }}-app/ --delete
+          aws s3 sync ${{ env.FRONT_DIR }}/ s3://$BUCKET_NAME/ --delete
