@@ -50,4 +50,4 @@ jobs:
           BUCKET_NAME="solidary-tech-${{ env.ENV_NAME }}-frontend"
           echo "Sincronizando arquivos com s3://$BUCKET_NAME/"
           
-          aws s3 sync ${{ env.FRONT_DIR }}/ s3://$BUCKET_NAME/ --delete
+          aws s3 sync ${{ env.FRONT_DIR }}/ s3://solidary-tech-${{ env.ENV_NAME }}-app/ --delete
