@@ -13,7 +13,7 @@ A decisão fundamental da Solidary Tech foi a adoção da **Opção A (Multiclou
 **Justificativa Técnica e Financeira:** A escolha foi guiada por diversos fatores arquiteturais, onde **o custo operacional teve um peso relevante na decisão**. Manter um ambiente Ativo-Passivo (Opção B) exigiria o pagamento contínuo de um Control Plane do EKS, instâncias de Node Groups, Load Balancers e instâncias de banco de dados rodando de forma ociosa em uma segunda região, o que elevaria substancialmente o custo mensal da infraestrutura. A Opção A, aliada à forte automação de Infraestrutura como Código (Terraform/Terragrunt) integrada nos nossos pipelines de CI/CD, permite armazenar os backups de forma otimizada (S3) e levantar o ambiente de recuperação apenas no momento do desastre. Isso oferece o melhor equilíbrio entre resiliência técnica, governança e responsabilidade financeira.
 
 ## 3. Métricas Críticas: RTO e RPO
-O sistema de **Doações** é o núcleo financeiro da plataforma. A perda destes dados impacta diretamente a credibilidade e a auditoria da Solidary Tech. Os microsserviços de ONGs e Voluntários possuem naturezas cadastrais, tolerando janelas levemente maiores.
+O sistema de **Doações** é o núcleo financeiro da plataforma. A perda destes dados impacta diretamente a credibilidade e a auditoria da Solidary Tech. Os microsserviços de ONGs (NGO) e Voluntários (Volunteer) possuem naturezas cadastrais, tolerando janelas levemente maiores.
 
 * **Dados das Doações (Donation Service - PostgreSQL/SQS):**
   * **RPO (Recovery Point Objective): 15 minutos.**
@@ -27,7 +27,7 @@ O sistema de **Doações** é o núcleo financeiro da plataforma. A perda destes
   * **RPO: 24 horas**, alinhado à cadência do backup diário do Velero (Seção 4.1) — o `Schedule` cobre manifestos e estado do cluster nesta janela; **não há, hoje, backup de dados de aplicação (SQS/DynamoDB) cross-region automatizado**, apenas o estado do cluster via Velero.
   * **RTO: 4 horas.**
 
-> **Nota de rastreabilidade:** o RPO de dados cadastrais foi ajustado de 12h para 24h para refletir a cadência real do `Schedule` do Velero (`backup-schedule.yaml`, execução diária às 03:00 UTC) implementado no projeto. Não existe, na infraestrutura atual, uma rotina de *snapshot* noturno independente para esses dados — o mecanismo de proteção vigente é o backup diário do Velero.
+> **Nota de rastreabilidade:** o RPO de dados cadastrais foi ajustado para 24h para refletir a cadência real do `Schedule` do Velero (`backup-schedule.yaml`, execução diária às 03:00 UTC) implementado no projeto. Não existe, na infraestrutura atual, uma rotina de *snapshot* noturno independente para esses dados — o mecanismo de proteção vigente é o backup diário do Velero.
 
 ## 4. Estratégia de DR Prática (Implementação da Opção A)
 
@@ -39,7 +39,7 @@ A estratégia de recuperação baseia-se na separação entre Infraestrutura, Es
 * **Agendamento (`Schedule`):** configurado via [`backup-schedule.yaml`](../solidary-tech/eks/velero/backup-schedule.yaml), sincronizado por GitOps (ArgoCD, `recurse: true` sobre o diretório `eks/`), com execução diária às **03:00 UTC** — horário escolhido por estar fora do pico de doações.
 * **Escopo do backup:** os namespaces `solidary-tech`, `monitoring`, `argocd` e `keda` — cobrindo a aplicação, a stack de observabilidade e os add-ons de cluster que sustentam o scaling (KEDA) e o próprio GitOps (ArgoCD), necessários para uma recuperação completa e não apenas da aplicação.
 * **Retenção:** TTL de `720h0m0s` (**30 dias**) por backup no bucket.
-* **Armazenamento Cross-Region:** o Velero é instalado com `--backup-location-config region=us-west-2`, enviando os backups para o bucket S3 `solidary-tech-velero-backups-dev` (ou equivalente por ambiente), provisionado pelo módulo Terraform `modules/velero` em uma região secundária (variável `dr_region`, *default* `us-west-2`) — distinta da região primária da infra (`us-east-1`).
+* **Armazenamento Cross-Region:** o Velero é instalado com `--backup-location-config region=us-west-2`, enviando os backups para o bucket S3 `solidary-tech-velero-backups-dev` (ou equivalente por ambiente), provisionado pelo módulo Terraform [`modules/velero`](../solidary-tech/terraform/modules/velero) em uma região secundária (variável `dr_region`, *default* `us-west-2`) — distinta da região primária da infra (`us-east-1`).
 * **Versionamento e retenção do bucket:** o bucket S3 de destino possui *versioning* habilitado e uma política de lifecycle que expira backups após **90 dias** — uma segunda camada de retenção, mais ampla que o TTL de 30 dias do próprio `Schedule`, funcionando como margem de segurança no armazenamento.
 * **Ciclo de vida da infraestrutura do Velero:** automatizado via pipeline dedicado (job `velero-infra`, `terragrunt apply` sobre o módulo `velero`), que provisiona o bucket de destino **antes** da instalação do Velero no cluster — o job `cluster-addons` depende explicitamente de `velero-infra` para garantir essa ordem.
 * **Identidade/permissões:** o Velero é instalado em modo `--no-secret`, autenticando via IRSA com a `LabRole` da conta AWS Lab (`--sa-annotations eks.amazonaws.com/role-arn=<LabRole>`), sem credenciais estáticas no cluster.
@@ -47,7 +47,7 @@ A estratégia de recuperação baseia-se na separação entre Infraestrutura, Es
 ### 4.2. Backup de Dados (RDS/DynamoDB)
 
 * Os bancos de dados (PostgreSQL gerenciados pelo Flyway) operam com políticas de retenção de snapshots automatizados e cópia *Cross-Region* ativada para a região secundária, sustentando o RPO de 15 minutos do `donation-service` (Seção 3).
-* **DynamoDB (`volunteer-table`):** protegido pelo módulo `terraform/modules/aws_backup`, provisionado via `dynamodb-backup/dev/terragrunt.hcl`. O plano de backup executa diariamente às 03:00 UTC — mesma janela do Schedule do Velero — e realiza cópia cross-region para `us-west-2` (mesmo vault de DR), com retenção de 90 dias alinhada ao lifecycle do bucket S3 do Velero.
+* **DynamoDB (`volunteer-table`):** protegido pelo módulo `terraform/modules/backup`, provisionado via `dynamodb-backup/dev/terragrunt.hcl`. O plano de backup executa diariamente às 03:00 UTC — mesma janela do Schedule do Velero — e realiza cópia cross-region para `us-west-2` (mesmo vault de DR), com retenção de 90 dias alinhada ao lifecycle do bucket S3 do Velero.
 * **Gap remanescente:** a fila SQS (`donation-queue`) não possui backup cross-region equivalente — AWS Backup não suporta SQS nativamente. A perda de mensagens em trânsito no momento de um desastre deve ser avaliada dentro do RPO de 15 minutos declarado para o `donation-service`.
 
 ### 4.3. Procedimento de Recuperação (Runbook)

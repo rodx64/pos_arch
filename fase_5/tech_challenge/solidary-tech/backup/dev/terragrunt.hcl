@@ -18,7 +18,7 @@ remote_state {
 }
 
 terraform {
-  source = "${get_repo_root()}/fase_5/tech_challenge/solidary-tech/terraform/modules/aws_backup"
+  source = "${get_repo_root()}/fase_5/tech_challenge/solidary-tech/terraform/modules/backup"
 }
 
 dependency "infra" {

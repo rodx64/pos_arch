@@ -12,15 +12,15 @@ Esta documentação cobre a entrega da **Fase 5** do Tech Challenge, organizada 
 | **1. SRE: Confiabilidade** | SLIs/SLOs do `donation-service`, dashboard de Error Budget, redução de MTTR | [SRE e Confiabilidade](./sre.md) |
 | **2. FinOps** | Tagging obrigatório via Terraform, rightsizing por workload, forecast de custos | [FinOps](./finops.md) |
 | **3. ITSM e AIOps** | Datadog Watchdog (detecção de anomalias) e fluxo de vida de incidentes | [AIOps e Gestão de Incidentes](./itsm-aiops.md) |
-| **4. Multicloud, Segurança e DR** | Plano de Continuidade de Negócios, RTO/RPO e estratégia de backup/DR | *Em elaboração* |
+| **4. Multicloud, Segurança e DR** | Plano de Continuidade de Negócios, RTO/RPO, backup Velero cross-region e AWS Backup para DynamoDB | [Disaster Recovery e PCN](disaster-recovery.md) |
 
 ## Visão rápida da arquitetura
 
 Três microsserviços compõem o domínio de negócio — `donation-service` (Go), `ngo-service` e `volunteer-service` (Python/Flask) — rodando em EKS, com PostgreSQL (RDS) para dados transacionais, DynamoDB para voluntários e SQS para eventos de doação. Tudo provisionado via Terraform/Terragrunt, entregue via GitOps (ArgoCD) e observado via Prometheus + Loki + OpenTelemetry + Datadog. Detalhes completos em [Arquitetura](./architecture.md) e [Guia de APIs e Serviços](./how-to/apis-services.md).
 
-## Onde encontrar os documentos-fonte completos
+## Documentos de referência no repositório
 
-Esta documentação é um painel de navegação resumido. Os relatórios completos e detalhados (com tabelas de custo, queries PromQL, manifestos YAML, etc.) ficam versionados junto ao código no github do projeto, em [`Doc`][1]:
+Os arquivos abaixo ficam versionados junto ao código em [`Doc`][1], servindo como fonte primária de evidências (tabelas de custo, queries PromQL, manifestos YAML) referenciadas por esta documentação:
 
 - `0_REQUISITOS.md` — checklist oficial dos requisitos do desafio
 - `1_MELHORIAS.md` — changelog técnico de todas as melhorias implementadas
@@ -28,5 +28,6 @@ Esta documentação é um painel de navegação resumido. Os relatórios complet
 - `3_FORECAST.md` — forecast de custos completo, por ambiente
 - `4_RIGHTSIZING.md` — análise completa de rightsizing e scaling (KEDA)
 - `5_AIOPS_ITSM.md` — AIOps e fluxo de incidentes em detalhe
+- `6_PCN.md` — Plano de Continuidade de Negócios (PCN) completo
 
 [1]: https://github.com/rodx64/pos_arch/tree/develop/fase_5/tech_challenge/doc
