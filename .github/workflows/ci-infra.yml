@@ -765,7 +765,7 @@ jobs:
           fi
 
           AWS_REGION="${{ secrets.AWS_REGION }}"
-          BUCKET_NAME="solidary-tech-${ENV_NAME}-frontend"
+          BUCKET_NAME="solidary-tech-${ENV_NAME}-app"
           FRONTEND_URL="http://${BUCKET_NAME}.s3-website-${AWS_REGION}.amazonaws.com"
 
           sed -i "s|host: .*|host: ${NLB_HOST}|g" "$INGRESS_API_FILE"
