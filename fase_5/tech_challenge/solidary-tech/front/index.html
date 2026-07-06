@@ -42,20 +42,23 @@
 
   <div class="container">
     
-    <div class="content-banner">
-      <img src="img/banner.png" alt="Banner Solidary Tech">
-    </div>
-
-    <div class="tabs">
-      <button class="tab active" onclick="switchTab('ngos', this)">
-        <span class="tab-icon">🏢</span> ONGs
-      </button>
-      <button class="tab" onclick="switchTab('donations', this)">
-        <span class="tab-icon">💚</span> Doações
-      </button>
-      <button class="tab" onclick="switchTab('volunteers', this)">
-        <span class="tab-icon">🙋</span> Voluntários
-      </button>
+    <div class="banner-nav-card">
+      <div class="content-banner">
+        <img src="img/banner.png" alt="Banner Solidary Tech">
+      </div>
+      <div class="tabs-wrapper">
+        <div class="tabs">
+          <button class="tab active" onclick="switchTab('ngos', this)">
+            <span class="tab-icon">🏢</span> ONGs
+          </button>
+          <button class="tab" onclick="switchTab('donations', this)">
+            <span class="tab-icon">💚</span> Doações
+          </button>
+          <button class="tab" onclick="switchTab('volunteers', this)">
+            <span class="tab-icon">🙋</span> Voluntários
+          </button>
+        </div>
+      </div>
     </div>
 
     <div id="panel-ngos" class="panel active">
