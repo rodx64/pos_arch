@@ -6,7 +6,8 @@
   <title>Solidary Tech — Plataforma</title>
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
   
   <link rel="stylesheet" href="style.css">
 </head>
@@ -19,10 +20,10 @@
     </div>
     <div class="header-impact">
       <div class="impact-pill">
-        <span style="color:rgba(255,255,255,.6);font-size:12px;">Total de doações</span>
+        <span>Total de doações</span>
         <span class="impact-number" id="impact-counter">—</span>
       </div>
-      <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:rgba(255,255,255,.5)">
+      <div class="status-wrapper">
         <div class="status-dot offline" id="status-dot"></div>
         <span id="status-label">Aguardando</span>
       </div>
@@ -38,7 +39,6 @@
   </div>
 
   <div class="container">
-
     <div class="tabs">
       <button class="tab active" onclick="switchTab('ngos', this)">
         <span class="tab-icon">🏢</span> ONGs
@@ -53,13 +53,13 @@
 
     <div id="panel-ngos" class="panel active">
       <div class="section-eyebrow">Cadastro</div>
-      <div class="section-title">Organizações parceiras</div>
+      <div class="section-title">Organizações Parceiras</div>
       <div class="grid">
         <div>
           <div class="card">
             <div class="card-header">
-              <span class="card-title">ONGs cadastradas</span>
-              <div style="display:flex;align-items:center;gap:8px">
+              <span class="card-title">ONGs Cadastradas</span>
+              <div style="display:flex;align-items:center;gap:12px">
                 <span class="card-count" id="ngo-count">0</span>
                 <button class="btn-refresh" onclick="loadNgos()" title="Atualizar">↻</button>
               </div>
@@ -69,7 +69,7 @@
         </div>
         <div>
           <div class="card form-card">
-            <div class="card-header">
+            <div class="card-header" style="padding-left:0; padding-top:0; border-bottom:none;">
               <span class="card-title">Nova ONG</span>
             </div>
             <div class="form-body">
@@ -100,13 +100,13 @@
 
     <div id="panel-donations" class="panel">
       <div class="section-eyebrow">Transações</div>
-      <div class="section-title">Histórico de doações</div>
+      <div class="section-title">Histórico de Doações</div>
       <div class="grid">
         <div>
           <div class="card">
             <div class="card-header">
-              <span class="card-title">Doações realizadas</span>
-              <div style="display:flex;align-items:center;gap:8px">
+              <span class="card-title">Doações Realizadas</span>
+              <div style="display:flex;align-items:center;gap:12px">
                 <span class="card-count" id="don-count">0</span>
                 <button class="btn-refresh" onclick="loadDonations()" title="Atualizar">↻</button>
               </div>
@@ -116,8 +116,8 @@
         </div>
         <div>
           <div class="card form-card">
-            <div class="card-header">
-              <span class="card-title">Nova doação</span>
+            <div class="card-header" style="padding-left:0; padding-top:0; border-bottom:none;">
+              <span class="card-title">Nova Doação</span>
             </div>
             <div class="form-body">
               <div class="field">
@@ -125,7 +125,7 @@
                 <input type="text" id="don-name" placeholder="Ex: Maria Silva">
               </div>
               <div class="field">
-                <label>ONG destinatária (ID)</label>
+                <label>ONG destinatária</label>
                 <select id="don-ngo">
                   <option value="">Selecione uma ONG…</option>
                 </select>
@@ -150,14 +150,14 @@
         <div>
           <div class="card" style="margin-bottom:0">
             <div class="card-header">
-              <span class="card-title">Filtrar por ONG</span>
+              <span class="card-title">Filtrar Equipe</span>
             </div>
-            <div style="padding:16px 22px;border-bottom:1px solid var(--bg-2)">
-              <div style="display:flex;gap:8px">
-                <select id="vol-filter-ngo" style="flex:1;padding:8px 12px;border:1.5px solid var(--bg-2);border-radius:6px;font-size:14px;font-family:Inter,sans-serif;background:var(--bg);color:var(--text);outline:none">
+            <div style="padding:20px 24px; border-bottom:1px solid var(--border)">
+              <div style="display:flex;gap:12px">
+                <select id="vol-filter-ngo" style="flex:1; padding:10px 14px; border:2px solid var(--border); border-radius:8px; font-size:14px; font-family:Inter,sans-serif; background:var(--bg); color:var(--text-main); outline:none">
                   <option value="">Selecione uma ONG…</option>
                 </select>
-                <button class="btn-primary" style="width:auto;padding:8px 18px" onclick="loadVolunteers()">Buscar</button>
+                <button class="btn-primary" style="width:auto; padding:10px 24px" onclick="loadVolunteers()">Buscar</button>
               </div>
             </div>
             <div id="vol-list"><div class="empty"><div class="empty-icon">🔍</div><p>Selecione uma ONG para listar os voluntários.</p></div></div>
@@ -165,8 +165,8 @@
         </div>
         <div>
           <div class="card form-card">
-            <div class="card-header">
-              <span class="card-title">Registrar voluntário</span>
+            <div class="card-header" style="padding-left:0; padding-top:0; border-bottom:none;">
+              <span class="card-title">Registrar Voluntário</span>
             </div>
             <div class="form-body">
               <div class="field">
@@ -178,7 +178,7 @@
                 <input type="email" id="vol-email" placeholder="joao@email.com">
               </div>
               <div class="field">
-                <label>ONG (ID)</label>
+                <label>ONG de atuação</label>
                 <select id="vol-ngo">
                   <option value="">Selecione uma ONG…</option>
                 </select>
@@ -192,7 +192,9 @@
       </div>
     </div>
 
-  </div><div id="toast"></div>
+  </div>
+  
+  <div id="toast"></div>
 
   <script src="config.js"></script>
   <script src="app.js"></script>

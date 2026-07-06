@@ -61,7 +61,7 @@ window.switchTab = function(name, btn) {
 // ─── ONGs ──────────────────────────────────────────────────────────────────
 window.loadNgos = async function() {
   const el = document.getElementById('ngo-list');
-  el.innerHTML = '<div class="loading"><div class="spinner"></div>Carregando…</div>';
+  el.innerHTML = '<div class="loading"><div class="spinner"></div><span>Buscando organizações...</span></div>';
   try {
     const r = await fetch(BASE + '/ngos');
     if (!r.ok) throw new Error(r.status);
@@ -80,8 +80,8 @@ function renderNgos(list) {
     el.innerHTML = '<div class="empty"><div class="empty-icon">🏢</div><p>Nenhuma ONG cadastrada ainda.</p></div>';
     return;
   }
-  el.innerHTML = '<div class="list">' + list.map(n => `
-    <div class="list-item">
+  el.innerHTML = '<div class="list">' + list.map((n, i) => `
+    <div class="list-item fade-in" style="animation-delay: ${i * 0.05}s">
       <div class="item-row">
         <div>
           <div class="item-name">${esc(n.name)}</div>
@@ -90,9 +90,11 @@ function renderNgos(list) {
             <span>📍 ${esc(n.city)}</span>
           </div>
         </div>
-        <span class="badge green">${esc(n.cause)}</span>
+        <div style="text-align:right">
+          <span class="badge green">${esc(n.cause)}</span>
+          <div style="margin-top:6px;font-size:11px;color:var(--text-muted);font-weight:500;">ID ${n.id}</div>
+        </div>
       </div>
-      <div style="margin-top:4px;font-size:11px;color:var(--muted)">ID ${n.id}</div>
     </div>`).join('') + '</div>';
 }
 
@@ -111,7 +113,7 @@ window.createNgo = async function() {
   const city  = document.getElementById('ngo-city').value.trim();
   if (!name || !email || !cause || !city) { toast('Preencha todos os campos.', true); return; }
   const btn = document.getElementById('btn-ngo');
-  btn.disabled = true; btn.innerHTML = '<div class="spinner" style="border-top-color:#fff"></div>';
+  btn.disabled = true; btn.innerHTML = '<div class="spinner" style="border-color: rgba(255,255,255,0.3); border-top-color: #fff;"></div>';
   try {
     const r = await fetch(BASE + '/ngos', {
       method: 'POST',
@@ -130,7 +132,7 @@ window.createNgo = async function() {
 // ─── DOAÇÕES ───────────────────────────────────────────────────────────────
 window.loadDonations = async function() {
   const el = document.getElementById('don-list');
-  el.innerHTML = '<div class="loading"><div class="spinner"></div>Carregando…</div>';
+  el.innerHTML = '<div class="loading"><div class="spinner"></div><span>Verificando histórico...</span></div>';
   try {
     const r = await fetch(BASE + '/donations');
     if (!r.ok) throw new Error();
@@ -149,8 +151,8 @@ function renderDonations(list) {
     el.innerHTML = '<div class="empty"><div class="empty-icon">💚</div><p>Nenhuma doação registrada ainda.</p></div>';
     return;
   }
-  el.innerHTML = '<div class="list">' + list.map(d => `
-    <div class="list-item">
+  el.innerHTML = '<div class="list">' + list.map((d, i) => `
+    <div class="list-item fade-in" style="animation-delay: ${i * 0.05}s">
       <div class="item-row">
         <div>
           <div class="item-name">${esc(d.donor_name)}</div>
@@ -173,7 +175,7 @@ window.createDonation = async function() {
   const amount     = parseFloat(document.getElementById('don-amount').value);
   if (!donor_name || !ngo_id || !amount || amount <= 0) { toast('Preencha todos os campos.', true); return; }
   const btn = document.getElementById('btn-don');
-  btn.disabled = true; btn.innerHTML = '<div class="spinner" style="border-top-color:#fff"></div>';
+  btn.disabled = true; btn.innerHTML = '<div class="spinner" style="border-color: rgba(255,255,255,0.3); border-top-color: #fff;"></div>';
   try {
     const r = await fetch(BASE + '/donations', {
       method: 'POST',
@@ -194,7 +196,7 @@ window.loadVolunteers = async function() {
   const ngo_id = document.getElementById('vol-filter-ngo').value;
   if (!ngo_id) { toast('Selecione uma ONG para buscar.', true); return; }
   const el = document.getElementById('vol-list');
-  el.innerHTML = '<div class="loading"><div class="spinner"></div>Carregando…</div>';
+  el.innerHTML = '<div class="loading"><div class="spinner"></div><span>Localizando voluntários...</span></div>';
   try {
     const r = await fetch(BASE + '/volunteers/' + ngo_id);
     if (!r.ok) throw new Error();
@@ -211,8 +213,8 @@ function renderVolunteers(list) {
     el.innerHTML = '<div class="empty"><div class="empty-icon">🙋</div><p>Nenhum voluntário cadastrado para esta ONG.</p></div>';
     return;
   }
-  el.innerHTML = '<div class="list">' + list.map(v => `
-    <div class="list-item">
+  el.innerHTML = '<div class="list">' + list.map((v, i) => `
+    <div class="list-item fade-in" style="animation-delay: ${i * 0.05}s">
       <div class="item-row">
         <div>
           <div class="item-name">${esc(v.name)}</div>
@@ -220,9 +222,11 @@ function renderVolunteers(list) {
             <span>📧 ${esc(v.email)}</span>
           </div>
         </div>
-        <span class="badge blue">Voluntário</span>
+        <div style="text-align:right">
+          <span class="badge blue">Voluntário</span>
+          <div style="margin-top:6px;font-size:11px;color:var(--text-muted);font-weight:500;">Desde ${fmtTs(v.registered_at)}</div>
+        </div>
       </div>
-      <div style="margin-top:4px;font-size:11px;color:var(--muted)">Desde ${fmtTs(v.registered_at)}</div>
     </div>`).join('') + '</div>';
 }
 
@@ -232,7 +236,7 @@ window.createVolunteer = async function() {
   const ngo_id = parseInt(document.getElementById('vol-ngo').value);
   if (!name || !email || !ngo_id) { toast('Preencha todos os campos.', true); return; }
   const btn = document.getElementById('btn-vol');
-  btn.disabled = true; btn.innerHTML = '<div class="spinner" style="border-top-color:#fff"></div>';
+  btn.disabled = true; btn.innerHTML = '<div class="spinner" style="border-color: rgba(255,255,255,0.3); border-top-color: #fff;"></div>';
   try {
     const r = await fetch(BASE + '/volunteers', {
       method: 'POST',
@@ -273,11 +277,9 @@ function loadAll() {
 window.addEventListener('DOMContentLoaded', () => {
   if (typeof window.APP_CONFIG !== 'undefined' && window.APP_CONFIG.API_URL) {
     let url = window.APP_CONFIG.API_URL.replace(/\/$/, '');
-    
     if (!url.startsWith('http')) {
       url = 'http://' + url;
     }
-    
     BASE = url;
   } else {
     BASE = 'http://localhost';
