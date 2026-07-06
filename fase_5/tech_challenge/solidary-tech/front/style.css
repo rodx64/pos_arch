@@ -179,3 +179,21 @@ header {
 /* ── TYPOGRAPHY EXTRAS ───────────────────────── */
 .section-eyebrow { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--gold); margin-bottom: 8px; }
 .section-title { font-size: 26px; font-weight: 700; color: var(--text-main); margin-bottom: 24px; letter-spacing: -0.5px; }
+
+/* ── CONTENT BANNER ──────────────────────────── */
+.content-banner {
+  width: 100%;
+  margin-bottom: 32px; /* Espaçamento entre o banner e as abas */
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  line-height: 0; /* Remove aquele pequeno espaço invisível que o HTML deixa abaixo de imagens */
+}
+
+.content-banner img {
+  width: 100%;
+  height: auto;
+  max-height: 250px; /* Limita a altura para não empurrar muito o conteúdo para baixo */
+  object-fit: cover; /* Garante que a imagem preencha o espaço sem distorcer */
+  display: block;
+}
