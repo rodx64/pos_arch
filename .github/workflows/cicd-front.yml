@@ -25,7 +25,7 @@ jobs:
             echo "API_URL=http://NLB_DE_PROD" >> $GITHUB_ENV
           else
             echo "ENV_NAME=dev" >> $GITHUB_ENV
-            echo "API_URL=a2f80b5e3fb5049d18d0cadfaff23054-21dab141f0b550e5.elb.us-east-1.amazonaws.com" >> $GITHUB_ENV
+            echo "API_URL=a1440e89a378844f0b0ee3579103cd35-85d4bbd90fe80f6e.elb.us-east-1.amazonaws.com" >> $GITHUB_ENV
           fi
 
       - name: Configure AWS credentials
