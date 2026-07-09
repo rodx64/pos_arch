@@ -15,13 +15,17 @@ O `volunteer-service` é um backend em Flask que registra voluntários e busca l
 
 ## Endpoints
 
-- `GET /health`
+- `GET /volunteers/health`
   - Retorna o estado de saúde do serviço.
 - `POST /volunteers`
   - Registra um novo voluntário.
   - Campos obrigatórios no corpo JSON: `name`, `email`, `ngo_id`.
 - `GET /volunteers/<ngo_id>`
   - Retorna voluntários registrados para uma ONG específica.
+- `GET /cpu`
+  - Endpoint sintético de carga de CPU.
+- `GET /metrics`
+  - Exibe métricas Prometheus.
 
 ## Configuração de runtime
 
@@ -66,6 +70,30 @@ Ou com Docker:
 ```bash
 docker build -t solidary-tech-volunteer-service .
 docker run --env-file .env -p 8083:8083 solidary-tech-volunteer-service
+```
+
+### Exemplos locais com curl
+
+```bash
+curl http://localhost:8083/volunteers/health
+```
+
+```bash
+curl -X POST http://localhost:8083/volunteers \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Ana", "email": "ana@email.com", "ngo_id": 1}'
+```
+
+```bash
+curl http://localhost:8083/volunteers/1
+```
+
+```bash
+curl "http://localhost:8083/cpu?duration_ms=100"
+```
+
+```bash
+curl http://localhost:8083/metrics
 ```
 
 ### Usando LocalStack

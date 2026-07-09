@@ -13,13 +13,17 @@ O `donation-service` é um backend em Go que gerencia a criação e a listagem d
 
 ## Endpoints
 
-- `GET /health`
+- `GET /donations/health`
   - Retorna o estado de saúde do serviço.
 - `GET /donations`
   - Retorna a lista de doações.
 - `POST /donations`
   - Cria um novo registro de doação.
   - Payload JSON esperado: `ngo_id`, `amount`, `donor_name`.
+- `GET /cpu`
+  - Endpoint sintético de carga de CPU.
+- `GET /metrics`
+  - Exibe métricas Prometheus.
 
 ## Configuração de runtime
 
@@ -66,6 +70,30 @@ Ou com Docker:
 ```bash
 docker build -t solidary-tech-donation-service .
 docker run --env-file .env -p 8082:8082 solidary-tech-donation-service
+```
+
+### Exemplos locais com curl
+
+```bash
+curl http://localhost:8082/donations/health
+```
+
+```bash
+curl http://localhost:8082/donations
+```
+
+```bash
+curl -X POST http://localhost:8082/donations \
+  -H "Content-Type: application/json" \
+  -d '{"ngo_id": 1, "amount": 25.5, "donor_name": "Maria"}'
+```
+
+```bash
+curl "http://localhost:8082/cpu?duration_ms=100"
+```
+
+```bash
+curl http://localhost:8082/metrics
 ```
 
 ### Usando LocalStack

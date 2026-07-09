@@ -1,67 +1,24 @@
 # Arquitetura - Fase 5: Solidary Tech
 
-## 1. Arquitetura de Serviços
+## 1. Visão Geral da Arquitetura
 
-![alt text](../doc//imagens/arquitetura_drawio.png)
+### 1.1. Arquitetura AWS (Diagrama)
+![alt text](../doc/imagens/arquitetura_drawio.png)
 
-```mermaid
-    flowchart TB
-        subgraph AWS ["AWS Cloud (Região: us-east-1)"]
-            IGW["Internet Gateway (solidary-tech-dev-igw)"]
+---
 
-            subgraph VPC ["VPC: solidary-tech-dev-vpc (10.0.0.0/16)"]
+## 2. Componentes e Microsserviços
 
-                subgraph Public ["Subnets Públicas (10.0.3.0/24 e 10.0.4.0/24)"]
-                    NAT["NAT Gateway"]
-                    Bastion["Bastion Host EC2 (t3.small)"]
-                end
+O projeto Solidary Tech é uma plataforma de doações e voluntariado para ONGs estruturada em microsserviços. Abaixo estão as responsabilidades e fluxos de cada componente.
 
-                subgraph Private ["Subnets Privadas (10.0.1.0/24 e 10.0.2.0/24)"]
-                    subgraph EKS ["EKS Cluster (solidary-tech-eks)"]
-                        EKS_CLUSTER["Cluster EKS"]
-                        NGO["ngo-service (Porta 8081)"]
-                        DON["donation-service (Porta 8082)"]
-                        VOL["volunteer-service (Porta 8083)"]
-                    end
+### 2.1. Serviço de Doações (`donation-service`)
+* **Linguagem/Framework**: Go
+* **Porta**: 8082
+* **Banco de Dados**: `donation_db` (PostgreSQL)
+* **Integrações**: SQS (`donation-queue`)
+* **Responsabilidade**: Gestão do ciclo de vida das doações. (Serviço Crítico de SLO - 99.9%).
 
-                    subgraph RDS ["RDS PostgreSQL (db.t3.micro)"]
-                        DB_NGO[("ngo_db")]
-                        DB_DON[("donation_db")]
-                    end
-                end
-            end
-
-            subgraph ServicosGerenciados ["Serviços Gerenciados (Serverless / Storage)"]
-                ECR["ECR (Imagens: solidary-tech/*)"]
-                SQS[["SQS (donation-queue)"]]
-                DDB[("DynamoDB (volunteer-table)")]
-                
-                subgraph S3 ["Amazon S3"]
-                    S3_FRONT["solidary-tech-dev-app (Frontend)"]
-                    S3_STATE["solidary-iac-state (Terraform)"]
-                end
-            end
-        end
-
-        %% Fluxo de Rede e Acesso
-        Internet((Internet)) -->|Acesso Público| IGW
-        IGW -->|Conecta| Public
-        Private -->|Acesso à Internet| NAT
-        NAT -->|Retorna| IGW
-        Bastion -->|SSH Tunnel| EKS_CLUSTER
-        
-        %% Interações dos Microsserviços
-        NGO -->|Lê/Grava| DB_NGO
-        DON -->|Lê/Grava| DB_DON
-        DON -->|Eventos de doação| SQS
-        VOL -->|Armazena perfis| DDB
-        VOL -->|Integração| SQS
-
-        %% Provisionamento e Hospedagem
-        EKS_CLUSTER -->|Pull de Imagens| ECR
-        Internet -->|Acessa Configuração React| S3_FRONT
-```
-
+**Fluxo de Eventos (Doação):**
 ```mermaid
     sequenceDiagram
         actor Doador
@@ -91,7 +48,63 @@
         Ingress-->>Doador: Resposta de sucesso
 ```
 
-### 1.1. Estrutura de Dependências e Microsserviços
+### 2.2. Serviço de ONGs (`ngo-service`)
+* **Linguagem/Framework**: Python/Flask
+* **Porta**: 8081
+* **Banco de Dados**: `ngo_db` (PostgreSQL)
+* **Computação**: Gunicorn otimizado (2 workers para redução de context switching).
+* **Responsabilidade**: Gerenciamento de cadastros, perfis e localizações das ONGs parceiras.
+
+**Fluxo de Eventos (Cadastro de ONG):**
+```mermaid
+    sequenceDiagram
+        actor Utilizador as Utilizador/Admin
+        participant Ingress as Ingress (NGINX/NLB)
+        participant NgoAPI as ngo-service (Flask)
+        participant DB as PostgreSQL (ngo_db)
+
+        Utilizador->>Ingress: POST /ngos (name, email, cause, city)
+        Ingress->>NgoAPI: Encaminha requisição HTTP
+        
+        rect rgb(240, 248, 255)
+            Note over NgoAPI,DB: Persistência Relacional
+            NgoAPI->>DB: INSERT INTO ngos (...)
+            DB-->>NgoAPI: Retorna id e created_at
+        end
+        
+        NgoAPI-->>Ingress: HTTP 201 Created (Dados da ONG)
+        Ingress-->>Utilizador: Resposta de sucesso
+```
+
+### 2.3. Serviço de Voluntários (`volunteer-service`)
+* **Linguagem/Framework**: Python/Flask
+* **Porta**: 8083
+* **Banco de Dados**: `volunteer-table` (DynamoDB)
+* **Computação**: Gunicorn otimizado (2 workers).
+* **Responsabilidade**: Cadastro e vinculação de voluntários às ONGs.
+
+**Fluxo de Eventos (Cadastro de Voluntário):**
+```mermaid
+    sequenceDiagram
+        actor Utilizador as Utilizador/Admin
+        participant Ingress as Ingress (NGINX/NLB)
+        participant VolAPI as volunteer-service (Flask)
+        participant Dynamo as DynamoDB (volunteer-table)
+
+        Utilizador->>Ingress: POST /volunteers (name, email, ngo_id)
+        Ingress->>VolAPI: Encaminha requisição HTTP
+        
+        rect rgb(230, 255, 230)
+            Note over VolAPI,Dynamo: Persistência NoSQL
+            VolAPI->>Dynamo: PutItem (Gera UUID, Timestamp, etc.)
+            Dynamo-->>VolAPI: Confirmação de gravação
+        end
+        
+        VolAPI-->>Ingress: HTTP 201 Created (Dados do Voluntário)
+        Ingress-->>Utilizador: Resposta de sucesso
+```
+
+### 3.1. Estrutura de Dependências e Microsserviços
 
 O projeto Solidary Tech é uma plataforma de doações e voluntariado para ONGs com os seguintes serviços em Go:
 
@@ -116,7 +129,7 @@ Estrutura de serviços:
   - Integrações: SQS
 ```
 
-### 1.2. Frontend
+### 3.2. Frontend
 
 * **Aplicação React/TypeScript** 
   - Hospedada em S3
@@ -125,11 +138,11 @@ Estrutura de serviços:
 
 ---
 
-## 2. Arquitetura AWS
+## 4. Arquitetura AWS
 
-## 2.1. VPC (Virtual Private Cloud)
+## 4.1. VPC (Virtual Private Cloud)
 
-### 2.1.1. VPC Principal
+### 4.1.1. VPC Principal
 
 ```
 Nome: solidary-tech-dev-vpc
@@ -142,7 +155,7 @@ Tags:
   Name = solidary-tech-dev-vpc
 ```
 
-### 2.1.2. Subnets
+### 4.1.2. Subnets
 
 Foram criadas 4 subnets distribuídas em 2 zonas de disponibilidade:
 
@@ -170,7 +183,7 @@ Subnets Públicas (acesso direto via IGW):
    * Uso: NAT Gateway
 ```
 
-### 2.1.3. Internet Gateway (IGW)
+### 4.1.3. Internet Gateway (IGW)
 
 ```
 Nome: solidary-tech-dev-igw
@@ -178,7 +191,7 @@ Propósito: Acesso à internet das subnets públicas
 Associação: solidary-tech-dev-vpc
 ```
 
-### 2.1.4. NAT Gateway
+### 4.1.4. NAT Gateway
 
 ```
 Nome: solidary-tech-dev-nat
@@ -187,7 +200,7 @@ Elastic IP: Alocado automaticamente
 Propósito: Acesso à internet dos recursos em subnets privadas
 ```
 
-### 2.1.5. Route Tables
+### 4.1.5. Route Tables
 
 #### Rota Pública (RTB)
 ```
@@ -213,9 +226,9 @@ Associações:
 
 ---
 
-## 2.2. EKS (Elastic Kubernetes Service)
+## 4.2. EKS (Elastic Kubernetes Service)
 
-### 2.2.1. Cluster Kubernetes
+### 4.2.1. Cluster Kubernetes
 
 Foi criado o cluster EKS `solidary-tech-eks` com as seguintes características:
 
@@ -237,7 +250,7 @@ Encriptação:
  - Recomendação: Habilitar em produção
 ```
 
-#### 2.2.1.1. Security Groups
+#### 4.2.1.1. Security Groups
 
 ```
 Cluster Security Group:
@@ -245,7 +258,7 @@ Cluster Security Group:
  - Egresso: Qualquer lugar
 ```
 
-### 2.2.2. Node Group
+### 4.2.2. Node Group
 
 Foi criado um Node Group com a seguinte configuração:
 
@@ -278,7 +291,7 @@ Tags FinOps:
  - ManagedBy: Terraform
 ```
 
-### 2.2.3. Bastion Host (EC2)
+### 4.2.3. Bastion Host (EC2)
 
 Para acesso seguro ao cluster e execução de migrations:
 
@@ -301,7 +314,7 @@ Propósito:
 
 ---
 
-## 2.3. ECR (Elastic Container Registry)
+## 4.3. ECR (Elastic Container Registry)
 
 Foram criados repositórios no ECR para armazenar imagens dos serviços:
 
@@ -331,7 +344,7 @@ Exemplo de imagem:
 
 ---
 
-## 2.4. RDS (Relational Database Service)
+## 4.4. RDS (Relational Database Service)
 
 Foram criados dois bancos de dados PostgreSQL para aplicação:
 
@@ -382,7 +395,7 @@ Tags:
  - CostCenter: NGO-Core
 ```
 
-## 2.5. SQS (Simple Queue Service)
+## 4.5. SQS (Simple Queue Service)
 
 Foram criadas filas para processamento assíncrono:
 
@@ -415,7 +428,7 @@ Local (desenvolvimento):
 
 ---
 
-## 2.6. DynamoDB
+## 4.6. DynamoDB
 
 Foram criadas tabelas NoSQL para armazenamento de voluntários:
 
@@ -445,9 +458,9 @@ Local (desenvolvimento):
 
 ---
 
-## 2.7. S3 (Simple Storage Service)
+## 4.7. S3 (Simple Storage Service)
 
-### 2.7.1. State Bucket (Terraform/Terragrunt)
+### 4.7.1. State Bucket (Terraform/Terragrunt)
 
 ```
 Bucket: solidary-iac-state
@@ -468,7 +481,7 @@ Estrutura:
   └── ...
 ```
 
-### 2.7.2. Frontend Buckets
+### 4.7.2. Frontend Buckets
 
 ```
 Buckets:
@@ -489,9 +502,9 @@ Propósito:
 
 ---
 
-## 3. Segurança
+## 5. Segurança
 
-### 3.1. Network Security
+### 5.1. Network Security
 
 ```
 Security Groups:
@@ -511,7 +524,7 @@ Bastion:
 Padrão: Todos permitem egresso ilimitado
 ```
 
-### 3.2. IAM & Acesso
+### 5.2. IAM & Acesso
 
 ```
 LabRole: Role padrão do lab AWS
@@ -525,7 +538,7 @@ GitHub Actions:
  - AWS_REGION: us-east-1
 ```
 
-### 3.3. Image Security
+### 5.3. Image Security
 
 ```
 ECR Scanning:

@@ -1,22 +1,46 @@
 # Guia de APIs e Serviços
 
-O ecossistema é composto por três microsserviços especializados, cada um com domínio, persistência e linguagem próprios:
+O ecossistema é composto por três microsserviços especializados, cada um com domínio, persistência e linguagem próprios. A documentação abaixo considera o uso local, assumindo que cada serviço esteja rodando nas portas padrão: `8081` para o `ngo-service`, `8082` para o `donation-service` e `8083` para o `volunteer-service`.
 
 ## `donation-service` (Go)
 
 **Repositório:** [`services/donation-service`][donation-repo]
 
-O serviço crítico de negócio — toda doação passa por aqui. É o único serviço com SLO formal e monitoramento de error budget.
+O serviço crítico de negócio — toda doação passa por aqui. Ele persiste registros no PostgreSQL e, quando configurado, publica eventos na fila SQS.
 
 | Endpoint | Método | Descrição |
 |---|---|---|
-| `/donations` | POST | Cria uma doação; publica evento na `donation-queue` (SQS) |
-| `/donations` | GET | Lista todas as doações |
 | `/donations/health` | GET | Health check |
+| `/donations` | POST | Cria uma doação |
+| `/donations` | GET | Lista todas as doações |
+| `/cpu` | GET | Endpoint sintético de carga de CPU |
 | `/metrics` | GET | Métricas Prometheus |
-| `/cpu` | GET | Endpoint de carga sintética (usado pelo `k6-load-test.yaml` para calibração de rightsizing) |
 
 **Persistência:** PostgreSQL (RDS `donation_db`) + SQS (`donation-queue` para eventos de notificação).
+
+### Exemplos locais com curl
+
+```bash
+curl http://localhost:8082/donations/health
+```
+
+```bash
+curl http://localhost:8082/donations
+```
+
+```bash
+curl -X POST http://localhost:8082/donations \
+  -H "Content-Type: application/json" \
+  -d '{"ngo_id": 1, "amount": 25.5, "donor_name": "Maria"}'
+```
+
+```bash
+curl "http://localhost:8082/cpu?duration_ms=100"
+```
+
+```bash
+curl http://localhost:8082/metrics
+```
 
 ## `ngo-service` (Python/Flask)
 
@@ -26,12 +50,37 @@ Cadastro e gestão das ONGs parceiras da plataforma.
 
 | Endpoint | Método | Descrição |
 |---|---|---|
+| `/ngos/health` | GET | Health check |
 | `/ngos` | POST | Cadastra uma ONG |
 | `/ngos` | GET | Lista todas as ONGs |
-| `/ngos/health` | GET | Health check |
+| `/cpu` | GET | Endpoint sintético de carga de CPU |
 | `/metrics` | GET | Métricas Prometheus |
 
 **Persistência:** PostgreSQL (RDS `ngo_db`).
+
+### Exemplos locais com curl
+
+```bash
+curl http://localhost:8081/ngos/health
+```
+
+```bash
+curl http://localhost:8081/ngos
+```
+
+```bash
+curl -X POST http://localhost:8081/ngos \
+  -H "Content-Type: application/json" \
+  -d '{"name": "ONG Exemplo", "email": "contato@ong.org", "cause": "Educação", "city": "São Paulo"}'
+```
+
+```bash
+curl "http://localhost:8081/cpu?duration_ms=100"
+```
+
+```bash
+curl http://localhost:8081/metrics
+```
 
 ## `volunteer-service` (Python/Flask)
 
@@ -41,16 +90,41 @@ Gestão de voluntários por ONG.
 
 | Endpoint | Método | Descrição |
 |---|---|---|
-| `/volunteers` | POST | Cadastra um voluntário |
-| `/volunteers/<ngo_id>` | GET | Lista voluntários de uma ONG específica (filtra por `ngo_id`) |
 | `/volunteers/health` | GET | Health check |
+| `/volunteers` | POST | Cadastra um voluntário |
+| `/volunteers/<ngo_id>` | GET | Lista voluntários de uma ONG específica |
+| `/cpu` | GET | Endpoint sintético de carga de CPU |
 | `/metrics` | GET | Métricas Prometheus |
 
 **Persistência:** DynamoDB (`volunteer-table`, hash key: `volunteer_id`).
 
+### Exemplos locais com curl
+
+```bash
+curl http://localhost:8083/volunteers/health
+```
+
+```bash
+curl -X POST http://localhost:8083/volunteers \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Ana", "email": "ana@email.com", "ngo_id": 1}'
+```
+
+```bash
+curl http://localhost:8083/volunteers/1
+```
+
+```bash
+curl "http://localhost:8083/cpu?duration_ms=100"
+```
+
+```bash
+curl http://localhost:8083/metrics
+```
+
 ## Comunicação entre serviços
 
-```
+```text
 Doador → donation-service → PostgreSQL (donation_db)
                           → SQS (donation-queue)  ← sem consumidor hoje
 ```
