@@ -37,8 +37,8 @@ module "eks" {
   eks_managed_node_groups = {
     "${var.project_name}-ng" = {
       min_size       = 1
-      max_size       = 4
-      desired_size   = 3
+      max_size       = 2
+      desired_size   = 2
       instance_types = var.instance_types
 
       create_iam_role = false

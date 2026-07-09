@@ -15,13 +15,17 @@ O `ngo-service` é um backend em Flask que gerencia o cadastro e a listagem de O
 
 ## Endpoints
 
-- `GET /health`
+- `GET /ngos/health`
   - Retorna o estado de saúde do serviço.
 - `GET /ngos`
   - Retorna a lista de ONGs cadastradas.
 - `POST /ngos`
   - Cria um novo registro de ONG.
   - Campos obrigatórios no corpo JSON: `name`, `email`, `cause`, `city`.
+- `GET /cpu`
+  - Endpoint sintético de carga de CPU.
+- `GET /metrics`
+  - Exibe métricas Prometheus.
 
 ## Configuração de runtime
 
@@ -61,6 +65,30 @@ docker build -t solidary-tech-ngo-service .
 docker run --env-file .env -p 8081:8081 solidary-tech-ngo-service
 ```
 
+### Exemplos locais com curl
+
+```bash
+curl http://localhost:8081/ngos/health
+```
+
+```bash
+curl http://localhost:8081/ngos
+```
+
+```bash
+curl -X POST http://localhost:8081/ngos \
+  -H "Content-Type: application/json" \
+  -d '{"name": "ONG Exemplo", "email": "contato@ong.org", "cause": "Educação", "city": "São Paulo"}'
+```
+
+```bash
+curl "http://localhost:8081/cpu?duration_ms=100"
+```
+
+```bash
+curl http://localhost:8081/metrics
+```
+
 ### Usando LocalStack
 
 Este serviço não consome diretamente AWS, então não exige configuração específica de LocalStack para o backend. Basta garantir que o PostgreSQL local esteja disponível e o `DATABASE_URL` aponte para sua instância de banco.
@@ -85,4 +113,3 @@ Execute os testes unitários com:
 ```bash
 python -m unittest test_app.py
 ```
-

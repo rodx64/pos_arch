@@ -2,12 +2,6 @@ variable "environment" {
   type = string
 }
 
-variable "dr_region" {
-  type        = string
-  description = "Região secundária (DR) onde a cópia do backup do DynamoDB é armazenada — mesma região usada pelo bucket do Velero (terraform/modules/velero)"
-  default     = "us-west-2"
-}
-
 variable "dynamodb_table_arn" {
   type        = string
   description = "ARN da tabela DynamoDB a proteger (ex: output do módulo terraform/modules/dynamodb para a volunteer-table)"

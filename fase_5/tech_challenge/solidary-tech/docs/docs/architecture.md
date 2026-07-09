@@ -2,84 +2,128 @@
 
 ## Visão Geral
 
+A plataforma Solidary Tech é organizada em microsserviços executados no EKS, com persistência relacional para ONGs e doações, NoSQL para voluntários e eventos assíncronos por fila SQS. A imagem abaixo consolida o panorama principal da arquitetura AWS implementada na fase 5.
+
+![Arquitetura AWS da plataforma](../static/img/arquitetura_drawio.png)
+
 ```mermaid
 flowchart LR
-    subgraph Client
-        Donor[Doador / App]
-    end
+    Internet((Internet)) -->|HTTPS| IGW[Internet Gateway]
+    IGW --> Public[Subnets Públicas]
+    Public --> NAT[NAT Gateway]
+    Public --> Bastion[Bastion Host]
+    NAT --> Private[Subnets Privadas]
+    Private --> EKS[EKS Cluster]
 
-    Donor -->|HTTP| Ingress[Ingress NGINX / NLB]
+    EKS --> NGO[ngo-service]
+    EKS --> DON[donation-service]
+    EKS --> VOL[volunteer-service]
 
-    subgraph EKS["EKS — namespace solidary-tech"]
-        Ingress --> NGO[ngo-service]
-        Ingress --> DON[donation-service]
-        Ingress --> VOL[volunteer-service]
-        DON -->|SQS SendMessage| SQS[(donation-queue)]
-    end
-
-    NGO --> RDSNGO[(RDS — ngo_db)]
-    DON --> RDSDON[(RDS — donation_db)]
-    VOL --> DDB[(DynamoDB — volunteer-table)]
-
-    subgraph Monitoring["EKS — namespace monitoring"]
-        OTEL[otel-collector]
-        PROM[Prometheus]
-        LOKI[Loki]
-        GRAF[Grafana]
-        DD[Datadog Agent]
-    end
-
-    NGO -.traces/metrics/logs.-> OTEL
-    DON -.traces/metrics/logs.-> OTEL
-    VOL -.traces/metrics/logs.-> OTEL
-    OTEL --> PROM
-    OTEL --> LOKI
-    OTEL --> DD
-    DD --> Datadog[(Datadog SaaS — APM/Watchdog)]
-    PROM --> GRAF
-    LOKI --> GRAF
+    NGO --> RDSNGO[(RDS ngo_db)]
+    DON --> RDSDON[(RDS donation_db)]
+    DON --> SQS[(SQS donation-queue)]
+    VOL --> DDB[(DynamoDB volunteer-table)]
+    EKS --> ECR[ECR]
+    Internet --> Frontend[Frontend em S3]
 ```
 
 ## Componentes de Negócio
 
 | Serviço | Linguagem | Persistência | Responsabilidade |
 |---|---|---|---|
-| `donation-service` | Go | PostgreSQL (RDS) + SQS (evento de notificação) | Cria e lista doações; serviço crítico de SLO (jornada de doação ponta a ponta) |
+| `donation-service` | Go | PostgreSQL (RDS) + SQS | Gerencia o ciclo de vida das doações e é o serviço crítico de SLO (99.9%) |
 | `ngo-service` | Python/Flask | PostgreSQL (RDS) | Cadastro e listagem de ONGs parceiras |
-| `volunteer-service` | Python/Flask | DynamoDB | Cadastro e listagem de voluntários por ONG |
+| `volunteer-service` | Python/Flask | DynamoDB | Cadastro e vinculação de voluntários às ONGs |
 
-Detalhes de endpoints em [Guia de APIs e Serviços](./how-to/apis-services.md).
+Detalhes de endpoints e contratos em [Guia de APIs e Serviços](./how-to/apis-services.md).
 
-## Infraestrutura
+## Fluxos Principais
 
-Toda a infraestrutura é provisionada via **Terraform**, orquestrada por **Terragrunt** (módulos em `terraform/modules/`, ambientes em `terraform/environments/`): VPC, EKS, RDS, DynamoDB, SQS, ECR, EC2 (bastion) e o módulo de observabilidade (Datadog via Terraform provider). Ver [Infraestrutura](./infra/terraform-terragrunt.md).
+### 1. Fluxo de doação
 
-### Camada de Disaster Recovery
+```mermaid
+sequenceDiagram
+    actor Doador
+    participant Ingress as Ingress / NLB
+    participant DonationAPI as donation-service
+    participant DB as PostgreSQL (donation_db)
+    participant SQS as SQS (donation-queue)
 
-Dois módulos Terraform adicionais sustentam a estratégia de backup cross-region (região primária `us-east-1` → DR `us-west-2`):
+    Doador->>Ingress: POST /donations
+    Ingress->>DonationAPI: Encaminha requisição
+    DonationAPI->>DB: Persiste doação
+    DB-->>DonationAPI: Confirma gravação
+    DonationAPI-)SQS: Publica evento de doação
+    DonationAPI-->>Ingress: HTTP 201 Created
+    Ingress-->>Doador: Resposta de sucesso
+```
 
-- **`modules/velero`** — bucket S3 que recebe backups diários do estado do cluster EKS (namespaces `solidary-tech`, `monitoring`, `argocd`, `keda`) via Velero, com TTL de 30 dias e lifecycle de 90 dias.
-- **`modules/backup`** — plano AWS Backup com cópia cross-region da tabela DynamoDB `volunteer-table`, mesma cadência diária (03:00 UTC) e retenção de 90 dias.
+### 2. Fluxo de cadastro de ONG
 
-Detalhes completos, incluindo RTO/RPO e runbook de recuperação, em [Disaster Recovery e PCN](./disaster-recovery.md).
+```mermaid
+sequenceDiagram
+    actor Admin
+    participant Ingress as Ingress / NLB
+    participant NgoAPI as ngo-service
+    participant DB as PostgreSQL (ngo_db)
 
-## Entrega Contínua
+    Admin->>Ingress: POST /ngos
+    Ingress->>NgoAPI: Encaminha requisição
+    NgoAPI->>DB: Insere ONG
+    DB-->>NgoAPI: Confirma gravação
+    NgoAPI-->>Ingress: HTTP 201 Created
+    Ingress-->>Admin: Resposta de sucesso
+```
 
-- **CI** (GitHub Actions): testes, lint, SAST (Gosec/Bandit), SCA (Trivy), build e push de imagem para ECR — uma esteira por serviço.
-- **CD da infraestrutura**: workflow dedicado de Terraform/Terragrunt que também instala os add-ons de cluster (ArgoCD, Metrics Server, KEDA, ingress-nginx, Velero).
-- **CD da aplicação**: GitOps puro via **ArgoCD**, sincronizando o diretório `eks/` do repositório, com `selfHeal` e `prune` habilitados.
+### 3. Fluxo de cadastro de voluntário
 
-Detalhes completos em [CI/CD](./infra/pipelines-cicd.md).
+```mermaid
+sequenceDiagram
+    actor Admin
+    participant Ingress as Ingress / NLB
+    participant VolAPI as volunteer-service
+    participant Dynamo as DynamoDB (volunteer-table)
 
-## Scaling
+    Admin->>Ingress: POST /volunteers
+    Ingress->>VolAPI: Encaminha requisição
+    VolAPI->>Dynamo: PutItem
+    Dynamo-->>VolAPI: Confirma gravação
+    VolAPI-->>Ingress: HTTP 201 Created
+    Ingress-->>Admin: Resposta de sucesso
+```
 
-- `donation-service`: **KEDA**, escalando por tráfego HTTP (Prometheus) com CPU como gatilho de segurança — por ser o serviço crítico de SLO.
-- `ngo-service` / `volunteer-service`: HPA nativo do Kubernetes, por CPU.
+## Infraestrutura AWS
 
-Justificativa completa, incluindo por que scaling por fila (SQS) não é viável hoje, em [FinOps](./finops.md#scaling).
+A infraestrutura é provisionada via Terraform/Terragrunt e cobre os principais blocos abaixo:
 
-## Observabilidade
+- **VPC**: rede principal `10.0.0.0/16`, com subnets públicas e privadas distribuídas em duas zonas de disponibilidade.
+- **EKS**: cluster `solidary-tech-eks`, com endpoint privado, acesso via bastion e node group `solidary-tech-ng`.
+- **RDS**: dois bancos PostgreSQL (`donation_db` e `ngo_db`) com backup e isolamento por security group.
+- **SQS**: fila `donation-queue` para eventos assíncronos de doação.
+- **DynamoDB**: tabela `volunteer-table` para persistência de voluntários.
+- **S3**: buckets para frontend e para o estado do Terraform/Terragrunt.
+- **ECR**: repositórios por serviço com scan de imagens e tagging por commit SHA.
 
-Stack híbrida: **Prometheus + Loki + Grafana** (open-source, no cluster) e **Datadog** (APM, Watchdog/AIOps, dashboards de SRE), ambos alimentados pelo mesmo **OpenTelemetry Collector** — um único ponto de instrumentação nos serviços (Go: `otelhttp` + OTLP gRPC; Python: `opentelemetry-instrumentation-flask`), dois destinos. Ver [Observabilidade e AIOps](./observability.md).
+## Segurança e acesso
 
-[tf-rightsizing]: https://github.com/rodx64/pos_arch/blob/develop/fase_5/tech_challenge/doc/4_RIGHTSIZING.md
+- **Bastion Host**: utilizado para acesso administrativo ao cluster EKS e execução de migrations.
+- **Security Groups**: restrição de entrada para RDS e EKS, com acessos controlados por bastion e pelo cluster.
+- **IAM**: uso da `LabRole` no ambiente de laboratório e credenciais temporárias via GitHub Actions.
+- **Image Security**: integração com Trivy para escaneamento de imagens no ECR.
+
+## Outros temas da documentação
+
+Os tópicos abaixo não foram incorporados diretamente ao diagrama, mas continuam documentados neste portal:
+
+- [Infraestrutura](./infra/terraform-terragrunt.md) — módulos Terraform/Terragrunt, estado remoto, tagging e backup.
+- [CI/CD](./infra/pipelines-cicd.md) — pipelines de build, deploy e GitOps com ArgoCD.
+- [Observabilidade](./observability.md) — Prometheus, Loki, OpenTelemetry e Datadog.
+- [SRE](./sre.md) — SLIs/SLOs, budget error e confiabilidade.
+- [FinOps](./finops.md) — rightsizing, scaling e forecast de custos.
+- [Disaster Recovery e PCN](./disaster-recovery.md) — backup cross-region e recuperação.
+
+## Escalabilidade e operação
+
+- `donation-service`: escalonamento com **KEDA** por tráfego HTTP e CPU como proteção.
+- `ngo-service` e `volunteer-service`: HPA nativo do Kubernetes por CPU.
+- A documentação operacional completa, incluindo os motivos da decisão de scaling e as métricas, está disponível em [FinOps](./finops.md).

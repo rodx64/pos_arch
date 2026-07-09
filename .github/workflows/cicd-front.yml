@@ -1,0 +1,54 @@
+name: CI/CD — Frontend
+
+on:
+  push:
+    branches: ["main", "develop"]
+    paths:
+      - "fase_5/tech_challenge/solidary-tech/front/**"
+  workflow_dispatch: {}
+
+env:
+  FRONT_DIR: fase_5/tech_challenge/solidary-tech/front
+
+jobs:
+  deploy:
+    name: Deploy to S3
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set Environment Variables
+        id: vars
+        run: |
+          if [ "${{ github.ref_name }}" == "main" ]; then
+            echo "ENV_NAME=prod" >> $GITHUB_ENV
+            echo "API_URL=http://NLB_DE_PROD" >> $GITHUB_ENV
+          else
+            echo "ENV_NAME=dev" >> $GITHUB_ENV
+            echo "API_URL=a2f80b5e3fb5049d18d0cadfaff23054-21dab141f0b550e5.elb.us-east-1.amazonaws.com" >> $GITHUB_ENV
+          fi
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }} 
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Generate config.js
+        run: |
+          echo "Gerando config.js para o ambiente: ${{ env.ENV_NAME }}"
+          cat <<EOF > ${{ env.FRONT_DIR }}/config.js
+          // Arquivo gerado automaticamente pelo CI/CD (${{ github.sha }})
+          window.APP_CONFIG = {
+              API_URL: "${{ env.API_URL }}"
+          };
+          EOF
+
+      - name: Sync Frontend to S3
+        run: |
+          BUCKET_NAME="solidary-tech-${{ env.ENV_NAME }}-app"
+          echo "Sincronizando arquivos com s3://$BUCKET_NAME/"
+          
+          aws s3 sync ${{ env.FRONT_DIR }}/ s3://$BUCKET_NAME/ --delete

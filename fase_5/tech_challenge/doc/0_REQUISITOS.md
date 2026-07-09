@@ -67,11 +67,11 @@ Incidentes devem ser previstos antes de afetarem o doador.
 
 Se o cluster principal cair, a SolidaryTech precisa sobreviver.
 
-- [ ] Plano de Continuidade de Negócios (PCN): escreva um documento
+- [x] Plano de Continuidade de Negócios (PCN): escreva um documento
     executivo de PCN. Defina os valores críticos de RTO (Recovery Time
     Objective) e RPO (Recovery Point Objective) para os dados das
     doações.
-- [ ] Estratégia de DR Prática: Implemente e evidencie uma estratégia de
+- [x] Estratégia de DR Prática: Implemente e evidencie uma estratégia de
     backup/DR.
     o Opção A (Multicloud/Cross-Region Backup): configure o Velero no
        Kubernetes para fazer backup do estado do cluster (manifestos e

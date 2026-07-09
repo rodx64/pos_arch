@@ -13,6 +13,11 @@ const config: Config = {
   projectName: 'pos_arch',
 
   themes: ['@docusaurus/theme-mermaid'],
+  
+  plugins: [
+    'docusaurus-plugin-image-zoom',
+  ],
+
   markdown: {
     mermaid: true,
   },
@@ -62,6 +67,17 @@ const config: Config = {
     mermaid: {
       theme: { light: 'neutral', dark: 'forest' },
     },
+    
+    zoom: {
+      selector: '.markdown img',
+      background: {
+        light: 'rgba(255, 255, 255, 0.95)',
+        dark: 'rgba(15, 23, 42, 0.95)'
+      },
+      config: {
+      }
+    },
+
     navbar: {
       title: 'Inicio',
       logo: {
@@ -85,7 +101,7 @@ const config: Config = {
       theme: prismThemes.github,
       darkTheme: prismThemes.dracula,
     },
-  } satisfies Preset.ThemeConfig,
+  } as any satisfies Preset.ThemeConfig,
 };
 
 export default config;

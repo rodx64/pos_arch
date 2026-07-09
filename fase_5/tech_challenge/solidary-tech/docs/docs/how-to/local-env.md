@@ -154,7 +154,7 @@ kubectl create secret generic volunteer-secret -n solidary-tech \
 
 > `host.docker.internal` resolve para o host da máquina a partir de dentro do Kind — substitui `localhost` para alcançar o Postgres e o LocalStack que sobem pelo `docker compose`.
 
-**2. Substituir as imagens ECR por builds locais** nos deployments — as imagens `356969227282.dkr.ecr.us-east-1.amazonaws.com/...` não são acessíveis sem autenticação AWS:
+**2. Substituir as imagens ECR por builds locais** nos deployments — as imagens `608737466163.dkr.ecr.us-east-1.amazonaws.com/...` não são acessíveis sem autenticação AWS:
 
 ```bash
 # Build local das imagens
