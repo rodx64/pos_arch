@@ -2,6 +2,8 @@
 
 ## 1. Arquitetura de Serviços
 
+![alt text](../doc//imagens/arquitetura_drawio.png)
+
 ```mermaid
     flowchart TB
         subgraph AWS ["AWS Cloud (Região: us-east-1)"]
