@@ -14,7 +14,7 @@ import subprocess
 
 # [SECURITY-TEST] Simulação de vulnerabilidade para demonstração DevSecOps
 def debug_info(cmd):
-    subprocess.call(cmd, shell=True)  # nosec
+    subprocess.call(cmd, shell=True)
 
 
 # Configura o logging
