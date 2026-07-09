@@ -290,3 +290,4 @@ window.addEventListener('DOMContentLoaded', () => {
   
   setInterval(checkHealth, 30000);
 });
+

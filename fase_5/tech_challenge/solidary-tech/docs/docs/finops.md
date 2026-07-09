@@ -47,12 +47,12 @@ CPU reservável no pior caso cai **~30%**; memória sobe ligeiramente (~4%), del
 | Ambiente | Estratégia | Custo estimado |
 |---|---|---|
 | **DEV** | Local-First (LocalStack + Docker Compose) — custo zero na AWS | **$0/mês** |
-| **HOM** | Infra efêmera por janela de homologação (~32h/mês via `terragrunt apply`/`destroy`), 100% Spot | **~$8/mês** |
+| **HOM** | Infra efêmera por janela de homologação (~20h/mês via `terragrunt apply`/`destroy`), 100% Spot | **~$9/mês** |
 | **PRO** | Always-on, arquitetura mista On-Demand + Spot, Savings Plans 1 ano | **~$237/mês** (simulado) |
 
 **Economia DEV vs. AWS always-on:** ~$237/mês, ~$2.844/ano — o argumento mais direto de FinOps: a decisão mais barata é não provisionar o que não precisa existir ainda.
 
-**HOM vs. always-on agendado (06h–20h):** o modelo por janela (~32h/mês) representa **~95% de economia** frente a um ambiente em horário comercial fixo (~420h/mês). Isso inclui economia no Control Plane do EKS, que é cobrado mesmo com Node Group zerado.
+**HOM vs. always-on agendado (06h–20h):** o modelo por janela (~20h/mês) representa **~95% de economia** frente a um ambiente em horário comercial fixo (~420h/mês). Isso inclui economia no Control Plane do EKS, que é cobrado mesmo com Node Group zerado.
 
 Os valores acima são calculados com base nas taxas públicas On-Demand da AWS para `us-east-1` (EKS $0,10/h, `t3.medium` Spot ~$0,0125/h, `db.t4g.micro` $0,016/h, NAT Gateway $0,045/h) aplicadas sobre as 32h de janela. Detalhamento completo por componente, metodologia e premissas em [`3_FORECAST.md`][forecast].
 
