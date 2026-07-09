@@ -1,160 +1,93 @@
-# Disaster Recovery e PCN
+# Recuperação de Desastre e PCN
 
 ## Visão Geral e Objetivo
 
-A Solidary Tech adota a **Opção A — Backup Cross-Region com Velero** como estratégia de Disaster Recovery. O objetivo é garantir que a plataforma sobreviva a falhas catastróficas no cluster principal (EKS) ou na região primária da AWS (`us-east-1`), minimizando a perda de dados financeiros (doações) e o tempo de inatividade.
+A Solidary Tech adotou a estratégia de recuperação de desastre baseada em backup cross-region com Velero como mecanismo principal de continuidade de negócios. O objetivo é garantir que a plataforma sobreviva a falhas catastróficas no cluster principal do EKS ou na região primária da AWS, reduzindo ao máximo a perda de dados financeiros e o tempo de indisponibilidade.
 
-### Por que não Ativo-Passivo (Opção B)?
+> A decisão foi priorizar uma abordagem resiliente, mas com custo operacional sustentável para a organização, evitando a necessidade de manter um ambiente ativo-passivo o tempo todo.
 
-Manter um ambiente espelho em segunda região exigiria pagar continuamente por um Control Plane de EKS, Node Groups, Load Balancers e instâncias de banco ociosos. A Opção A, combinada com a automação de IaC (Terraform/Terragrunt) integrada ao CI/CD, permite **levantar o ambiente de recuperação apenas no momento do desastre** — o melhor equilíbrio entre resiliência técnica e responsabilidade financeira de uma ONG.
+## Decisão Estratégica
 
----
+A engenharia avaliou duas abordagens:
+
+- **Opção A — Backup cross-region com Velero e snapshots de dados**: provisiona a infraestrutura de recuperação apenas quando necessário.
+- **Opção B — Warm standby ativo-passivo**: mantém um ambiente espelho em outra região, porém com custo contínuo mais elevado.
+
+A escolha da Solidary Tech foi pela **Opção A**, pois ela oferece o melhor equilíbrio entre continuidade operacional, governança e responsabilidade financeira. Manter um cluster espelho em segunda região exigiria pagamento contínuo por control plane, node groups, load balancers e bancos em execução ociosa.
 
 ## Métricas Críticas: RTO e RPO
 
-| Dado | RPO | RTO | Mecanismo |
-|---|---|---|---|
-| **Doações** (`donation-service` — PostgreSQL/SQS) | **15 min** | **2 horas** | WAL contínuo do RDS replicado cross-region |
-| **Cadastrais** (NGO e Volunteer — PostgreSQL/DynamoDB) | **24 horas** | **4 horas** | Backup diário do Velero (03:00 UTC) + AWS Backup para DynamoDB |
+Para contextualizar as escolhas de recuperação, vale lembrar que:
+- **RPO** (Recovery Point Objective) indica a quantidade máxima de dados que pode ser perdida em um incidente
+- **RTO** (Recovery Time Objective) mede o tempo máximo para a plataforma voltar a operar. 
 
-> O RPO de 24h para dados cadastrais é determinado pela cadência do `Schedule` do Velero (`backup-schedule.yaml`, diário às 03:00 UTC) — o mecanismo de proteção vigente para esses dados. Não existe rotina de snapshot independente nesse intervalo.
+| Componente | RPO | RTO | Estratégia de proteção |
+|---|---:|---:|---|
+| **Doações** (`donation-service`) | **15 min** | **2 horas** | RDS com cópia cross-region |
+| **Dados cadastrais** (NGO e Volunteer) | **24 horas** | **4 horas** | Backup diário realizado pelo Velero e backup do DynamoDB |
 
----
+O RPO de 24 horas para dados cadastrais reflete a cadência real do schedule do Velero, executado diariamente às 03:00 UTC.
 
-## Arquitetura de Backup
+## Arquitetura de Proteção
 
 ```mermaid
 flowchart LR
     subgraph Primary["us-east-1 — Região Primária"]
         EKS[EKS Cluster]
-        RDS[(PostgreSQL RDS)]
-        DDB[(DynamoDB\nvolunteer-table)]
-        SQS[SQS\ndonation-queue]
+        RDS[(RDS PostgreSQL)]
+        DDB[(DynamoDB volunteer-table)]
     end
 
     subgraph DR["us-west-2 — Região DR"]
-        S3[(S3 Bucket\nvelero-backups)]
-        RDSSR[(RDS Replica\nsnapshot cross-region)]
-        VAULT[(AWS Backup Vault\ndynamodb-dr)]
+        S3[(S3 Bucket Velero)]
+        RDSSR[(Snapshots RDS cross-region)]
+        VAULT[(AWS Backup Vault)]
     end
 
-    EKS -- "Velero Schedule\n03:00 UTC diário\nTTL 30d" --> S3
-    RDS -- "WAL contínuo\nRPO 15min" --> RDSSR
-    DDB -- "AWS Backup Plan\n03:00 UTC diário\nretenção 90d" --> VAULT
+    EKS -->|Velero Schedule| S3
+    RDS -->|WAL / snapshots| RDSSR
+    DDB -->|AWS Backup Plan| VAULT
 ```
 
-### Dois mecanismos independentes por camada
+### 1. Estado do cluster com Velero
 
-**1. Estado do Cluster (Velero)**
+- O Velero é instalado no cluster EKS em modo sem credenciais estáticas, autenticando via IRSA com a `LabRole`.
+- O schedule é aplicado via GitOps e executa diariamente às **03:00 UTC**.
+- Os namespaces cobertos incluem `solidary-tech`, `monitoring`, `argocd` e `keda`.
+- O backup possui TTL de **30 dias**, enquanto o bucket S3 mantém retenção de **90 dias**.
+- O destino dos backups fica na região secundária `us-west-2`.
 
-O Velero é instalado no cluster EKS em modo `--no-secret`, autenticando via IRSA com a `LabRole` (sem credenciais estáticas). O `velero install` inclui `--snapshot-location-config region=us-east-1` — obrigatório pelo plugin AWS mesmo com `snapshotVolumes: false`, pois o plugin exige a configuração do snapshot location na instalação. O `Schedule` diário é sincronizado pelo ArgoCD a partir de [`eks/velero/backup-schedule.yaml`][velero-schedule]:
+### 2. Dados persistentes
 
-- **Namespaces cobertos:** `solidary-tech`, `monitoring`, `argocd`, `keda` — cobrindo aplicação, observabilidade, GitOps e scaling
-- **TTL por backup:** 30 dias (controlado pelo Velero)
-- **Retenção no bucket:** 90 dias (lifecycle S3 — camada de auditoria, sempre ≥ TTL)
-- **`snapshotVolumes: false`** — declarado explicitamente; nenhum serviço usa PVC hoje. Alterar para `true` se algum PVC for introduzido
-- **Bucket S3 de destino:** `solidary-tech-velero-backups-{env}` em `us-west-2`, provisionado pelo módulo [`terraform/modules/velero`][tf-velero]
+- **RDS PostgreSQL**: snapshots automatizados com cópia cross-region para sustentar o RPO de 15 minutos para o serviço de doações.
+- **DynamoDB**: proteção via AWS Backup com execução diária e retenção alinhada ao lifecycle do bucket.
+- **SQS**: ainda é um ponto de atenção, pois a fila não possui backup cross-region nativo e mensagens em trânsito podem ser perdidas no momento do desastre.
 
-**2. Dados de Aplicação (RDS + DynamoDB via AWS Backup)**
+## Procedimento de Recuperação
 
-- **PostgreSQL (RDS):** snapshots automatizados com cópia cross-region ativada para `us-west-2`, sustentando o RPO de 15 min do `donation-service`
-- **DynamoDB (`volunteer-table`):** protegida pelo módulo [`terraform/modules/backup`][tf-awsbackup], instanciado via [`backup/dev/terragrunt.hcl`][tg-awsbackup]. Executa diariamente às 03:00 UTC, cópia cross-region para `us-west-2`, retenção de 90 dias — mesma janela e retenção do bucket do Velero, por consistência de governança
+1. **Provisionar infraestrutura na região de DR**: executar o pipeline de infraestrutura apontando para a região secundária.
+2. **Garantir o bucket de backups**: o módulo de Velero provisiona o bucket antes da restauração.
+3. **Reinstalar o Velero**: no novo cluster, com o mesmo bucket e permissões de acesso.
+4. **Restaurar o estado do cluster**: executar o restore a partir do backup mais recente.
+5. **Sincronizar o ArgoCD e o tráfego**: validar o estado GitOps e restabelecer o ingress via novo NLB.
 
-> **Gap remanescente — SQS:** AWS Backup não suporta SQS nativamente. Mensagens em trânsito no momento de um desastre podem ser perdidas. A mitigação atual depende da capacidade de reprocessamento do produtor; avaliar DLQ com replicação de aplicação se o RPO de 15 min precisar cobrir a fila.
-
----
-
-## Ciclo de Vida da Infraestrutura de DR no Pipeline
-
-A ordem de execução no pipeline `ci-infra.yml` garante que o bucket exista antes do Velero ser instalado:
-
-```
-apply (infra base EKS)
-  └─► velero-infra (terragrunt apply → cria bucket S3 em us-west-2)
-        └─► cluster-addons (velero install → aponta pro bucket)
-              └─► argocd-app (sync GitOps → aplica backup-schedule.yaml)
-```
-
----
-
-## Runbook de Recuperação
-
-### Pré-requisito: identificar o último backup válido
+### Runbook resumido
 
 ```bash
-velero backup get --label-selector app.kubernetes.io/part-of=solidary-tech
-# ou simplesmente:
 velero backup get
-```
-
-### Passo 1 — Provisionar nova infraestrutura na região de DR
-
-Acionar o pipeline `ci-infra.yml` via `workflow_dispatch`, apontando para a região de DR:
-
-```bash
-# Alterar temporariamente a variável de ambiente no workflow,
-# ou sobrescrever via input do workflow_dispatch:
-TERRAGRUNT_DIR=fase_5/tech_challenge/solidary-tech/terraform/environments/dr
-```
-
-O Terraform provisiona um novo EKS e toda a infraestrutura base limpa em `us-west-2`.
-
-### Passo 2 — Garantir bucket de backup acessível
-
-O job `velero-infra` do mesmo pipeline executa `terragrunt apply` sobre `modules/velero`, garantindo que o bucket `solidary-tech-velero-backups-{env}` em `us-west-2` exista e esteja acessível.
-
-### Passo 3 — Restaurar estado do cluster
-
-O job `cluster-addons` reinstala o Velero no novo cluster, apontando para o mesmo bucket. Em seguida, executar manualmente:
-
-```bash
-# Listar backups disponíveis
-velero backup get
-
-# Restaurar a partir do backup mais recente
-velero restore create --from-backup <nome-do-ultimo-backup>
-
-# Acompanhar o progresso
+velero restore create --from-backup <ultimo-backup>
 velero restore describe <nome-do-restore> --details
 ```
 
-Isso reidrata os namespaces `solidary-tech`, `monitoring`, `argocd` e `keda`.
+## Pontos de Atenção e Gaps
 
-### Passo 4 — Sincronização final via ArgoCD
-
-O ArgoCD, restaurado pelo Velero no passo anterior, assume o controle:
-- Valida que o estado do cluster está sincronizado com o repositório `eks/`
-- O job `update-ingress-host` do pipeline injeta o novo DNS do NLB na região de DR
-- Tráfego é restabelecido via novo Ingress
-
-### Passo 5 — Restaurar dados (RDS/DynamoDB)
-
-- **PostgreSQL:** restaurar a partir do snapshot cross-region mais próximo do ponto de falha (RPO 15 min)
-- **DynamoDB:** restaurar do vault `solidary-tech-dynamodb-backup-dr-{env}` em `us-west-2` via AWS Backup Console ou CLI
-
----
-
-## Gaps Identificados
-
-| Gap | Impacto | Status |
-|---|---|---|
-| **SQS sem backup cross-region** | Perda de mensagens em trânsito no momento do desastre | Aberto — AWS Backup não suporta SQS |
-| **Restore drill não executado** | RTO de 2h é estimativa, não garantia operacional medida | Aberto — recomenda-se exercício periódico de DR |
-
----
+- **SQS sem backup cross-region equivalente**: há risco de perda de mensagens em trânsito.
+- **Exercício de DR não executado ainda**: o RTO de 2 horas permanece uma estimativa operacional até a validação prática.
+- **Governança contínua**: a execução periódica do restore drill é recomendada para confirmar que o processo permanece viável.
 
 ## Referências
 
-- [`eks/velero/backup-schedule.yaml`][velero-schedule] — Schedule do Velero (GitOps)
-- [`terraform/modules/velero`][tf-velero] — Módulo Terraform do bucket S3 de backup
-- [`terraform/modules/backup`][tf-awsbackup] — Módulo Terraform do AWS Backup para DynamoDB
-- [`velero/dev/terragrunt.hcl`][tg-velero] — Instância Terragrunt do módulo Velero
-- [`backup/dev/terragrunt.hcl`][tg-awsbackup] — Instância Terragrunt do AWS Backup
-- [`.github/workflows/ci-infra.yml`][ci-infra] — Pipeline CI/CD de infraestrutura
-
-[velero-schedule]: https://github.com/rodx64/pos_arch/blob/develop/fase_5/tech_challenge/solidary-tech/eks/velero/backup-schedule.yaml
-[tf-velero]: https://github.com/rodx64/pos_arch/tree/develop/fase_5/tech_challenge/solidary-tech/terraform/modules/velero
-[tf-awsbackup]: https://github.com/rodx64/pos_arch/tree/develop/fase_5/tech_challenge/solidary-tech/terraform/modules/backup
-[tg-velero]: https://github.com/rodx64/pos_arch/blob/develop/fase_5/tech_challenge/solidary-tech/velero/dev/terragrunt.hcl
-[tg-awsbackup]: https://github.com/rodx64/pos_arch/blob/develop/fase_5/tech_challenge/solidary-tech/backup/dev/terragrunt.hcl
-[ci-infra]: https://github.com/rodx64/pos_arch/blob/develop/.github/workflows/ci-infra.yml
+- Backup schedule do Velero
+- Módulo Terraform de Velero
+- Módulo Terraform de backup do DynamoDB
+- Pipeline de infraestrutura do repositório

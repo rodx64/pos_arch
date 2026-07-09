@@ -21,6 +21,7 @@ const sidebars = {
     { type: 'doc', id: 'observability', label: '👁️ Observabilidade' },
     { type: 'doc', id: 'sre', label: '🛡️ SRE' },
     { type: 'doc', id: 'finops', label: '💰 FinOps' },
+    { type: 'doc', id: 'disaster-recovery', label: '🧯 DR e PCN' },
     { type: 'doc', id: 'itsm-aiops', label: '🤖 AIOps' },
   ],
 };
