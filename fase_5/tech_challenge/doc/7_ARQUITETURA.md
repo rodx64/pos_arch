@@ -62,6 +62,35 @@
         Internet -->|Acessa Configuração React| S3_FRONT
 ```
 
+```mermaid
+    sequenceDiagram
+        actor Doador
+        participant Ingress as Ingress (NGINX/NLB)
+        participant DonationAPI as donation-service
+        participant DB as PostgreSQL (donation_db)
+        participant SQS as SQS (donation-queue)
+
+        Doador->>Ingress: POST /donations (ngo_id, amount, donor_name)
+        Ingress->>DonationAPI: Encaminha requisição HTTP
+        
+        rect rgb(240, 248, 255)
+            Note over DonationAPI,DB: Persistência
+            DonationAPI->>DB: INSERT INTO donations (status: "APPROVED")
+            DB-->>DonationAPI: Retorna id e created_at
+        end
+        
+        DonationAPI->>DonationAPI: Incrementa métrica donations_created_total
+        
+        rect rgb(255, 245, 238)
+            Note over DonationAPI,SQS: Mensageria Assíncrona
+            DonationAPI-)SQS: Publica evento (JSON da doação)
+            Note right of SQS: Atualmente sem consumidor implementado
+        end
+        
+        DonationAPI-->>Ingress: HTTP 201 Created (Dados da doação)
+        Ingress-->>Doador: Resposta de sucesso
+```
+
 ### 1.1. Estrutura de Dependências e Microsserviços
 
 O projeto Solidary Tech é uma plataforma de doações e voluntariado para ONGs com os seguintes serviços em Go:
