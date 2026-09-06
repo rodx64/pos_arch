@@ -179,10 +179,10 @@ Este repositório centraliza todas as entregas práticas (Tech Challenges) desen
 📌 **Conteúdo:**
 
 - [x] Multicloud e Segurança
-    - [ ] Criação e Automação Multicloud (AWS, Azure e GCP).
-    - [ ] Segurança e privacidade centralizada.
-    - [ ] Disaster Recovery e PCN.
-    - [ ] Casos de Uso e Cenários reais
+    - [x] Criação e Automação Multicloud (AWS, Azure e GCP).
+    - [x] Segurança e privacidade centralizada.
+    - [x] Disaster Recovery e PCN.
+    - [x] Casos de Uso e Cenários reais
 - [x] SRE
     - [x] SRE (Site Reliability Engineering)
     - [x] Cultura e papel do SRE.
